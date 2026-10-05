@@ -100,10 +100,11 @@ Object.assign(PRAYERS,{
 // ---------------- false shrine (visible sign of a spreading cult)
 const devGrp=new THREE.Group();scene.add(devGrp);let devFlag=null;
 function devRefreshShrine(){while(devGrp.children.length){const m=devGrp.children.pop();m.traverse(o=>o.geometry&&o.geometry.dispose());}devFlag=null;
-  const c=G.dev&&G.dev.cult;if(!c||!c.shrine)return;const {x,z}=c.shrine,g=hAt(x,z);const B=new Builder(rnd,.04),F=new Builder(rnd,0);
+  TOWNS.list.forEach((s,i)=>{const dv=sGet(i,'dev'),c=dv&&dv.cult;if(c&&c.shrine)devDrawShrine(c);});}
+function devDrawShrine(c){{const {x,z}=c.shrine,g=hAt(x,z);const B=new Builder(rnd,.04),F=new Builder(rnd,0);
   B.cyl(0,g-.3,0,1.4,.7,0x2a2420,8);B.box(0,g+.3,0,.9,3.2,.9,0x1c1815);B.box(0,g+3.5,0,1.3,.35,1.3,0x3a1410);B.box(-1.9,g,0,.35,1.5,.35,0x2a2420);B.box(1.9,g,0,.35,1.5,.35,0x2a2420);B.box(0,g,-1.9,.35,1.5,.35,0x2a2420);B.box(0,g,1.9,.35,1.5,.35,0x2a2420);
   F.box(0,-1.6,.8,.05,2.2,1.4,0x7a1810);F.box(0,-.9,.8,.06,.3,1.42,0x16100c);
-  const grp=new THREE.Group();grp.position.set(x,0,z);grp.add(B.mesh(matB));const f=F.mesh(matB);f.position.set(0,g+4.9,0);grp.add(f);devFlag=f;devGrp.add(grp);}
+  const grp=new THREE.Group();grp.position.set(x,0,z);grp.add(B.mesh(matB));const f=F.mesh(matB);f.position.set(0,g+4.9,0);grp.add(f);devFlag=f;devGrp.add(grp);}}
 function devPlaceShrine(){const c=G.dev.cult;if(!c||c.shrine||!G.center)return;
   for(let i=0;i<40;i++){const a=rnd()*TAU,r=22+rnd()*18,x=G.center.x+Math.cos(a)*r,z=G.center.z+Math.sin(a)*r;
     if(Math.abs(x)>HALF-12||Math.abs(z)>HALF-12||wAt(x,z)>.05||slopeAt(x,z)>.7)continue;if(buildings.some(b=>Math.hypot(b.x-x,b.z-z)<b.r+4))continue;
@@ -154,10 +155,12 @@ function devJudgeHour(){const d=G.dev,j=d.judging;if(!j)return;const h=G.t-j.sin
 // ---------------- the ledger of ages and the reckoning screen
 function devLedger(){try{return JSON.parse(localStorage.getItem('hearthmere_ledger')||'[]');}catch(e){return [];}}
 function devSaveLedger(L){try{localStorage.setItem('hearthmere_ledger',JSON.stringify(L.slice(-30)));}catch(e){}}
-function devReckoning(){const d=G.dev,j=d.judging;if(!j||d.done)return;d.done=true;G.paused=true;
+function devReckoning(){const d=G.dev,j=d.judging;if(!j||d.done)return;d.done=true;
+  // if another people live on, only this one is cleansed and the world goes on
+  const here=TOWNS.cur,others=TOWNS.list.map((s,i)=>i).filter(i=>i!==here&&!TOWNS.list[i].dead);if(others.length){TOWNS.list[here].dead=true;G.nbDone=false;G.nbAt=dayN()+35;}else G.paused=true;
   const e={town:G.town,era:ERAS[G.era].name,peak:d.peak,years:yearN(),atrocities:d.atrocities,sin:Math.round(d.sin),prophet:d.cult?d.cult.name:(d.log.length?'(fallen)':''),doctrine:d.cult?DOCTRINES[d.cult.key].name:'',judgment:JUDG[j.kind].n,justified:j.justified,remnant:d.remnant,when:Date.now()};
-  const L=devLedger();L.push(e);devSaveLedger(L);devShowReckoning(e,L);}
-function devShowReckoning(e,L){const el=$('reckon');if(!el)return;
+  const L=devLedger();L.push(e);devSaveLedger(L);devShowReckoning(e,L,others.length?others[0]:-1);}
+function devShowReckoning(e,L,cont){const el=$('reckon');if(!el)return;cont=cont==null?-1:cont;
   const verdict=e.justified?'Their sins were many. The judgment was just.':'Their sins did not yet outweigh their goodness. The Spirit may regret this.';
   el.innerHTML=`<div class="rcard glass"><h2>THE RECKONING</h2><div class="sub">${esc(e.town)} · the ${esc(e.era)}</div>
     <div class="rrow"><span>Lasted</span><b>${e.years} year${e.years===1?'':'s'}</b></div><div class="rrow"><span>Greatest number of souls</span><b>${e.peak}</b></div>
@@ -165,8 +168,8 @@ function devShowReckoning(e,L){const el=$('reckon');if(!el)return;
     <div class="rrow"><span>Judgment</span><b>${esc(e.judgment)}</b></div><div class="rrow"><span>The faithful who escaped</span><b>${e.remnant}</b></div>
     <p class="verdict">${verdict}</p>
     ${L.length>1?`<div class="rages"><i>Ages before this one</i>${L.slice(0,-1).slice(-5).reverse().map(a=>`<div>${esc(a.town)} — the ${esc(a.era)}, ${a.years}y · ${esc(a.judgment)}</div>`).join('')}</div>`:''}
-    <div style="text-align:center;margin-top:14px"><button class="primary" id="rkNext">Begin the next age</button></div></div>`;
-  el.classList.remove('hidden');$('rkNext').onclick=()=>{el.classList.add('hidden');for(const id of ['gtop','prayers'])$(id)&&$(id).classList.add('hidden');showSetup();};}
+    <div style="text-align:center;margin-top:14px"><button class="primary" id="rkNext">${cont>=0?'The world goes on':'Begin the next age'}</button></div></div>`;
+  el.classList.remove('hidden');$('rkNext').onclick=()=>{el.classList.add('hidden');if(cont>=0){viewSettlement(cont,true);return;}for(const id of ['gtop','prayers'])$(id)&&$(id).classList.add('hidden');showSetup();};}
 function devApplyMeta(){const L=devLedger();if(!L.length)return;const rem=L.slice(-5).reduce((a,x)=>a+(x.remnant||0),0);const bonus=Math.min(120,L.length*10+rem*6);G.faith=Math.min(faithCap(),G.faith+bonus);G.dev.legacy=bonus;}
 // ---------------- panel (shown with the prayers)
 const _devBar=(v,c)=>`<span class="bar" style="width:84px"><i style="width:${_devPct(v)}%;${c?`background:${c}`:''}"></i></span>`;

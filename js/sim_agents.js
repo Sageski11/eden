@@ -26,7 +26,7 @@ const built=t=>buildings.filter(b=>b.type===t&&!b.build);
 const hasBuilt=t=>buildings.some(b=>b.type===t&&!b.build);
 const adults=()=>G.vill.filter(v=>v.age>=14&&!v.leaving);
 const popN=()=>G.vill.filter(v=>!v.leaving&&!v.arriving).length;
-function chron(txt,major){G.chron.unshift({d:dateStr(),t:txt,m:!!major});if(G.chron.length>300)G.chron.pop();if(major)toast(txt.length>70?txt.slice(0,68)+'…':txt);}
+function chron(txt,major){if(typeof TOWNS!=='undefined'&&TOWNS.list.length>1&&G.town&&!txt.includes(G.town))txt=G.town+': '+txt;G.chron.unshift({d:dateStr(),t:txt,m:!!major});if(G.chron.length>300)G.chron.pop();if(major)toast(txt.length>70?txt.slice(0,68)+'…':txt);}
 function toW2(b,lx,lz){const cs=Math.cos(b.rot),sn=Math.sin(b.rot);return [b.x+lx*cs+lz*sn,b.z-lx*sn+lz*cs];}
 function doorOf(b){if(b.type==='farm'){const a=rnd()*TAU;return toW2(b,Math.cos(a)*3.5,Math.sin(a)*2.5);}
   const dz=b.type==='house'?(b.d||3)/2+.7:b.type==='hall'?(b.level?2.9:0):b.r*.85;return toW2(b,b.type==='hall'&&!b.level?1.6:0,dz);}

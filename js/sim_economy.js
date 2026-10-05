@@ -272,7 +272,7 @@ function checkEra(){const nx=ERA_REQ[G.era+1];if(!nx||!nx.ok())return;G.era++;
   const e=ERAS[G.era];chron(`${G.town} entered ${e.intro}. The Spirit's power deepened.`,true);
   showBanner(e.name,`${G.town} has entered ${e.intro}`);startFestival(10,'era');G.faith=Math.min(faithCap(),G.faith+50);
   if(MODE==='god')buildToolbox(godToolDefs());sfx('bell');}
-const faithCap=()=>ERAS[G.era].cap;
+const faithCap=()=>TOWNS.list.length<2?ERAS[G.era].cap:Math.max(...TOWNS.list.map((s,i)=>ERAS[sGet(i,'era')||0].cap));
 // ---------------- happiness / faith
 function computeHap(){
   const p=Math.max(1,popN()),f={};const vs=G.vill.filter(v=>!v.arriving&&!v.leaving);
@@ -372,7 +372,7 @@ function newDay(){if(G.menu)return;
   if(s===2&&dis===DPS){if(G.food>=p*5&&G.t-G.lastFest>40){startFestival(12,'harvest');chron(`The harvest was gathered. ${G.town} held a Harvest Festival!`,true);}else chron('A lean harvest. There was no festival this year.');}
   G.prodY={...G.prod};G.prod={food:0,wood:0,stone:0};
   G.joy*=.75;G.grief*=.7;G.sad*=.8;
-  assignHomes();assignJobs();checkEra();devDaily();tfDaily();eraDaily();netDaily();waterDaily();if(seasonN()===3||dis===1)buildToolbox(godToolDefs());
+  assignHomes();assignJobs();checkEra();devDaily();tfDaily();eraDaily();netDaily();waterDaily();nbDaily();if(seasonN()===3||dis===1)buildToolbox(godToolDefs());
 }
 function edgePoint(a){const x=Math.cos(a),z=Math.sin(a),m=Math.max(Math.abs(x),Math.abs(z));let px=x/m*(HALF-1.5),pz=z/m*(HALF-1.5);
   for(let i=0;i<24&&wAt(px,pz)>.3;i++){a+=.15;const x2=Math.cos(a),z2=Math.sin(a),m2=Math.max(Math.abs(x2),Math.abs(z2));px=x2/m2*(HALF-1.5);pz=z2/m2*(HALF-1.5);}return [px,pz];}

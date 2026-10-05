@@ -164,7 +164,7 @@ canvas.addEventListener('pointermove',e=>{mouse.nx=e.clientX/innerWidth*2-1;mous
 canvas.addEventListener('pointerup',e=>{if(dragCam){dragCam=null;return;}if(painting){painting=false;endStroke();}});
 canvas.addEventListener('pointerleave',()=>{mouse.in=false;});
 canvas.addEventListener('wheel',e=>{e.preventDefault();if(UIBLOCK)return;if(tool.startsWith('b:')&&e.shiftKey){rotateGhost(e.deltaY>0?1:-1);return;}cam.dist*=Math.pow(1.0012,e.deltaY);},{passive:false});
-addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||UIBLOCK)return;keys[e.code]=true;shift=e.shiftKey;
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||UIBLOCK)return;if(e.code==='Tab'&&MODE==='god'&&typeof cycleSettlement==='function'){e.preventDefault();cycleSettlement();return;}keys[e.code]=true;shift=e.shiftKey;
   if(MODE==='title')return;
   if(MODE==='god'&&godKey(e))return;
   if((e.ctrlKey||e.metaKey)&&e.code==='KeyZ'){e.preventDefault();if(MODE!=='god'||G.phase==='shape')undo();return;}

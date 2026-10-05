@@ -103,7 +103,7 @@ rainMesh.frustumCulled=false;rainMesh.visible=false;scene.add(rainMesh);
 // ---------------- UI
 function updateUI(force){
   if(MODE!=='god')return;
-  $('gTown').textContent=G.town;$('gEra').textContent=G.phase==='shape'?WORLDS[WORLD].name+' · shaping':ERAS[G.era].name+(G.phase==='pick'?' · unsettled':'');
+  updateTowns();$('gTown').textContent=G.town;$('gEra').textContent=G.phase==='shape'?WORLDS[WORLD].name+' · shaping':ERAS[G.era].name+(G.phase==='pick'?' · unsettled':'');
   $('gFaith').textContent=Math.floor(G.faith);$('gFaithCap').textContent='/'+faithCap();$('gPop').textContent=popN();
   $('gHap').style.width=Math.round(G.hap)+'%';$('gHap').parentNode.parentNode.title='Happiness '+Math.round(G.hap)+'%\n'+Object.entries(G.hapF).map(([k,v])=>`${k}: ${v>0?'+':''}${v}`).join('\n');
   const net=(G.prodY.food||0)-(G.cons||0);$('gFood').textContent=Math.floor(G.food);$('gFood').parentNode.title=`Food — yesterday made ${Math.round(G.prodY.food||0)}, folk eat ${Math.round(G.cons||0)} a day`;
@@ -223,7 +223,7 @@ let aoT=0,treeT=0,last=performance.now(),TT=0,recolorT=0,drownT=0,evalI=0,evalT=
 function gameStep(dtH){
   G.pathBudget=14;
   const h0=Math.floor(G.t);G.t+=dtH;
-  for(let h=h0+1;h<=Math.floor(G.t);h++)eachSettlement(i=>{SHARED=i===0;if(h%24===5&&G.phase==='play')newDay();if(G.phase==='play')hourTick();});SHARED=true;
+  for(let h=h0+1;h<=Math.floor(G.t);h++)eachSettlement(i=>{SHARED=i===firstAlive();if(h%24===5&&G.phase==='play')newDay();if(G.phase==='play')hourTick();});SHARED=true;
   const n=Math.max(1,Math.ceil(dtH/.06)),sd=dtH/n;
   for(let s=0;s<n;s++)eachSettlement(()=>{for(const v of G.vill.slice())updAgent(v,sd);for(const b of G.bandits.slice())updAgent(b,sd);towersShoot(sd);});
   if(dtH>0)updateAnimals(dtH);

@@ -14,6 +14,7 @@ function sDefaults(town){return {dev:devNew(),tf:tfNew(),net:null,vill:[],bandit
   raid:null,raidCool:40,town:town||townName(),poll:0,pollWarn:false,waterDist:0,starve:0,starveH:0,lowDays:0,pid:1};}
 function sInit(){TOWNS.list=[{st:null,bld:[],dead:false}];TOWNS.cur=0;TOWNS.act=0;}
 const sMulti=()=>TOWNS.list.length>1;
+const firstAlive=()=>TOWNS.list.findIndex(s=>!s.dead);
 function swapOut(){const s=TOWNS.list[TOWNS.cur];if(!s)return;s.st={};for(const k of PERKEYS)s.st[k]=G[k];s.bld=buildings.slice();}
 function swapIn(i){const s=TOWNS.list[i];if(!s||!s.st)return;for(const k of PERKEYS)G[k]=s.st[k];buildings.length=0;for(const b of s.bld)buildings.push(b);TOWNS.cur=i;}
 function withSettlement(i,fn){if(i===TOWNS.cur)return fn();const prev=TOWNS.cur;swapOut();swapIn(i);try{return fn();}finally{swapOut();swapIn(prev);}}
