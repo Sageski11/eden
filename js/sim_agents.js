@@ -191,7 +191,9 @@ function builderTask(v){
   const [x,z]=doorOf(site);goTo(v,x+(rnd()-.5)*3,z+(rnd()-.5)*3,vv=>wait(vv,.7,'idle'));
 }
 function chooseSite(v){const sites=buildings.filter(b=>siteProj(b));if(!sites.length)return null;
-  let best=null,bs=1e9;for(const s of sites){const n=G.vill.filter(o=>o.site===s.id&&o.job==='builder').length;const sc=Math.hypot(s.x-v.x,s.z-v.z)*.05+n*1.5-(s.type==='house'?1:0)-(siteProj(s).blessed?2:0)+(s.upg?2:0);if(sc<bs){bs=sc;best=s;}}return best;}
+  let best=null,bs=1e9;for(const s of sites){const n=G.vill.filter(o=>o.site===s.id&&o.job==='builder').length;const big=SITE_PRIORITY[s.type]||0,sc=Math.hypot(s.x-v.x,s.z-v.z)*.05+n*1.5-(s.type==='house'?1:0)-(siteProj(s).blessed?2:0)+(s.upg?2:0)-(!s.upg&&n<(s.type==='castle'?4:2)?big:0);if(sc<bs){bs=sc;best=s;}}return best;}
+// large civic works must not be starved of builders by the many small jobs of a big town
+const SITE_PRIORITY={castle:8,church:5,market:4,tavern:3,mill:3,smith:3,school:4,factory:5,station:5,powerplant:6,fusion:6,tower:2,mason:3,sawmill:3,shipyard:3};
 function siteName(b){return b.type==='house'?(b.upg?'house':'new home'):b.type==='camp'?(b.variant==='lumber'?'lumber camp':b.variant==='fish'?'fishing camp':'camp'):(BT[b.type]||b.type).toLowerCase();}
 function woodTask(v){
   const base=bById(v.work)||G.center;if(!base)return wait(v,1);

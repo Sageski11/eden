@@ -176,7 +176,7 @@ function devPanelHTML(){const d=devEnsure();let h='<h3 style="margin-top:12px">H
   const top=Object.entries(c).filter(([,v])=>v>.15).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>names[k]);
   h+=`<div class="small" style="margin:2px 0 6px;color:var(--ink2);font-style:italic">${top.length?'Troubling them: '+top.join(', ')+'.':'The folk are at peace.'}</div>`;
   if(d.legacy)h+=`<div class="small" style="color:#3f5f2a">The memory of earlier ages lends you ${d.legacy} Faith.</div>`;
-  if(d.cult){const D=DOCTRINES[d.cult.key];h+=`<div class="pr urgent"><b>${esc(d.cult.name)}</b><em>${esc(D.name)} — ${devFollowers()} followers</em>${_devBar(d.cult.strength*100,'linear-gradient(90deg,#b0452a,#5a1810)')}<em>${esc(D.blurb)}</em></div>`;}
+  if(d.cult){const D=DOCTRINES[d.cult.key];h+=`<div class="pr urgent"><b>${esc(d.cult.name)}</b><em>${esc(D.name)} — ${devFollowers()} followers</em>${_devBar(d.cult.strength*100,'linear-gradient(90deg,#b0452a,#5a1810)')}</div>`;}
   if(d.seer>0)h+=`<div class="small" style="color:#3f5f2a">A true prophet is calming the people (${d.seer} days).</div>`;
   if(d.judging)h+='<div class="pr urgent">The Spirit\'s judgment is upon the valley.</div>';
   else if(d.sin>0||d.cult){h+=`<div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center">Wrath ${_devBar(d.sin,'linear-gradient(90deg,#d8a23a,#8e2f1f)')}</div>`;

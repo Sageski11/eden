@@ -40,7 +40,8 @@ function eraHapF(f){const e=G.era||0;if(e<5)return;const pl=G.poll||0;if(pl>10)f
   if(eraBuilt('powerplant')||eraBuilt('fusion'))f.Power=3;if(eraBuilt('school'))f.Learning=2;if(hasBuilt('station'))f.Travel=2;if(G.net&&G.net.lines.some(l=>l.kind==='highway'))f.Highway=2;}
 function eraDaily(){if(G.phase!=='play'||G.menu)return;const e=G.era||0;if(e<5){G.poll=0;return;}
   const fac=eraBuilt('factory'),coal=eraBuilt('powerplant'),clean=eraBuilt('fusion');
-  G.poll=clamp((G.poll||0)*.92+fac*5+coal*7-clean*2+(G.net&&G.net.lines.some(l=>l.kind==='highway')?2:0),0,100);
+  const relief=clamp((G.env?G.env.forest:0)/9000,0,.07); // forests near the town clean the air
+  G.poll=clamp((G.poll||0)*(.88-relief)+fac*2.5+coal*4-clean*3+(G.net&&G.net.lines.some(l=>l.kind==='highway')?1.5:0),0,100);
   if(G.poll>25){G.fish=Math.max(.1,(G.fish||1)-(G.poll-25)*.0009);if(G.poll>55&&rnd()<.15){const v=G.vill.find(o=>!o.sick&&!o.arriving&&!o.leaving&&o.age<12||o.age>55);if(v)v.sick=1;}}
   // the railway brings newcomers
   const beds=bedsFree();if(hasBuilt('station')&&G.center&&!G.center.build&&G.hap>=50&&beds>=3&&G.food>popN()*2&&rnd()<.3)arriveFamily(Math.min(beds,3+Math.floor(rnd()*3)));

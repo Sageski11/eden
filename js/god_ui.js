@@ -305,7 +305,7 @@ function layout(){applyUI();}
 function applyUI(){const ui=clamp(Math.min(innerWidth/1500,innerHeight/900),.55,1)*(SETS.ui||1);document.documentElement.style.setProperty('--ui',ui);
   const bar=MODE==='god'?$('gtop'):$('top');const tb=bar.classList.contains('hidden')?12:bar.getBoundingClientRect().bottom+10;
   toolsEl.style.top=tb+'px';toolsEl.style.maxHeight=Math.max(80,(innerHeight-tb-14)/ui)+'px';
-  const pr=$('prayers');pr.style.top=tb+'px';pr.style.maxHeight=Math.max(60,(innerHeight*.5-tb)/ui+160)+'px';
+  const pr=$('prayers');pr.style.top=tb+'px';pr.style.maxHeight=Math.max(60,(innerHeight*.64-tb)/ui+160)+'px';
   let it=tb;if(MODE==='god'&&!pr.classList.contains('hidden'))it=pr.getBoundingClientRect().bottom+10;
   insp.style.top=it+'px';insp.style.maxHeight=Math.max(80,(innerHeight-it-14)/ui)+'px';
   const tr=toolsEl.getBoundingClientRect();hintEl.style.left=(tr.right+14)+'px';hintEl.style.bottom=(64*ui)+'px';hintEl.style.display=innerWidth<1000?'none':'';}
