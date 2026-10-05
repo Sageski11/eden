@@ -7,7 +7,8 @@ function godToolDefs(){const e=G.era||0,L=r=>e>=r?null:`Unlocks in the ${ERAS[r]
     ['Water & nature',[['pour','Pour water','8','~'],['spring','Spring','9',30,L(1)],['drain','Drain','0','~'],['plant','Grow forest','T','~'],['w:deer','Deer herd','',20],['w:boar','Boar','',20,L(1)],['w:hare','Hares','',8],['w:fox','Foxes','',10],['w:horse','Wild horses','',25,L(1)]]],
     ['Sky',[['p:rain','Rain','R',35],['p:sun','Sunshine','',25],['p:snow','Snowfall','',30,L(1)],['p:rainbow','Rainbow','',40,L(1)],['p:storm','Thunderstorm','',70,L(2)],['meteor','Meteor','',150,L(1)]]],
     ['Guide the people',[['m:settle','Settle here','',mkCount('settle')],['m:farm','Farm here','',mkCount('farm')],['m:worship','Worship here','',mkCount('worship'),L(1)],['m:forbid','Keep clear','',mkCount('forbid')],['bless','Bless','B',20],['inspect','Watch','I']]],
-    ['Miracles',[['p:harvest','Harvest','',50,L(1)],['smite','Smite','X',15,L(2)],['p:heal','Heal','',40,L(2)],['p:festival','Festival','',60,L(2)]]]];}
+    ['Miracles',[['p:harvest','Harvest','',50,L(1)],['smite','Smite','X',15,L(2)],['p:heal','Heal','',40,L(2)],['p:festival','Festival','',60,L(2)]]],
+    ['Against doubt',[['p:sign','Divine sign','',60],['p:hush','Silence prophet','',40],['p:anoint','Anoint seer','',50]]]];}
 Object.assign(HINTS,{
   'm:settle':'Plant a banner where you want homes built. The folk will settle near it.','m:farm':'Plant a banner where fields should go — flat land near water grows best.',
   'm:worship':'Show the folk where to raise their church. Hilltops make grand churches.','m:forbid':'Mark land to keep clear of building (protect a forest, a view, a flood plain).',
@@ -15,7 +16,7 @@ Object.assign(HINTS,{
   inspect:'Click a villager to follow them, or a building to see who lives and works there.',greathill:'Click to raise a great hill in a heartbeat. Castles love hilltops.',
   spring:'Click to open a spring that flows forever. Rivers bring life — and floods.',meteor:'Click to call down a falling star: a crater, a firestorm — and star-stone for the masons.',rocks:'Drag to scatter boulders. Rocks become stone for quarries.',
   'w:deer':'Click to release a herd of deer. Hunters need game.','w:boar':'Click to release wild boar — fierce but filling.','w:hare':'Click to release hares into the meadow.','w:fox':'Click to release a pair of foxes.','w:horse':'Click to release a herd of wild horses — beautiful, and never hunted.',fell:'Drag to clear trees.',
-  'p:sun':'','m:x':'',plant:'Drag to grow forest. Woodcutters need trees; forests shelter log cabins.'});
+  'p:sun':'','m:x':'','p:sign':'Send a sign of light and warmth. Eases doubt and weakens a false prophet. Better still: ease what troubles them.','p:hush':'Strike down the false prophet. If their cult is already strong, they become a martyr.','p:anoint':'Raise a faithful villager as a true prophet who calms the people for a month.',plant:'Drag to grow forest. Woodcutters need trees; forests shelter log cabins.'});
 const MK={settle:{c:0xd4a73c,c2:0x8e2f1f,n:'Settle here'},farm:{c:0x7aa04a,c2:0xd8b84a,n:'Farm here'},worship:{c:0xe8e2d2,c2:0x2f4a8e,n:'Worship here'},forbid:{c:0x2a2018,c2:0xb03020,n:'Keep clear'}};
 const markGrp=new THREE.Group();scene.add(markGrp);
 function refreshMarkers(){while(markGrp.children.length){const m=markGrp.children.pop();m.traverse(o=>o.geometry&&o.geometry.dispose());}
@@ -34,6 +35,7 @@ function castPower(id){
   const lock=TOOLDEFS.some(([,l])=>l.some(t=>t[0]===id&&t[4]));if(lock){toast('That miracle is not yet unlocked');return;}
   if(G.phase==='pick'||G.phase==='shape'){toast('First, show your people where to settle');return;}
   if(castWeather(id)){updateUI(true);return;}
+  if(devCast(id)){updateUI(true);return;}
   const c=G.center||{x:0,z:0};
   if(id==='p:rain'){if(G.rain>12){toast('It is already raining');return;}if(!spend(35))return;G.rain=24;G.rainI=1;chron(seasonN()===3?'The Spirit sent snow over the valley.':'The Spirit sent rain over the valley.');sfx('thunder');}
   else if(id==='p:harvest'){if(seasonN()===3){toast('Nothing grows in winter');return;}if(G.harvest>0){toast('The harvest is already blessed');return;}if(!spend(50))return;G.harvest=24*(DPS-dayInSeason()+1);chron('The Spirit blessed the fields. The crops grew tall and golden.',true);for(const f of built('farm'))sparkle(f.x,f.z,[1,.85,.3]);}
@@ -115,8 +117,8 @@ function updateUI(force){
   else if(G.phase==='pick')h+=`<div class="pr urgent">Five weary settlers wander into the valley.<em>Click the land to plant a banner where they should make camp. Flat, dry ground near water and forest is best.</em></div><button id="autoPick">Let them choose</button>`;
   else{if(!G.prayers.length)h+='<div class="pr none">The folk are content. No prayers for now.</div>';
     for(const p of G.prayers){const hl=Math.max(0,p.until-G.t);h+=`<div class="pr${p.urgent?' urgent':''}">${esc(p.txt)}<em>${esc(PRAYERS[p.k].how)}</em><span class="rw">Reward ${PRAYERS[p.k].r} faith · ${hl>=24?Math.ceil(hl/24)+' days':Math.ceil(hl)+' hours'} left</span></div>`;}
-    const nx=ERA_REQ[G.era+1];if(nx)h+=`<div class="pr none" style="margin-top:4px">Next: <b>${ERAS[G.era+1].name}</b> — ${nx.txt}</div>`;}
-  if(force||$('prayers')._h!==h){$('prayers').innerHTML=h;$('prayers')._h=h;const ap=$('autoPick');if(ap)ap.onclick=()=>autoChooseStart();const cs=$('callS');if(cs)cs.onclick=()=>callSettlers();}
+    const nx=ERA_REQ[G.era+1];if(nx)h+=`<div class="pr none" style="margin-top:4px">Next: <b>${ERAS[G.era+1].name}</b> — ${nx.txt}</div>`;h+=devPanelHTML();}
+  if(force||$('prayers')._h!==h){$('prayers').innerHTML=h;$('prayers')._h=h;devBind();const ap=$('autoPick');if(ap)ap.onclick=()=>autoChooseStart();const cs=$('callS');if(cs)cs.onclick=()=>callSettlers();}
   layoutGod();
 }
 function layoutGod(){applyUI();}
@@ -161,7 +163,7 @@ function chooseStart(x,z){
   const r=5;let mn=1e9,mx=-1e9;for(let i=0;i<9;i++){const a=i/8*TAU,rr=i===8?0:r;const h=hAt(x+Math.cos(a)*rr,z+Math.sin(a)*rr);mn=Math.min(mn,h);mx=Math.max(mx,h);if(wAt(x+Math.cos(a)*rr,z+Math.sin(a)*rr)>.1){toast('Too wet — choose dry ground');return;}}
   if(mx-mn>2.6){toast('Too steep — choose flatter ground (or flatten it first)');return;}
   if(Math.abs(x)>HALF-14||Math.abs(z)>HALF-14){toast('Too close to the edge of the world');return;}
-  G.phase='play';const b=startSite('hall',x,z,Math.round(cam.yaw/(PI/2))*(PI/2),{level:0});G.center=b;makePlan(b);onPlannedBuild(b);paintPlaza();b.stock={wood:G.wood,stone:G.stone,food:G.food};
+  G.phase='play';devApplyMeta();const b=startSite('hall',x,z,Math.round(cam.yaw/(PI/2))*(PI/2),{level:0});G.center=b;makePlan(b);onPlannedBuild(b);paintPlaza();b.stock={wood:G.wood,stone:G.stone,food:G.food};
   let [ex,ez]=edgePoint(Math.atan2(z,x)+(rnd()-.5)*.6);{const dx=ex-x,dz=ez-z,d=Math.hypot(dx,dz);if(d>45){for(let r2=45;r2<d;r2+=5){const tx=x+dx/d*r2,tz=z+dz/d*r2;if(wAt(tx,tz)<.05){ex=tx;ez=tz;break;}}}}
   const fam=pickA(FAM),fam2=pickA(FAM.filter(f=>f!==fam));
   const spec=[{female:false,fam},{female:true,fam},{female:false,fam:fam2},{female:true,fam:fam2},{female:rnd()<.5,fam:pickA(FAM),age:19}];
@@ -181,8 +183,8 @@ function autoFindSpot(lim){let best=null,bs=-1e9;for(let i=0;i<600;i++){const x=
 function serializeGod(){const s=snapshot();const pick=(o,ks)=>{const r={};for(const k of ks)r[k]=o[k];return r;};
   return JSON.stringify({v:2,mode:'god',N,H:f32b64(s.H),W:f32b64(s.W),R:f32b64(s.R),trees:s.trees.map(t=>({x:t.x,z:t.z,t:t.t,s:t.s,r:t.r,c:t.c})),springs:springs.map(p=>({x:p.x,z:p.z,rate:p.base||p.rate})),
     bl:buildings.map(b=>pick(b,['id','type','x','z','rot','manual','seed','w','d','level','variant','build','upg','forFam','stock','blessedUp','flooded','cw','cs'])),
-    vill:G.vill.filter(v=>!v.leaving).map(v=>pick(v,['id','name','fam','female','age','job','home','work','x','z','spouse','parents','sick','skin','site','hp','arriving','look'])),
-    G:pick(G,['t','speed','faith','food','wood','stone','era','hap','markers','prayers','chron','town','raids','births','deaths','arrivals','raidCool','plagueCool','drought','rain','rainI','harvest','firstHut','wantHouse','nextV','prayerCool','lastFest','phase','realm','seed','plan','sk','unl','fish','boatsBuilt','boatWork','world','sun','snow','storm','rainbow','lastRain']),animals:animals.map(a=>({sp:a.sp,x:+a.x.toFixed(1),z:+a.z.toFixed(1),male:a.male,sc:a.sc})),
+    vill:G.vill.filter(v=>!v.leaving).map(v=>pick(v,['id','name','fam','female','age','job','home','work','x','z','spouse','parents','sick','skin','site','hp','arriving','look','cult','prophet','seer'])),
+    G:pick(G,['t','speed','faith','food','wood','stone','era','hap','markers','prayers','chron','town','raids','births','deaths','arrivals','raidCool','plagueCool','drought','rain','rainI','harvest','firstHut','wantHouse','nextV','prayerCool','lastFest','phase','realm','seed','plan','sk','unl','fish','boatsBuilt','boatWork','world','sun','snow','storm','rainbow','lastRain','dev']),animals:animals.map(a=>({sp:a.sp,x:+a.x.toFixed(1),z:+a.z.toFixed(1),male:a.male,sc:a.sc})),
     center:G.center?G.center.id:0,cam:{tx:cam.tx,tz:cam.tz,yaw:cam.yaw,pitch:cam.pitch,dist:cam.dist}});}
 function loadGod(str){const o=JSON.parse(str);if(o.mode!=='god'||o.N!==N)throw new Error('bad');
   enterGodUI();resetG();
@@ -192,7 +194,7 @@ function loadGod(str){const o=JSON.parse(str);if(o.mode!=='god'||o.N!==N)throw n
   for(const r of o.bl){const b=newRecord(r.type,r.x,r.z,r.rot,r.seed);Object.assign(b,r);buildings.push(b);mx=Math.max(mx,b.id);}nextId=mx+1;
   Object.assign(G,o.G);G.paused=false;G.raid=null;G.bandits=[];G.vill=[];
   for(const r of o.vill){const v=newVillager(r);v.id=r.id;v.timer=rnd()*.3;}G.nextV=Math.max(G.nextV,...G.vill.map(v=>v.id+1),1);
-  G.center=bById(o.center);if(o.cam)Object.assign(cam,o.cam);WORLD=G.world||'river';animals.length=0;for(const a of (o.animals||[]))spawnAnimal(a.sp,a.x,a.z,{male:a.male,sc:a.sc});if(!G.sk)G.sk={wood:0,work:0,stone:0,farm:0,fish:0,hunt:0};if(!G.unl)G.unl={};
+  G.center=bById(o.center);if(o.cam)Object.assign(cam,o.cam);WORLD=G.world||'river';animals.length=0;for(const a of (o.animals||[]))spawnAnimal(a.sp,a.x,a.z,{male:a.male,sc:a.sc});if(!G.sk)G.sk={wood:0,work:0,stone:0,farm:0,fish:0,hunt:0};if(!G.unl)G.unl={};devEnsure();devRefreshShrine();
   if(G.center&&!G.plan)makePlan(G.center);
   refreshCivic();for(const b of buildings)realize(b);refreshTerrain();updateSkirt();updateWaterMesh(true);refreshMarkers();
   if(G.phase==='shape'){buildToolbox(shapeToolDefs());setTool('raise');}else{buildToolbox(godToolDefs());setTool('inspect');}assignHomes();gridDirty=true;treesDirty=true;rebuildTrees();updateUI(true);applyUI();

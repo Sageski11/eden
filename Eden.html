@@ -242,6 +242,11 @@ body.paused canvas{filter:blur(3px) brightness(.62) saturate(.8);transition:filt
 .sdesc{font-size:14px;font-style:italic;color:#a8936c;margin:4px 0 0}
 .schk{display:flex;align-items:center;gap:9px;margin:10px 0;font-size:16px}.schk input{accent-color:#c99a3b;width:17px;height:17px}
 .sfoot{display:flex;justify-content:flex-end;margin-top:18px}
+#reckon{position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(20,6,2,.55),rgba(4,2,1,.88));animation:pfade .6s}
+#reckon.hidden{display:none}
+.rcard{width:520px;max-width:94vw;padding:26px 30px;transform:scale(var(--ui))}
+.rcard .rrow{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dotted rgba(201,154,59,.35);font-size:17px}.rcard .rrow span{color:#b9a37c}.rcard .rrow b{color:#f2c873;font-weight:600;text-align:right}
+.rcard .verdict{font-style:italic;text-align:center;margin:14px 0 4px;color:#e6d7b8}.rcard .rages{margin-top:12px;font-size:14px;color:#a8936c}.rcard .rages i{display:block;letter-spacing:.2em;font-style:normal;font-family:Cinzel,serif;font-size:12px;color:#c99a3b;margin-bottom:3px}
 #farewell{position:fixed;inset:0;z-index:60;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#d8c6a0;text-align:center;gap:14px}
 #farewell h2{font-family:Cinzel,serif;font-size:38px;letter-spacing:.25em;color:#f2c873;margin:0}
 </style>
@@ -392,6 +397,7 @@ body.paused canvas{filter:blur(3px) brightness(.62) saturate(.8);transition:filt
   <div class="srow"><label for="sUI">Interface size</label><input type="range" id="sUI" min="70" max="130"><output id="oUI"></output></div>
   <div class="sfoot"><button id="sDone" class="primary">Done</button></div>
 </div></div>
+<div id="reckon" class="hidden"></div>
 <div id="farewell" class="hidden"><h2>FAREWELL</h2><div>Your realm is saved. You may close this tab now.</div><button class="gbtn" id="fwBack">Return to the valley</button></div>
 <input type="file" id="fileIn" accept=".json,application/json" hidden>
 <script src="js/lib/three.min.js"></script>
@@ -409,6 +415,7 @@ body.paused canvas{filter:blur(3px) brightness(.62) saturate(.8);transition:filt
 <script src="js/town_plan.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/world_features.js"></script>
+<script src="js/devotion.js"></script>
 <script src="js/god_ui.js"></script>
 <script src="js/saves.js"></script>
 <script src="js/menu.js"></script>

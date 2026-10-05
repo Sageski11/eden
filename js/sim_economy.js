@@ -281,6 +281,7 @@ function computeHap(){
   f.Events=Math.round(G.joy-G.grief*2-G.sad);
   const sick=vs.filter(v=>v.sick).length;if(sick)f.Sickness=-Math.min(15,sick*2);
   if(p>40)f.Crowding=-Math.min(14,Math.round((p-40)/11));
+  if(typeof devHapF==='function')devHapF(f);
   G.hapF=f;let s=50;for(const k in f)s+=f[k];G.hapT=clamp(s,0,100);
 }
 // ---------------- prayers
@@ -302,11 +303,11 @@ const PRAYERS={
 };
 function prayerTick(){
   for(const pr of G.prayers.slice()){const D=PRAYERS[pr.k];
-    if(D.ok()){G.prayers.splice(G.prayers.indexOf(pr),1);G.faith=Math.min(faithCap(),G.faith+D.r);G.joy=Math.min(20,G.joy+4);chron(`The Spirit answered the prayer: “${pr.txt}” (+${D.r} faith)`);toast(`Prayer answered! +${D.r} faith`);sfx('chime');continue;}
-    if(G.t>pr.until){G.prayers.splice(G.prayers.indexOf(pr),1);G.sad=Math.min(20,G.sad+5);chron(`A prayer went unanswered: “${pr.txt}”`);G.prayerCool[pr.k]=G.t+36;}}
+    if(D.ok()){G.prayers.splice(G.prayers.indexOf(pr),1);devPrayer(true);G.faith=Math.min(faithCap(),G.faith+D.r);G.joy=Math.min(20,G.joy+4);chron(`The Spirit answered the prayer: “${pr.txt}” (+${D.r} faith)`);toast(`Prayer answered! +${D.r} faith`);sfx('chime');continue;}
+    if(G.t>pr.until){G.prayers.splice(G.prayers.indexOf(pr),1);devPrayer(false);G.sad=Math.min(20,G.sad+5);chron(`A prayer went unanswered: “${pr.txt}”`);G.prayerCool[pr.k]=G.t+36;}}
   if(G.prayers.length>=3)return;
   for(const k in PRAYERS){if(G.prayers.some(p=>p.k===k))continue;if((G.prayerCool[k]||0)>G.t)continue;const D=PRAYERS[k];
-    if(D.when()){let x='';if(k==='fire'){const b=buildings.find(o=>o.fire);x=b&&b.info?b.info.name:'house';}if(k==='land')x=G.siteFail?siteName({type:G.siteFail.type,variant:null,r:3}):'building';
+    if(D.when()){let x='';if(k==='fire'){const b=buildings.find(o=>o.fire);x=b&&b.info?b.info.name:'house';}if(k==='land')x=G.siteFail?siteName({type:G.siteFail.type,variant:null,r:3}):'building';if(D.x)x=D.x();
       const txt=D.t.replace('{X}',x);G.prayers.push({k,txt,until:G.t+D.d*24,urgent:!!D.urgent});G.prayerCool[k]=G.t+12;if(D.urgent)sfx('alarm');if(G.prayers.length>=3)break;}}
 }
 // ---------------- daily & hourly
@@ -364,7 +365,7 @@ function newDay(){if(G.menu)return;
   if(s===2&&dis===DPS){if(G.food>=p*5&&G.t-G.lastFest>40){startFestival(12,'harvest');chron(`The harvest was gathered. ${G.town} held a Harvest Festival!`,true);}else chron('A lean harvest. There was no festival this year.');}
   G.prodY={...G.prod};G.prod={food:0,wood:0,stone:0};
   G.joy*=.75;G.grief*=.7;G.sad*=.8;
-  assignHomes();assignJobs();checkEra();if(seasonN()===3||dis===1)buildToolbox(godToolDefs());
+  assignHomes();assignJobs();checkEra();devDaily();if(seasonN()===3||dis===1)buildToolbox(godToolDefs());
 }
 function edgePoint(a){const x=Math.cos(a),z=Math.sin(a),m=Math.max(Math.abs(x),Math.abs(z));let px=x/m*(HALF-1.5),pz=z/m*(HALF-1.5);
   for(let i=0;i<24&&wAt(px,pz)>.3;i++){a+=.15;const x2=Math.cos(a),z2=Math.sin(a),m2=Math.max(Math.abs(x2),Math.abs(z2));px=x2/m2*(HALF-1.5);pz=z2/m2*(HALF-1.5);}return [px,pz];}
@@ -408,7 +409,7 @@ function hourTick(){
   if(G.raid&&G.raid.over&&G.t>G.raid.at+60)G.raid=null;
   // plague spread
   for(const v of G.vill)if(v.sick)for(const o of G.vill)if(!o.sick&&o.home===v.home&&rnd()<.012)o.sick=1;
-  prayerTick();
+  prayerTick();devHourly();
   const h=Math.floor(hod());
   if(h>=6&&h<=18&&h%2===0)planTick();
   if(h%6===1)upgradeTick();if(h%3===0)stuckCheck();
