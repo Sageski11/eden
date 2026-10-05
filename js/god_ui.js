@@ -122,7 +122,7 @@ function updateUI(force){
   layoutGod();
 }
 function layoutGod(){applyUI();}
-const JOBN={hunter:'Hunter',sawyer:'Sawyer',mason:'Stonemason',shipwright:'Shipwright',fishmonger:'Fishmonger',builder:'Builder',wood:'Woodcutter',farmer:'Farmer',fisher:'Fisher',quarry:'Quarryman',forager:'Forager',priest:'Priest',guard:'Guard',miller:'Miller',smith:'Smith',keeper:'Innkeeper',merchant:'Merchant',clerk:'Reeve'};
+const JOBN={hunter:'Hunter',sawyer:'Sawyer',mason:'Stonemason',shipwright:'Shipwright',fishmonger:'Fishmonger',builder:'Builder',wood:'Woodcutter',farmer:'Farmer',fisher:'Fisher',quarry:'Quarryman',forager:'Forager',priest:'Priest',guard:'Guard',miller:'Miller',smith:'Smith',keeper:'Innkeeper',merchant:'Merchant',clerk:'Reeve',machinist:'Machinist',scholar:'Scholar',stationmaster:'Stationmaster',engineer:'Engineer'};
 function vMood(v){let m=G.hap;if(!v.home)m-=15;if(v.sick)m-=20;const h=bById(v.home);if(h&&h.type==='house')m+=(h.level||0)*3;if(h&&h.type==='hall')m-=6;return clamp(Math.round(m),0,100);}
 function godInspector(){
   let html='';const v=G.follow;
@@ -184,7 +184,7 @@ function serializeGod(){const s=snapshot();const pick=(o,ks)=>{const r={};for(co
   return JSON.stringify({v:2,mode:'god',N,H:f32b64(s.H),W:f32b64(s.W),R:f32b64(s.R),trees:s.trees.map(t=>({x:t.x,z:t.z,t:t.t,s:t.s,r:t.r,c:t.c})),springs:springs.map(p=>({x:p.x,z:p.z,rate:p.base||p.rate})),
     bl:buildings.map(b=>pick(b,['id','type','x','z','rot','manual','seed','w','d','level','variant','build','upg','forFam','stock','blessedUp','flooded','cw','cs'])),
     vill:G.vill.filter(v=>!v.leaving).map(v=>pick(v,['id','name','fam','female','age','job','home','work','x','z','spouse','parents','sick','skin','site','hp','arriving','look','cult','prophet','seer'])),
-    G:pick(G,['t','speed','faith','food','wood','stone','era','hap','markers','prayers','chron','town','raids','births','deaths','arrivals','raidCool','plagueCool','drought','rain','rainI','harvest','firstHut','wantHouse','nextV','prayerCool','lastFest','phase','realm','seed','plan','sk','unl','fish','boatsBuilt','boatWork','world','sun','snow','storm','rainbow','lastRain','dev','tf']),animals:animals.map(a=>({sp:a.sp,x:+a.x.toFixed(1),z:+a.z.toFixed(1),male:a.male,sc:a.sc})),
+    G:pick(G,['t','speed','faith','food','wood','stone','era','hap','markers','prayers','chron','town','raids','births','deaths','arrivals','raidCool','plagueCool','drought','rain','rainI','harvest','firstHut','wantHouse','nextV','prayerCool','lastFest','phase','realm','seed','plan','sk','unl','fish','boatsBuilt','boatWork','world','sun','snow','storm','rainbow','lastRain','dev','tf','net']),animals:animals.map(a=>({sp:a.sp,x:+a.x.toFixed(1),z:+a.z.toFixed(1),male:a.male,sc:a.sc})),
     center:G.center?G.center.id:0,cam:{tx:cam.tx,tz:cam.tz,yaw:cam.yaw,pitch:cam.pitch,dist:cam.dist}});}
 function loadGod(str){const o=JSON.parse(str);if(o.mode!=='god'||o.N!==N)throw new Error('bad');
   enterGodUI();resetG();
@@ -194,7 +194,7 @@ function loadGod(str){const o=JSON.parse(str);if(o.mode!=='god'||o.N!==N)throw n
   for(const r of o.bl){const b=newRecord(r.type,r.x,r.z,r.rot,r.seed);Object.assign(b,r);buildings.push(b);mx=Math.max(mx,b.id);}nextId=mx+1;
   Object.assign(G,o.G);G.paused=false;G.raid=null;G.bandits=[];G.vill=[];
   for(const r of o.vill){const v=newVillager(r);v.id=r.id;v.timer=rnd()*.3;}G.nextV=Math.max(G.nextV,...G.vill.map(v=>v.id+1),1);
-  G.center=bById(o.center);if(o.cam)Object.assign(cam,o.cam);WORLD=G.world||'river';animals.length=0;for(const a of (o.animals||[]))spawnAnimal(a.sp,a.x,a.z,{male:a.male,sc:a.sc});if(!G.sk)G.sk={wood:0,work:0,stone:0,farm:0,fish:0,hunt:0};if(!G.unl)G.unl={};devEnsure();tfEnsure();devRefreshShrine();
+  G.center=bById(o.center);if(o.cam)Object.assign(cam,o.cam);WORLD=G.world||'river';animals.length=0;for(const a of (o.animals||[]))spawnAnimal(a.sp,a.x,a.z,{male:a.male,sc:a.sc});if(!G.sk)G.sk={wood:0,work:0,stone:0,farm:0,fish:0,hunt:0};if(!G.unl)G.unl={};devEnsure();tfEnsure();devRefreshShrine();netReload();
   if(G.center&&!G.plan)makePlan(G.center);
   refreshCivic();for(const b of buildings)realize(b);refreshTerrain();updateSkirt();updateWaterMesh(true);refreshMarkers();
   if(G.phase==='shape'){buildToolbox(shapeToolDefs());setTool('raise');}else{buildToolbox(godToolDefs());setTool('inspect');}assignHomes();gridDirty=true;treesDirty=true;rebuildTrees();updateUI(true);applyUI();
@@ -255,7 +255,7 @@ function frame(now){
   if(MODE==='god'){
     let dtH=0;if(!G.paused&&!PAUSED){const hh=hod();const night=(hh>22.3||hh<4.6)&&!(G.raid&&G.raid.active)&&!buildings.some(b=>b.fire)&&G.speed<10;dtH=dt/HOUR_REAL*G.speed*(night?3:1);}
     if(G.phase==='pick'||G.phase==='shape'){if(G.phase==='pick')startAuto+=dt;dtH=0;updateAnimals(dt/HOUR_REAL);}
-    gameStep(dtH);updateBoats(dtH);PT('game');
+    gameStep(dtH);updateBoats(dtH);netFrame(dt);PT('game');
     if(G.phase==='shape'){envT+=dt;if(envT>1.5){envT=0;envRep=null;updateUI();}}
     setTime(G.menu?menuSkyHour():hod());
     const rv=G.rain>0||G.snow>0?1:0;rainU.uA.value+=((rv?.55:0)-rainU.uA.value)*Math.min(1,dt*1.5);rainU.uSnow.value=seasonN()===3||G.snow>0?1:0;rainU.uT.value=TT;rainU.uC.value.set(cam.tx,cam.ty,cam.tz);rainMesh.visible=rainU.uA.value>.01;

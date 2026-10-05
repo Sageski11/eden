@@ -19,6 +19,16 @@ const DOCTRINES={
       {lvl:1,sin:4,f:(c,v)=>{const s=G.vill.filter(o=>o.sick);if(s.length){const o=s[0];o.home=0;o.job=null;o.work=0;return `${fullName(o)}, still fevered, was barred from the village by ${c.name}'s followers and told to die outside the walls.`;}return `${c.name}'s followers painted marks on the doors of the sick.`;}},
       {lvl:2,sin:9,f:(c,v)=>{const s=G.vill.filter(o=>o.sick&&!o.cult);const o=s[0]||v;if(o){devKill(o);return `${fullName(o)} was burned in their bed as "unclean" by those who followed ${c.name}. They only wanted the sickness to stop.`;}return null;}},
       {lvl:3,sin:17,f:(c,v)=>{const g=devDriveOut(2);if(g)return `${c.name} declared the ${g} family impure. They were hunted from ${G.town}. Fear of death had hollowed out mercy.`;if(v){devKill(v);return `${fullName(v)} was drowned as "impure".`;}return null;}}]},
+  mammon:{name:'The Creed of Gold',cause:'greed',blurb:'Smoke, long shifts and crowded rooms taught them that only wealth is holy, and that the poor deserve their lot.',
+    deeds:[
+      {lvl:1,sin:4,f:(c,v)=>{G.joy=Math.max(0,G.joy-4);return `${c.name}'s followers cut the workers' wages and lengthened the shifts. The works ran night and day, and the folk grew grey.`;}},
+      {lvl:2,sin:9,f:(c,v)=>{if(v){devKill(v);return `${fullName(v)} was crushed in the machinery while the overseers, who followed ${c.name}, looked on. Profit had become holier than a life.`;}return null;}},
+      {lvl:3,sin:18,f:(c,v)=>{G.poll=Math.min(100,(G.poll||0)+20);G.fish=Math.max(.05,(G.fish||1)-.3);if(v){devKill(v);return `${c.name}'s followers let the works pour poison into the river, and ${fullName(v)}, who protested, was dismissed to starve. The water ran black.`;}return `${c.name}'s followers let the works pour poison into the river. The fish died.`;}}]},
+  machine:{name:'The Cult of the Engine',cause:'machine',blurb:'Comfort made them forget the Spirit. They were taught that the machines hear them better, and that the soul is only a pattern to be kept.',
+    deeds:[
+      {lvl:1,sin:3,f:(c,v)=>{G.faith=Math.max(0,G.faith-6);return `${c.name}'s followers bowed to the humming engines instead of the Spirit, and the chapel stood empty.`;}},
+      {lvl:2,sin:8,f:(c,v)=>{const ch=buildings.find(b=>(b.type==='church')&&!b.build&&!b.fire);if(ch){ignite(ch,`Followers of ${c.name} burned the old chapel, saying the engines had no need of ghosts.`);return null;}if(v){devKill(v);return `${fullName(v)} would not bow to the Engine and was taken away.`;}return null;}},
+      {lvl:3,sin:16,f:(c,v)=>{if(v){devKill(v);return `${fullName(v)} was "uploaded" into the Engine at ${c.name}'s command and never returned. Gentle people, convinced they were saving souls.`;}return null;}}]},
   self:{name:'The Cult of Self',cause:'pride',blurb:'Prosperity made them proud. They were taught that the harvest was their own work, and no Spirit had a hand in it.',
     deeds:[
       {lvl:1,sin:3,f:(c,v)=>{G.faith=Math.max(0,G.faith-4);return `${c.name}'s followers stopped giving thanks at the shrine. "We did this ourselves," they said. The chapel bell rang to an empty hall.`;}},
@@ -39,9 +49,11 @@ function devCauses(){const p=Math.max(1,popN()),vs=G.vill.filter(v=>!v.arriving&
   const prayers=clamp(G.sad/10,0,1);
   const homeless=clamp(vs.filter(v=>!v.home).length/p*2,0,1);
   const pride=(G.hap>74&&p>=24&&G.food>p*6)?clamp((G.hap-70)/25,0,1):0;
-  return {hunger,fear,sick,prayers,homeless,pride};}
+  const e=G.era||0,greed=e>=5?clamp((G.poll||0)/60+(typeof eraBuilt==='function'&&eraBuilt('factory')>0&&p>150?.15:0),0,1):0;
+  const machine=e>=7&&(typeof eraBuilt==='function'&&(eraBuilt('powerplant')||eraBuilt('fusion')))?clamp((G.hap-58)/30,0,1)*.9:0;
+  return {hunger,fear,sick,prayers,homeless,pride,greed,machine};}
 function devDistress(c){return clamp(c.hunger*.35+c.fear*.2+c.sick*.2+c.prayers*.15+c.homeless*.1,0,1);}
-function devDoctrineFor(c){const o=[['abundance',c.hunger],['sword',c.fear],['purity',c.sick],['self',c.pride]].sort((a,b)=>b[1]-a[1]);return o[0][1]>.15?o[0][0]:null;}
+function devDoctrineFor(c){const o=[['abundance',c.hunger],['sword',c.fear],['purity',c.sick],['self',c.pride],['mammon',c.greed||0],['machine',c.machine||0]].sort((a,b)=>b[1]-a[1]);return o[0][1]>.15?o[0][0]:null;}
 function devSpawnProphet(key){const cand=G.vill.filter(v=>v.age>=22&&!v.arriving&&!v.leaving&&!v.sick&&!v.seer);if(!cand.length)return;
   const v=pickA(cand);v.prophet=true;v.cult=true;const D=DOCTRINES[key];
   G.dev.cult={key,name:fullName(v),pid:v.id,strength:.08,shrine:null,since:G.t,stage:0};
@@ -62,7 +74,7 @@ function devDaily(){const d=devEnsure();if(G.phase!=='play'||G.menu)return;const
   d.piety+=(pT-d.piety)*.1;d.doubt+=(dT-d.doubt)*.12;d.answered*=.85;
   if(d.seer>0)d.seer--;if(d.cool>0)d.cool--;if(d.cultCool>0)d.cultCool--;
   // a prophet rises from doubt, not from nowhere
-  if(!d.cult&&p>=8&&d.cultCool<=0&&d.doubt>(cs.pride>0&&dist<.2?28:40)){const k=devDoctrineFor(cs);if(k&&rnd()<.35)devSpawnProphet(k);}
+  if(!d.cult&&p>=8&&d.cultCool<=0&&d.doubt>((cs.pride>0||cs.greed>.2||cs.machine>.2)&&dist<.2?28:40)){const k=devDoctrineFor(cs);if(k&&rnd()<.35)devSpawnProphet(k);}
   const c=d.cult;
   if(c){const D=DOCTRINES[c.key];
     c.strength=clamp(c.strength+((d.doubt-34)/100)*.1-((d.piety-50)/100)*.05-(d.seer>0?.018:0)-(G.hap>72?.012:0)+(G.joy>8?-.01:0),0,1);
@@ -160,7 +172,7 @@ function devApplyMeta(){const L=devLedger();if(!L.length)return;const rem=L.slic
 const _devBar=(v,c)=>`<span class="bar" style="width:84px"><i style="width:${_devPct(v)}%;${c?`background:${c}`:''}"></i></span>`;
 function devPanelHTML(){const d=devEnsure();let h='<h3 style="margin-top:12px">Hearts of the folk</h3>';
   h+=`<div class="pr none" style="font-style:normal;margin-bottom:4px"><div style="display:flex;justify-content:space-between;align-items:center">Piety ${_devBar(d.piety,'linear-gradient(90deg,#8a6a3a,#d8a23a)')}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px">Doubt ${_devBar(d.doubt,'linear-gradient(90deg,#8a8a8a,#8e2f1f)')}</div></div>`;
-  const c=d.causes||{},names={hunger:'hunger',fear:'fear',sick:'sickness',prayers:'unanswered prayers',homeless:'no homes',pride:'pride'};
+  const c=d.causes||{},names={hunger:'hunger',fear:'fear',sick:'sickness',prayers:'unanswered prayers',homeless:'no homes',pride:'pride',greed:'smoke and greed',machine:'idolatry of machines'};
   const top=Object.entries(c).filter(([,v])=>v>.15).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>names[k]);
   h+=`<div class="small" style="margin:2px 0 6px;color:var(--ink2);font-style:italic">${top.length?'Troubling them: '+top.join(', ')+'.':'The folk are at peace.'}</div>`;
   if(d.legacy)h+=`<div class="small" style="color:#3f5f2a">The memory of earlier ages lends you ${d.legacy} Faith.</div>`;

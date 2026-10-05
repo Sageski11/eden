@@ -12,7 +12,7 @@ const angDiff=(a,b)=>{let d=(a-b)%TAU;if(d>PI)d-=TAU;if(d<-PI)d+=TAU;return d;};
 
 // ================================================================ world grid
 const N=320,S=N+1,V=S*S,HALF=N/2;
-const H=new Float32Array(V),W=new Float32Array(V),F=new Float32Array(V*4),SPD=new Float32Array(V),ROAD=new Float32Array(V),FX=new Float32Array(V),FZ=new Float32Array(V);
+const H=new Float32Array(V),W=new Float32Array(V),F=new Float32Array(V*4),SPD=new Float32Array(V),ROAD=new Float32Array(V),ROADT=new Uint8Array(V),FX=new Float32Array(V),FZ=new Float32Array(V);
 const NOI=new Float32Array(V),NOI2=new Float32Array(V);
 for(let j=0;j<S;j++)for(let i=0;i<S;i++){const k=j*S+i;NOI[k]=vnoise(i*.13,j*.13,7);NOI2[k]=hash2(i,j,3);}
 function sampleArr(A,x,z){let gx=clamp(x+HALF,0,N),gz=clamp(z+HALF,0,N);let i=Math.floor(gx),j=Math.floor(gz);if(i>=N)i=N-1;if(j>=N)j=N-1;

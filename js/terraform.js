@@ -51,13 +51,18 @@ function tfFindForest(){const c=G.center;if(!c)return null;let best=null;
 function tfFile(k,o){const T=tfEnsure();const w=dirWord(o.x,o.z);let txt,how,short;
   if(k==='drain'){short='drain the marsh';txt=`The folk ask leave to drain the marsh ${w} of ${G.town} and turn it to fields.`;how='Allowed: farmland grows, but fish, frogs and waterfowl are lost, and springs fail.';}
   else if(k==='clearcut'){short='fell the forest';txt=`The folk ask leave to fell the great wood ${w} of ${G.town} for timber and fields.`;how=`Allowed: about ${o.n} trees fall. Timber and fields — but the game flees and the soil loosens.`;}
+  else if(k==='rail'){short='lay the railway';txt=`The folk ask leave to lay a railway from the station to the works ${w} of ${G.town}.`;how='Allowed: the land is cut and filled for the line, trees fall, and it costs 60 wood and 80 stone. Trade and newcomers come — and more smoke.';}
+  else if(k==='highway'){short='build the highway';txt=`The folk ask leave to build a highway from ${G.town} to the ${w} edge of the valley.`;how='Allowed: a corridor is graded through the land, costs 80 wood and 140 stone. Cars bring trade and speed — and noise, smoke and scattered game.';}
   else{short='cut into the hill';txt=`The quarrymen ask leave to cut deep into the hills ${w} of ${G.town}.`;how='Allowed: the hillside will be scarred and pits dug, but stone flows.';}
-  T.pet.push({id:T.pid++,k,x:o.x,z:o.z,n:o.n||0,txt,how,short,until:G.t+5*24});T.cool[k]=dayN()+8;sfx('chime');}
+  T.pet.push({id:T.pid++,k,x:o.x,z:o.z,n:o.n||0,a:o.a,b:o.b,txt,how,short,until:G.t+5*24});T.cool[k]=dayN()+8;sfx('chime');}
 function tfDaily(){const T=tfEnsure();if(G.phase!=='play'||G.menu||!G.center)return;
   for(const p of T.pet.slice()){if(G.t>p.until){T.pet.splice(T.pet.indexOf(p),1);G.sad=Math.min(20,G.sad+2);T.cool[p.k]=dayN()+10;chron(`The petition to ${p.short} was left unanswered. The folk grumbled.`);}}
   if(T.pet.length>=2||(G.era||0)<1)return;const d=dayN(),p=popN(),can=k=>!(T.cool[k]>d)&&!T.pet.some(q=>q.k===k);
   if(can('drain')&&p>=12&&(G.siteFail||cnt('farm')<2+Math.floor(p/20))&&rnd()<.4){const m=tfFindMarsh();if(m)return tfFile('drain',m);}
   if(can('clearcut')&&p>=14&&(G.siteFail||G.wood<p*.8)&&rnd()<.35){const f=tfFindForest();if(f)return tfFile('clearcut',f);}
+  if((G.era||0)>=5){const net=netEnsure();
+    if(can('rail')&&!net.lines.some(l=>l.kind==='rail')){const st=built('station')[0],fa=built('factory')[0];if(st&&fa)return tfFile('rail',{x:(st.x+fa.x)/2,z:(st.z+fa.z)/2,a:doorOf(st),b:doorOf(fa)});}
+    if(can('highway')&&(G.era||0)>=6&&p>=300&&!net.lines.some(l=>l.kind==='highway')){const c=G.center,t=netEdgeTarget([c.x,c.z]);if(t)return tfFile('highway',{x:t[0],z:t[1],a:doorOf(c),b:t});}}
   if(can('mountain')&&!T.mountain&&p>=16&&G.stone<90){const q=buildings.find(b=>b.type==='quarry'&&b.pit&&b.pit.depth>=tfMineMax()-.15);if(q&&rnd()<.5)return tfFile('mountain',{x:q.pit.x,z:q.pit.z});}
 }
 function tfDecide(id,yes){const T=tfEnsure(),p=T.pet.find(q=>q.id===id);if(!p)return;T.pet.splice(T.pet.indexOf(p),1);T.cool[p.k]=dayN()+(yes?12:20);
@@ -76,6 +81,13 @@ function tfExecute(p){const T=tfEnsure();
   else if(p.k==='clearcut'){let n=0;for(let i=trees.length-1;i>=0;i--){const t=trees[i];if(t.t!==4&&t.t!==5&&(t.x-p.x)**2+(t.z-p.z)**2<18*18){trees.splice(i,1);n++;}}
     treesDirty=true;G.wood+=n*.7;T.cut+=n;let fled=0;for(let i=animals.length-1;i>=0;i--){const a=animals[i];if(Math.hypot(a.x-p.x,a.z-p.z)<26&&rnd()<.4){animals.splice(i,1);fled++;}}
     G.noGame=G.noGame||fled>3;tfDust(p.x,p.z,26,[.5,.45,.3]);gridDirty=true;chron(`The folk felled ${n} trees in the wood ${dirWord(p.x,p.z)} of ${G.town}. The timber was welcome; the deer fled the clearing.`,true);}
+  else if(p.k==='rail'||p.k==='highway'){const cost=p.k==='rail'?[60,80]:[80,140];
+    if(G.wood<cost[0]||G.stone<cost[1]){chron(`The folk lacked the ${G.wood<cost[0]?'timber':'stone'} to ${p.short}. They will ask again.`);T.cool[p.k]=dayN()+3;return;}
+    G.wood-=cost[0];G.stone-=cost[1];const r=netBuild(p.k,p.a,p.b);
+    if(!r){G.wood+=cost[0];G.stone+=cost[1];chron(`The surveyors could find no way to ${p.short}.`);T.cool[p.k]=dayN()+10;return;}
+    if(r.scared>0){G.noGame=G.noGame||r.scared>6;for(let i=animals.length-1;i>=0;i--)if(rnd()<.2&&Math.hypot(animals[i].x-p.x,animals[i].z-p.z)<60)animals.splice(i,1);}
+    chron(p.k==='rail'?`By the Spirit's leave the folk laid ${r.len} paces of railway through the valley. The first train came puffing in, trailing smoke.`:`The highway was finished: ${r.len} paces of grey road cut straight through the valley. Cars hummed along it, and the deer fled.`,true);
+    showBanner(p.k==='rail'?'The railway':'The highway',`${G.town} is joined to the world`);sfx('bell');}
   else if(p.k==='mountain'){T.mountain=true;chron(`The quarrymen began to cut deep into the hills ${dirWord(p.x,p.z)} of ${G.town}. The mountain will not stay as it was.`,true);}
   sfx('chime');}
 function tfPanelHTML(){const T=tfEnsure();if(!T.pet.length)return '';let h='<h3 style="margin-top:12px">Petitions</h3>';

@@ -34,7 +34,7 @@ function completeSite(b){
 }
 function famOfHouse(b){const v=G.vill.find(o=>o.home===b.id);return v?v.fam:'local';}
 function destroyBuilding(b,why){
-  chron(why,true);G.grief+=3;
+  chron(why,true);griefAdd(3);
   for(let i=0;i<40;i++){const a=rnd()*TAU;spawn(b.x+Math.cos(a)*b.r*.7,hAt(b.x,b.z)+rnd()*2,b.z+Math.sin(a)*b.r*.7,Math.cos(a)*.5,.6+rnd(),Math.sin(a)*.5,3,1.8,.3,.28,.26,0);}
   for(const v of G.vill){if(v.home===b.id)v.home=0;if(v.work===b.id){v.work=0;v.job=null;}if(v.site===b.id)v.site=0;if(v.inside===b.id)v.inside=0;}
   const wasC=b===G.center;
@@ -185,6 +185,9 @@ function evalSite(need,x,z,snap){
     case 'fishmkt':s-=dC*.45;if(wd>12)return null;s+=(12-wd)*.6;break;
     case 'lodge':{let n=0;for(const t of trees)if(t.t!==4&&Math.abs(t.x-x)<14&&Math.abs(t.z-z)<14)n++;if(n<10)return null;let g=0;for(const a of animals)if(Math.hypot(a.x-x,a.z-z)<45)g++;s+=Math.min(n,40)*.2+g*1.2-dC*.15;break;}
     case 'sawmill':{let n=0;for(const t of trees)if(t.t!==4&&Math.abs(t.x-x)<16&&Math.abs(t.z-z)<16)n++;s+=Math.min(n,40)*.15+(wd<6?5:0)-dC*.3;break;}
+    case 'factory':s-=Math.abs(dC-(R0*.8+4))*.3;if(wd<12)s+=3;break;
+    case 'station':s-=Math.abs(dC-(R0*.6+6))*.3;break;
+    case 'powerplant':case 'fusion':if(wd<9)s+=5;s-=Math.abs(dC-(R0+8))*.25;break;
     case 'mason':{const qq=buildings.find(b=>b.type==='quarry');if(qq)s-=Math.hypot(qq.x-x,qq.z-z)*.3;s-=dC*.25;break;}
     default:s-=dC*.5;
   }
@@ -205,13 +208,13 @@ function findSite(need){
     else if(type==='camp'&&need.variant==='lumber'){const t=pickA(trees);if(!t)continue;x=t.x+(rnd()-.5)*6;z=t.z+(rnd()-.5)*6;if(Math.hypot(x-c.x,z-c.z)>R0+34)continue;}
     else if((type==='dock'||type==='shipyard'||type==='fishmkt')&&rnd()<.8){let tx=0,tz=0,ok=false;for(let t=0;t<20&&!ok;t++){const a=rnd()*TAU,d=rnd()*(R0+30);tx=c.x+Math.cos(a)*d;tz=c.z+Math.sin(a)*d;const w=nearWater(tx,tz,6);ok=w>=1.5&&w<=4.5;}x=tx;z=tz;}
     else if(type==='quarry'&&rnd()<.7){const rocks=trees.filter(t=>t.t===4&&Math.hypot(t.x-c.x,t.z-c.z)<50);if(!rocks.length)continue;const t=pickA(rocks);x=t.x+(rnd()-.5)*8;z=t.z+(rnd()-.5)*8;}
-    else{const a=rnd()*TAU;const d=type==='farm'?R0*.5+rnd()*(R0+16):type==='castle'?rnd()*(R0+34):type==='tower'?R0*.7+rnd()*16:type==='camp'?rnd()*(R0+28):type==='quarry'?rnd()*48:Math.sqrt(rnd())*(R0+4);x=c.x+Math.cos(a)*d;z=c.z+Math.sin(a)*d;}
+    else{const a=rnd()*TAU;const d=type==='farm'?R0*.5+rnd()*(R0+16):type==='castle'?rnd()*(R0+34):type==='tower'?R0*.7+rnd()*16:type==='camp'?rnd()*(R0+28):type==='quarry'?rnd()*48:(type==='factory'||type==='station'||type==='powerplant'||type==='fusion')?R0*.5+rnd()*(R0+26):Math.sqrt(rnd())*(R0+4);x=c.x+Math.cos(a)*d;z=c.z+Math.sin(a)*d;}
     cands.push([x,z,null]);}
   if(G.plan){const P=G.plan;
     if(type==='house'){const ps=P.plots.map(p=>{let nb=0;for(const o of buildings)if(o.type==='house'&&Math.abs(o.x-p.x)<6&&Math.abs(o.z-p.z)<6)nb++;return [p,p.d-nb*4+rnd()*6];}).sort((a,b)=>a[1]-b[1]);
       const orig=cands.slice();let n=0;cands.length=0;for(const [p] of ps){if(n>=36)break;if(blockedAt('house',p.x,p.z,p.rot,p.w,null))continue;cands.push([p.x,p.z,{rot:p.rot,w:p.w,d:+(3.2+rnd()*.5).toFixed(1),plot:p}]);n++;}
       if(n<5)for(const c of orig)cands.push([c[0],c[1],{rot:faceStreetRot(c[0],c[1],rnd()*TAU),w:+(3.3+rnd()*.8).toFixed(1),d:3.4}]);}
-    else if(['church','market','tavern','smith','well','mason','sawmill','mill','fishmkt','farm'].includes(type)){
+    else if(['church','market','tavern','smith','well','mason','sawmill','mill','fishmkt','farm','school'].includes(type)){
       const fr=type==='farm'?[]:frontageCands(type,R0+30);
       if(type==='farm'){for(const s of P.streets)for(let i=2;i<s.pts.length-1;i+=3){const [x0,z0]=s.pts[i],[x1,z1]=s.pts[i+1];const tl=Math.hypot(x1-x0,z1-z0)||1;const ux=(x1-x0)/tl,uz=(z1-z0)/tl;
           for(const sd of [1,-1]){const nx=-uz*sd,nz=ux*sd;for(const off of [s.hw+.7+4.1,s.hw+15.5])fr.push([x0+nx*off,z0+nz*off,Math.atan2(-nx,-nz)]);}}}
@@ -239,7 +242,7 @@ function planTick(){
   if(G.siteFail&&G.siteFail.type===need.type)G.siteFail=null;
   const rec={id:-1,type:need.type,x:spot.x,z:spot.z,rot:0};let rot=spot.snap?spot.snap.rot:autoRot(Object.assign(newRecord(need.type,spot.x,spot.z,0,1),{id:-1}));
   const o={variant:need.variant};if(spot.snap){o.w=spot.snap.w;o.d=spot.snap.d;}
-  if(need.type==='house'){if(need.fam){o.forFam=need.fam;G.wantHouse.shift();}o.level=G.era>=2?1:0;}
+  if(need.type==='house'){if(need.fam){o.forFam=need.fam;G.wantHouse.shift();}o.level=G.era>=7?6:G.era>=6?5:G.era>=5?4:G.era>=2?1:0;}
   startSite(need.type,spot.x,spot.z,rot,o);
 }
 function stuckCheck(){for(const b of buildings.slice()){const P=b.build;if(!P||b===G.center)continue;
@@ -250,7 +253,7 @@ function upgradeTick(){
   const p=popN();const ups=buildings.filter(b=>b.upg).length;
   if(G.center&&!G.center.build&&!G.center.upg){const want=G.era>=3?2:G.era>=1?1:0;if((G.center.level||0)<want){startUpgrade(G.center,(G.center.level||0)+1);return;}}
   if(ups>=1+Math.floor(p/30)||G.hap<42)return;
-  const maxL=[0,1,2,3,3][G.era];
+  const maxL=[0,1,2,3,3,4,5,6][G.era];
   const cand=buildings.filter(b=>b.type==='house'&&!b.build&&!b.upg&&(b.level||0)<maxL&&G.vill.some(v=>v.home===b.id));
   if(!cand.length)return;cand.sort((a,b)=>(a.level||0)-(b.level||0)||(b.blessedUp?1:0)-(a.blessedUp?1:0));
   const b=cand[0];const [w,s]=costOf('house',null,(b.level||0)+1);if(G.wood<w*.5||(s>0&&G.stone<s*.4&&!cnt('quarry')))return;startUpgrade(b,(b.level||0)+1);
@@ -262,8 +265,8 @@ const ERA_REQ=[null,
   {txt:'60 folk, a market and a tavern',ok:()=>popN()>=60&&hasBuilt('market')&&hasBuilt('tavern')},
   {txt:'120 folk, a castle and a tower (needs Fortification)',ok:()=>popN()>=120&&hasBuilt('castle')&&hasBuilt('tower')}];
 function checkEra(){const nx=ERA_REQ[G.era+1];if(!nx||!nx.ok())return;G.era++;
-  const e=ERAS[G.era];chron(`${G.town} grew into a ${e.name.toLowerCase()}. The Spirit's power deepened.`,true);
-  showBanner(e.name,`${G.town} is now a ${e.name.toLowerCase()}`);startFestival(10,'era');G.faith=Math.min(faithCap(),G.faith+50);
+  const e=ERAS[G.era];chron(`${G.town} entered ${e.intro}. The Spirit's power deepened.`,true);
+  showBanner(e.name,`${G.town} has entered ${e.intro}`);startFestival(10,'era');G.faith=Math.min(faithCap(),G.faith+50);
   if(MODE==='god')buildToolbox(godToolDefs());sfx('bell');}
 const faithCap=()=>ERAS[G.era].cap;
 // ---------------- happiness / faith
@@ -281,7 +284,7 @@ function computeHap(){
   f.Events=Math.round(G.joy-G.grief*2-G.sad);
   const sick=vs.filter(v=>v.sick).length;if(sick)f.Sickness=-Math.min(15,sick*2);
   if(p>40)f.Crowding=-Math.min(14,Math.round((p-40)/11));
-  if(typeof devHapF==='function')devHapF(f);
+  if(typeof devHapF==='function')devHapF(f);if(typeof eraHapF==='function')eraHapF(f);
   G.hapF=f;let s=50;for(const k in f)s+=f[k];G.hapT=clamp(s,0,100);
 }
 // ---------------- prayers
@@ -365,7 +368,7 @@ function newDay(){if(G.menu)return;
   if(s===2&&dis===DPS){if(G.food>=p*5&&G.t-G.lastFest>40){startFestival(12,'harvest');chron(`The harvest was gathered. ${G.town} held a Harvest Festival!`,true);}else chron('A lean harvest. There was no festival this year.');}
   G.prodY={...G.prod};G.prod={food:0,wood:0,stone:0};
   G.joy*=.75;G.grief*=.7;G.sad*=.8;
-  assignHomes();assignJobs();checkEra();devDaily();tfDaily();if(seasonN()===3||dis===1)buildToolbox(godToolDefs());
+  assignHomes();assignJobs();checkEra();devDaily();tfDaily();eraDaily();netDaily();if(seasonN()===3||dis===1)buildToolbox(godToolDefs());
 }
 function edgePoint(a){const x=Math.cos(a),z=Math.sin(a),m=Math.max(Math.abs(x),Math.abs(z));let px=x/m*(HALF-1.5),pz=z/m*(HALF-1.5);
   for(let i=0;i<24&&wAt(px,pz)>.3;i++){a+=.15;const x2=Math.cos(a),z2=Math.sin(a),m2=Math.max(Math.abs(x2),Math.abs(z2));px=x2/m2*(HALF-1.5);pz=z2/m2*(HALF-1.5);}return [px,pz];}
@@ -375,8 +378,8 @@ function arriveFamily(n){const c=G.center;const a=Math.atan2(c.z,c.x)+(rnd()-.5)
     if(i>=2)v.parents=[G.vill[G.vill.length-1-i+0].id];
     const [dx,dz]=doorOf(c);v.timer=0;v.path=null;goTo(v,dx+(rnd()-.5)*3,dz+(rnd()-.5)*3,vv=>{vv.arriving=false;assignHomes();assignJobs();});setThought(v,'A new life awaits!');}
   G.arrivals+=n;chron(`The ${fam} family (${n}) arrived, seeking a new life in ${G.town}.`);}
-function flam(b){if(['castle','well','quarry','market'].includes(b.type))return 0;if(b.type==='house')return [1,.75,.4,.18][b.level||0];if(b.type==='hall')return b.level?.1:.35;if(b.type==='camp')return .6;if(b.type==='farm')return seasonN()===1?.22:.05;if(b.type==='church'||b.type==='tower')return .1;return .35;}
-function ignite(b,why){if(b.fire||flam(b)<=0)return;b.fire={t:0};realize(b);if(why)chron(why,true);G.grief+=1;sfx('alarm');}
+function flam(b){if(['castle','well','quarry','market','powerplant','fusion','school','station'].includes(b.type))return b.type==='school'||b.type==='station'?.05:0;if(b.type==='factory')return .12;if(b.type==='house')return [1,.75,.4,.18,.06,.02,.01][b.level||0];if(b.type==='hall')return b.level?.1:.35;if(b.type==='camp')return .6;if(b.type==='farm')return seasonN()===1?.22:.05;if(b.type==='church'||b.type==='tower')return .1;return .35;}
+function ignite(b,why){if(b.fire||flam(b)<=0)return;b.fire={t:0};realize(b);if(why)chron(why,true);griefAdd(1);sfx('alarm');}
 function hourTick(){
   if(G.menu){G.food=Math.max(G.food,500);G.wood=Math.max(G.wood,200);G.stone=Math.max(G.stone,150);G.hap=72;const hh=Math.floor(hod());if(hh===5||hh===12)assignJobs();if(hh%3===0)upgradeTick&&0;return;}
   const p=popN(),wint=seasonN()===3;

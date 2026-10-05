@@ -3,7 +3,8 @@
 let MODE='title';
 const HOUR_REAL=4,DPS=5;
 const SEASONS=['Spring','Summer','Autumn','Winter'];
-const ERAS=[{name:'Camp',pop:0,cap:300},{name:'Hamlet',pop:10,cap:450},{name:'Village',pop:24,cap:700},{name:'Town',pop:50,cap:1000},{name:'City',pop:100,cap:1500}];
+const ERAS=[{name:'Stone Age',pop:0,cap:300,intro:'a stone age camp'},{name:'Bronze Age',pop:10,cap:450,intro:'the Bronze Age'},{name:'Iron Age',pop:24,cap:700,intro:'the Iron Age'},{name:'Medieval',pop:50,cap:1000,intro:'a medieval town'},{name:'High Medieval',pop:100,cap:1500,intro:'a great medieval city'},
+  {name:'Industrial',pop:170,cap:2200,intro:'the Industrial Age'},{name:'Modern',pop:320,cap:3200,intro:'the Modern Age'},{name:'Futuristic',pop:520,cap:4500,intro:'a future of glass and light'}];
 const GC=2,GN=N/GC,NN=GN*GN;
 const G={};
 const rnd=Math.random,pickA=a=>a[Math.floor(rnd()*a.length)];
@@ -11,7 +12,7 @@ const NM=['Aldric','Bram','Cedric','Duncan','Edric','Finn','Gareth','Hugh','Ivo'
 const NF=['Agnes','Beatrix','Cecily','Edith','Elena','Gisela','Hilda','Isolde','Joan','Juliana','Linnet','Mabel','Matilda','Maud','Nell','Odila','Rosamund','Sybil','Tilda','Wynn','Alys','Emma','Ida','Avice','Margery','Petra','Eleanor','Ysolde','Eda','Rose'];
 const FAM=['Ashby','Brook','Cooper','Thatcher','Miller','Fletcher','Wright','Hollins','Marsh','Fenwick','Underwood','Hale','Tanner','Shepherd','Carter','Fisher','Mason','Baker','Woodward','Reeve','Croft','Fairweather','Ridley','Stone','Ashdown','Merriman'];
 function townName(){return pickA(['Ash','Oak','Bram','Thorn','Wil','Elder','Stan','Mer','Holl','Ral','Wend','Fen','Briar','Kings','Red','Cold','Hart','Lark'])+pickA(['ford','mere','by','ton','wick','stead','holm','dale','bury','well','brook','field']);}
-function resetG(){for(const k in G)delete G[k];Object.assign(G,{dev:devNew(),tf:tfNew(),t:7,speed:1,paused:false,faith:160,food:70,wood:45,stone:0,era:0,hap:62,hapT:62,hapF:{},
+function resetG(){for(const k in G)delete G[k];if(typeof netReset==='function')netReset();Object.assign(G,{dev:devNew(),tf:tfNew(),t:7,speed:1,paused:false,faith:160,food:70,wood:45,stone:0,era:0,hap:62,hapT:62,hapF:{},
   vill:[],bandits:[],markers:[],prayers:[],chron:[],center:null,rain:0,rainI:1,drought:false,snowmelt:0,harvest:0,festival:0,festCool:0,raid:null,raidCool:40,
   sad:0,grief:0,joy:0,nextV:1,town:townName(),phase:'pick',wantHouse:[],lastDay:-1,lastHour:-1,pid:1,flooded:0,floodMap:new Uint8Array(NN),siteFail:null,noTrees:false,
   follow:null,pathBudget:0,prod:{food:0,wood:0,stone:0},prodY:{food:0,wood:0,stone:0},failCool:{},sk:{wood:0,work:0,stone:0,farm:0,fish:0,hunt:0},unl:{},fish:1,boatsBuilt:0,boatWork:0,sun:0,snow:0,rainbow:0,storm:0,env:null,lastRain:-99,noGame:false,cons:0,firstHut:false,raids:0,births:0,deaths:0,arrivals:0,prayerCool:{},plagueCool:0,lastFest:-9,storm:0});}
@@ -83,9 +84,11 @@ function newVillager(o={}){const female=o.female!=null?o.female:rnd()<.5;
     path:null,pi:0,onArrive:null,timer:0,onDone:null,tick:null,anim:'idle',hidden:false,carry:null,amt:0,mood:60,thought:'',spouse:0,sick:0,hp:3,skin:pickA(SKIN),site:0,lowDays:0},o);
   G.vill.push(v);return v;}
 const fullName=v=>`${v.name} ${v.fam}`;
+// grief felt by the town is shared out as it grows, so a big city is not crushed by ordinary deaths and fires
+function griefAdd(x){G.grief=Math.min(30,G.grief+x*clamp(28/Math.max(28,popN()),.1,1));}
 function removeVillager(v,why){const i=G.vill.indexOf(v);if(i>=0)G.vill.splice(i,1);
   for(const o of G.vill)if(o.spouse===v.id)o.spouse=0;if(G.follow===v)G.follow=null;
-  if(why==='died'){G.deaths++;G.grief+=3;}}
+  if(why==='died'){G.deaths++;griefAdd(3);}}
 function setThought(v,t){v.thought=t;}
 function goTo(v,x,z,cb,tb){
   x=clamp(x,-HALF+.5,HALF-.5);z=clamp(z,-HALF+.5,HALF-.5);
@@ -163,7 +166,7 @@ function doJob(v){
   }
 }
 const seasonFood=()=>[.9,1.15,1.4,0][seasonN()];
-function workMul(){return (hasBuilt('smith')?1.2:1)*(.85+G.hap/100*.3);}
+function workMul(){return (hasBuilt('smith')?1.2:1)*(.85+G.hap/100*.3)*(typeof eraMul==='function'?eraMul():1);}
 function farmRate(f){if(!f||f.build)return 0;let r=.64*seasonFood()*(G.unl.rotation?1.2:1)*(1+(skLvl('farm')-1)*.04)*(G.sun>0?1.25:1)*(G.snow>0?0:1);if(f._mill)r*=1.3;if(G.harvest>0)r*=1.5;if(G.drought)r*=.6;if(wAt(f.x,f.z)>.15)r=0;return r*workMul();}
 function storeFor(m,x,z){let best=G.center,bd=G.center?Math.hypot(G.center.x-x,G.center.z-z):1e9;
   for(const b of buildings){if(b.build)continue;const ok=(m==='wood'&&b.type==='camp'&&b.variant==='lumber')||(m==='stone'&&b.type==='quarry');if(!ok)continue;const d=Math.hypot(b.x-x,b.z-z);if(d<bd){bd=d;best=b;}}return best;}
@@ -217,8 +220,8 @@ function forageTask(v){const c=G.center;if(!c)return wait(v,1);
   goTo(v,tx,tz,vv=>wait(vv,1.5,'work',false,null,(w,dt)=>{const r=.26*[1,1.1,1.25,.3][seasonN()]*dt;G.food+=r;G.prod.food+=r;}));}
 function serviceTask(v){const b=bById(v.work);if(!b||b.build)return forageTask(v);
   if(v.job==='shipwright'&&G.unl.boats){setThought(v,'Caulking a new hull.');goTo(v,...doorOf(b),vv=>{vv.inside=b.id;wait(vv,2,'work',true,null,(w,dt)=>{G.boatWork+=dt;gainXP('work',dt*.2);const docks=buildings.filter(o=>o.type==='dock'&&!o.build).length;if(G.boatWork>=14&&G.boatsBuilt<docks*2){G.boatWork=0;G.boatsBuilt++;chron('The shipwrights launched a new fishing boat.',true);}});},b.id);return;}
-  if(v.job==='sawyer'){gainXP('work',.4);}if(v.job==='mason'){gainXP('stone',.4);}
-  const th={sawyer:'Sawing planks.',mason:'Dressing stone blocks.',fishmonger:'Fresh fish! Fresh fish!',shipwright:'Shaping ribs for a hull.',priest:'Preparing Sunday’s sermon.',miller:'Grinding flour.',smith:'Clang! Clang! Forging tools.',keeper:'Pouring ale and stew.',merchant:'Fresh goods, fair prices!',clerk:'Counting the town’s stores.'}[v.job]||'At work.';
+  if(v.job==='sawyer'){gainXP('work',.4);}if(v.job==='mason'){gainXP('stone',.4);}if(v.job==='machinist'){gainXP('machine',.6);}if(v.job==='scholar'){gainXP('science',.6);}if(v.job==='engineer'){gainXP('machine',.4);gainXP('science',.3);}
+  const th={sawyer:'Sawing planks.',mason:'Dressing stone blocks.',fishmonger:'Fresh fish! Fresh fish!',shipwright:'Shaping ribs for a hull.',priest:'Preparing Sunday’s sermon.',miller:'Grinding flour.',smith:'Clang! Clang! Forging tools.',keeper:'Pouring ale and stew.',merchant:'Fresh goods, fair prices!',clerk:'Counting the town’s stores.',machinist:'Tending the machines.',scholar:'Poring over a book of figures.',stationmaster:'Checking the timetable.',engineer:'Watching the gauges.'}[v.job]||'At work.';
   goInside(v,b,Math.max(1,17.5-hod()),'work',th);}
 function guardPatrol(v){const b=bById(v.work)||G.center;if(!b)return wait(v,1);const a=rnd()*TAU,r=6+rnd()*14;setThought(v,'Keeping watch.');
   goTo(v,b.x+Math.cos(a)*r,b.z+Math.sin(a)*r,vv=>wait(vv,1,'idle',false));}

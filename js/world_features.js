@@ -17,7 +17,7 @@ const UNL=[
   {k:'gothic',t:'Gothic arches',req:{stone:5,work:4},d:'Great churches with soaring towers.'},
   {k:'rotation',t:'Crop rotation',req:{farm:3},d:'Fields yield 20% more.'},
   {k:'smoking',t:'Smokehouses',req:{hunt:3},d:'Smoked meat keeps: hunts feed 30% more.'}];
-function gainXP(k,x){if(MODE!=='god'||!G.sk)return;const b=skLvl(k);G.sk[k]+=x;const a=skLvl(k);if(a>b){chron(`The folk grew skilled in ${SKN[k].toLowerCase()} (level ${a}).`,true);checkUnlocks();}}
+function gainXP(k,x){if(MODE!=='god'||!G.sk)return;const b=skLvl(k);G.sk[k]=(G.sk[k]||0)+x;const a=skLvl(k);if(a>b){chron(`The folk grew skilled in ${SKN[k].toLowerCase()} (level ${a}).`,true);checkUnlocks();}}
 function checkUnlocks(){for(const u of UNL){if(G.unl[u.k])continue;if(Object.entries(u.req).every(([k,l])=>skLvl(k)>=l)){G.unl[u.k]=true;showBanner(u.t,u.d);chron(`New craft learned: ${u.t}. ${u.d}`,true);sfx('chime');if(u.k==='bows'||u.k==='boats')buildToolbox(MODE==='god'&&G.phase==='shape'?shapeToolDefs():godToolDefs());}}}
 // ---------------- environment
 function envScan(cx,cz,R){let n=0,water=0,deep=0,flat=0;for(let dz=-R;dz<=R;dz+=3)for(let dx=-R;dx<=R;dx+=3){if(dx*dx+dz*dz>R*R)continue;n++;const x=cx+dx,z=cz+dz;if(Math.abs(x)>HALF||Math.abs(z)>HALF)continue;

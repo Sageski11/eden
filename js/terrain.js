@@ -33,7 +33,7 @@ function flood(x,z,lvl,maxR=1e9){const seen=new Uint8Array(V),q=[];const ci=clam
 function edgeOf(x,z){const ax=Math.abs(x),az=Math.abs(z);if(ax>az)return [Math.sign(x)*(HALF+4),z*1.1];return [x*1.1,Math.sign(z)*(HALF+4)];}
 function genTerrain(seed,preset){
   preset=preset||WORLD;WORLD=preset;const r=mulberry(seed);LAKES.length=0;springs.length=0;
-  W.fill(0);F.fill(0);SPD.fill(0);ROAD.fill(0);FX.fill(0);FZ.fill(0);
+  W.fill(0);F.fill(0);SPD.fill(0);ROAD.fill(0);ROADT.fill(0);FX.fill(0);FZ.fill(0);
   const mts=[];
   if(preset==='blank'){for(let k=0;k<V;k++){const i=k%S,j=(k/S)|0;H[k]=4+(fbm(i*.012,j*.012,seed)-.5)*1.8;}return;}
   for(let m=0;m<(preset==='high'?4:preset==='dry'?1:2);m++){const a=r()*TAU,d=95+r()*45;mts.push([Math.cos(a)*d,Math.sin(a)*d,preset==='high'?50+r()*30:28+r()*22,70+r()*40]);}
@@ -125,7 +125,8 @@ function colorVert(i,j){
   const rd=ROAD[k];
   if(rd>.02){let cob=false;const x=i-HALF,z=j-HALF;for(const c of civicSpots){if((c[0]-x)**2+(c[1]-z)**2<c[2])cob=true;}
     const C=cob?TC.cob:TC.road,m=sstep(.04,.45,rd);const ck=cob?((i+j)&1?.93:1.05):1;
-    r=lerp(r,C[0]*ck,m);g=lerp(g,C[1]*ck,m);b=lerp(b,C[2]*ck,m);}
+    r=lerp(r,C[0]*ck,m);g=lerp(g,C[1]*ck,m);b=lerp(b,C[2]*ck,m);
+    const rt=ROADT[k];if(rt){const T2=rt===2?.36:rt===3?.5:.24,wr=rt===3?1.02:1;const am=.92*m;r=lerp(r,T2*wr,am);g=lerp(g,T2*(rt===3?.97:1),am);b=lerp(b,T2*(rt===3?.92:1.04),am);}}
   if(SNOWF>.01&&w<=.05){const m=SNOWF*(1-rk*.75)*(.72+.28*n)*(rd>.3?.5:1);r=lerp(r,.92,m);g=lerp(g,.94,m);b=lerp(b,.97,m);}
   const jt=(.93+NOI2[k]*.12)*(1-AOF[k]);tCol[k*3]=r*jt;tCol[k*3+1]=g*jt;tCol[k*3+2]=b*jt;
 }

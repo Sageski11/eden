@@ -7,6 +7,7 @@ GEN.house=(b,c,K)=>{
   const {B,rng}=K,T=K.traits,att=c.attach,aL=!!att.L,aR=!!att.R;
   const inWater=c.wC>.2,lake=!inWater&&c.waterDist<5.5;
   let style,name;const lvl=b.level==null?3:b.level;const cw=b.cw==null?5:b.cw,cs=b.cs==null?5:b.cs;
+  if(lvl>=4)return eraHouse(b,c,K,lvl);
   if(lvl===0){style='hut';name='Wattle Hut';}
   else if(inWater){style='lake';name='Stilt House';}
   else if(lake){style='lake';name='Lake House';}
