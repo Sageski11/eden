@@ -367,7 +367,7 @@ function newDay(){if(G.menu)return;
   // roads fade
   for(let k=0;k<V;k++){const r=ROAD[k];if(r>0&&r<.4)ROAD[k]=r<.01?0:r*.9;}
   // fire risk
-  if(seasonN()!==3)for(const b of buildings){if(b.build||b.fire)continue;const fl=flam(b);if(fl<=0)continue;if(rnd()<.0028*fl*(seasonN()===1?1.6:1)*(G.drought?2.4:1))ignite(b,'A cooking fire got out of hand at the '+(b.info?b.info.name:'house')+'.');}
+  if(typeof eventsDaily==='function')eventsDaily();
   // harvest festival
   if(s===2&&dis===DPS){if(G.food>=p*5&&G.t-G.lastFest>40){startFestival(12,'harvest');chron(`The harvest was gathered. ${G.town} held a Harvest Festival!`,true);}else chron('A lean harvest. There was no festival this year.');}
   G.prodY={...G.prod};G.prod={food:0,wood:0,stone:0};

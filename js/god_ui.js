@@ -104,7 +104,7 @@ rainMesh.frustumCulled=false;rainMesh.visible=false;scene.add(rainMesh);
 function updateUI(force){
   if(MODE!=='god')return;
   updateTowns();$('gTown').textContent=G.town;$('gEra').textContent=G.phase==='shape'?WORLDS[WORLD].name+' · shaping':ERAS[G.era].name+(G.phase==='pick'?' · unsettled':'');
-  $('gFaith').textContent=Math.floor(G.faith);$('gFaithCap').textContent='/'+faithCap();$('gPop').textContent=popN();
+  $('gFaith').textContent=Math.floor(G.faith);$('gFaithCap').textContent='/'+faithCap();$('gPop').textContent=popN();if(force||(LOD.fr&63)===0){const cs=crowdSummary();$('gPop').parentElement.title='Folk — '+Object.entries(cs).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>k+' '+v).join(' · ')+'\nNear '+LOD.n[0]+' · mid '+LOD.n[1]+' · far '+LOD.n[2];}
   $('gHap').style.width=Math.round(G.hap)+'%';$('gHap').parentNode.parentNode.title='Happiness '+Math.round(G.hap)+'%\n'+Object.entries(G.hapF).map(([k,v])=>`${k}: ${v>0?'+':''}${v}`).join('\n');
   const net=(G.prodY.food||0)-(G.cons||0);$('gFood').textContent=Math.floor(G.food);$('gFood').parentNode.title=`Food — yesterday made ${Math.round(G.prodY.food||0)}, folk eat ${Math.round(G.cons||0)} a day`;
   $('gWood').textContent=Math.floor(G.wood);$('gStone').textContent=Math.floor(G.stone);
@@ -231,12 +231,30 @@ $('gSound').onclick=()=>{audioInit();setSound(!SND.on);$('gSound').textContent=S
 for(const b of document.querySelectorAll('#gtop .speed button'))b.onclick=()=>setSpeed(+b.dataset.sp);
 // ---------------- main loop
 let aoT=0,treeT=0,last=performance.now(),TT=0,recolorT=0,drownT=0,evalI=0,evalT=0,statT=0,uiT=0,saveT=0,prevWinter=0,prevAut=0;
+// ---- villagers by distance from where the player is looking (LOD):
+//   0-30  : every frame, fully (animation, paths, talk, needs, jobs)
+//   30-100: one batch in 4 frames, with the time they missed added up (same job states, simpler motion)
+//   100+  : one batch in 16 frames; they carry on their day in long steps and are only counted, not watched
+// Every villager keeps one consistent state, so when the player comes closer they simply become the full characters.
+const LOD={off:false,n:[0,0,0],fr:0,A:30,B:100,every:[1,4,16]};
+function lodOf(v){const d=Math.hypot(v.x-cam.tx,v.z-cam.tz),c=v._lod||0;return d<(c===0?LOD.A+6:LOD.A)?0:d<(c<=1?LOD.B+8:LOD.B)?1:2;}
+function stepAgents(dtH,n,sd){const fr=++LOD.fr,raid=!!(G.raid&&G.raid.active);
+  eachSettlement(()=>{const near=[],far=[];
+    for(const v of G.vill){if((fr+v.id&7)===0){const l=(LOD.off||raid||v===G.follow||v===selected||v===hoverV)?0:lodOf(v);if(l===0&&v._lod&&v._acc){coarseStep(v,v._acc);v._acc=0;}v._lod=l;}
+      if(v._lod)far.push(v);else near.push(v);}
+    for(let s=0;s<n;s++){for(const v of near)if(!v._gone)updAgent(v,sd);for(const b of G.bandits.slice())updAgent(b,sd);towersShoot(sd);}
+    if(dtH>0)for(const v of far){v._acc=(v._acc||0)+dtH;if((fr+v.id)%LOD.every[v._lod]===0){const a=v._acc;v._acc=0;coarseStep(v,a);}}
+  });
+  LOD.n=[0,0,0];for(const t of TOWNS.list)if(!t.dead){const vs=t===TOWNS.list[TOWNS.cur]?G.vill:(t.st&&t.st.vill)||[];for(const v of vs)LOD.n[v._lod||0]++;}
+}
+// a quick tally of what the folk are doing (also what the far ones are counted as)
+function crowdSummary(){const o={},add=k=>o[k]=(o[k]||0)+1;for(const v of G.vill){add(v.job||'Folk');add(v.path?'Walking':v.hidden&&v.inside?'Indoors':v.anim==='work'?'Working':'Resting');}return o;}
 function gameStep(dtH){
   if(PAUSED)drainRealize(1e9);G.pathBudget=14;
   const h0=Math.floor(G.t);G.t+=dtH;
   for(let h=h0+1;h<=Math.floor(G.t);h++)eachSettlement(i=>{SHARED=i===firstAlive();if(h%24===5&&G.phase==='play')newDay();if(G.phase==='play')hourTick();});SHARED=true;
   const n=Math.max(1,Math.ceil(dtH/.06)),sd=dtH/n;
-  for(let s=0;s<n;s++)eachSettlement(()=>{for(const v of G.vill.slice())updAgent(v,sd);for(const b of G.bandits.slice())updAgent(b,sd);towersShoot(sd);});
+  stepAgents(dtH,n,sd);
   if(dtH>0)updateAnimals(dtH);
   // seasons
   const se=seasonN(),k=dtH;

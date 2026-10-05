@@ -37,6 +37,8 @@ function doorOf(b){if(b.type==='farm'){const a=rnd()*TAU;return toW2(b,Math.cos(
 
 // ---------------------------------------------------------------- pathfinding grid
 const gCost=new Float32Array(NN),gOcc=new Int32Array(NN);let gridDirty=true;
+// Routes between the same two grid cells (same blocking building) are the same route until the grid changes: remember them.
+const PCACHE=new Map();let GVER=0;const PCST={hit:0,miss:0};
 function rebuildGrid(){
   for(let gj=0;gj<GN;gj++)for(let gi=0;gi<GN;gi++){const x=gi*GC+1-HALF,z=gj*GC+1-HALF,k=gj*GN+gi;
     const w=wAt(x,z),sl=Math.max(Math.abs(hAt(x+1.2,z)-hAt(x-1.2,z)),Math.abs(hAt(x,z+1.2)-hAt(x,z-1.2)))/2.4;
@@ -45,7 +47,7 @@ function rebuildGrid(){
   gOcc.fill(0);
   for(const b of allB()){if(b.type==='farm')continue;const r=b.r*.7;const i0=Math.floor((b.x-r+HALF)/GC),i1=Math.floor((b.x+r+HALF)/GC),j0=Math.floor((b.z-r+HALF)/GC),j1=Math.floor((b.z+r+HALF)/GC);
     for(let j=Math.max(0,j0);j<=Math.min(GN-1,j1);j++)for(let i=Math.max(0,i0);i<=Math.min(GN-1,i1);i++){const x=i*GC+1-HALF,z=j*GC+1-HALF;if(Math.hypot(x-b.x,z-b.z)<r)gOcc[j*GN+i]=b.id;}}
-  gridDirty=false;
+  gridDirty=false;GVER++;PCACHE.clear();
 }
 const gS=new Float32Array(NN),gSt=new Int32Array(NN),gCl=new Int32Array(NN),gFrom=new Int32Array(NN);let gStamp=0;
 const hpK=new Int32Array(NN*4),hpF=new Float32Array(NN*4);let hpN=0;
@@ -58,6 +60,9 @@ function findPath(x0,z0,x1,z1,tb,sb){
   if(gridDirty)rebuildGrid();
   const [si,sj]=cellOf(x0,z0),[ti,tj]=cellOf(x1,z1),s=sj*GN+si,t=tj*GN+ti;
   if(s===t)return [[x1,z1]];
+  const ck=s+':'+t+':'+(tb||0)+':'+(sb||0),hit=PCACHE.get(ck);
+  if(hit!==undefined){PCST.hit++;if(hit===null)return null;const out=[];for(let i=0;i<hit.length;i++)out.push([hit[i][0]+(rnd()-.5)*.8,hit[i][1]+(rnd()-.5)*.8]);out.push([x1,z1]);return out;}
+  PCST.miss++;
   gStamp++;hpN=0;gS[s]=0;gSt[s]=gStamp;gFrom[s]=-1;hPush(s,0);let it=0,found=false;
   while(hpN&&it<30000){it++;const k=hPop();if(gCl[k]===gStamp)continue;gCl[k]=gStamp;if(k===t){found=true;break;}
     const ki=k%GN,kj=(k/GN)|0;
@@ -68,12 +73,14 @@ function findPath(x0,z0,x1,z1,tb,sb){
       const o=gOcc[n];if(o&&o!==tb&&o!==sb)c+=7;
       const g=gk+c*dc;if(gSt[n]===gStamp&&g>=gS[n])continue;gS[n]=g;gSt[n]=gStamp;gFrom[n]=k;
       const hx=ni>ti?ni-ti:ti-ni,hz=nj>tj?nj-tj:tj-nj;hPush(n,g+((hx>hz?hx:hz)+.414*(hx>hz?hz:hx))*.62);}}
-  if(!found)return null;
+  if(PCACHE.size>2500)PCACHE.clear();
+  if(!found){PCACHE.set(ck,null);return null;}
   const cells=[];for(let k=t;k!==-1&&k!==s;k=gFrom[k])cells.push(k);cells.reverse();
-  const out=[];let pdx=9,pdz=9;
+  const out=[],base=[];let pdx=9,pdz=9;
   for(let i=0;i<cells.length;i++){const k=cells[i],x=(k%GN)*GC+1-HALF,z=((k/GN)|0)*GC+1-HALF;
     const nk=cells[i+1];if(nk!=null){const dx=(nk%GN)-(k%GN),dz=((nk/GN)|0)-((k/GN)|0);if(dx===pdx&&dz===pdz){continue;}pdx=dx;pdz=dz;}
-    out.push([x+(rnd()-.5)*.8,z+(rnd()-.5)*.8]);}
+    base.push([x,z]);out.push([x+(rnd()-.5)*.8,z+(rnd()-.5)*.8]);}
+  PCACHE.set(ck,base);
   out.push([x1,z1]);return out;
 }
 
@@ -92,7 +99,7 @@ function newVillager(o={}){const female=o.female!=null?o.female:rnd()<.5;
 const fullName=v=>`${v.name} ${v.fam}`;
 // grief felt by the town is shared out as it grows, so a big city is not crushed by ordinary deaths and fires
 function griefAdd(x){G.grief=Math.min(30,G.grief+x*clamp(28/Math.max(28,popN()),.1,1));}
-function removeVillager(v,why){const i=G.vill.indexOf(v);if(i>=0)G.vill.splice(i,1);
+function removeVillager(v,why){v._gone=true;const i=G.vill.indexOf(v);if(i>=0)G.vill.splice(i,1);
   for(const o of G.vill)if(o.spouse===v.id)o.spouse=0;if(G.follow===v)G.follow=null;
   if(why==='died'){G.deaths++;griefAdd(3);}}
 function setThought(v,t){v.thought=t;}
@@ -111,7 +118,7 @@ function moveAlong(v,dtH){
   let rem=sp*dtH;
   while(rem>0&&v.pi<v.path.length){const [tx,tz]=v.path[v.pi],dx=tx-v.x,dz=tz-v.z,d=Math.hypot(dx,dz);
     if(d<=rem){v.x=tx;v.z=tz;rem-=d;v.pi++;wear(v,d);v.wph=(v.wph||0)+d*3.2;}else{v.x+=dx/d*rem;v.z+=dz/d*rem;v.rot=Math.atan2(dx,dz);wear(v,rem);v.wph=(v.wph||0)+rem*3.2;rem=0;}}
-  return v.pi>=v.path.length;
+  v._mu=sp>0?dtH-Math.max(0,rem)/sp:dtH;return v.pi>=v.path.length;
 }
 function wear(v,d){if(v.kind==='bandit')return;v.wd=(v.wd||0)+d;if(v.wd<.8)return;v.wd=0;
   const i=Math.round(v.x+HALF),j=Math.round(v.z+HALF);
@@ -122,6 +129,14 @@ function updAgent(v,dtH){
   v.hidden=false;v.anim='idle';
   if(v.kind==='bandit')thinkBandit(v);else think(v);
 }
+// Same as updAgent, but for a long step taken at once (villagers away from the camera): it reports the hours it used so that
+// the caller can go on with what is left, and a villager far from the player works exactly as fast as one beside them.
+function updAgentC(v,dtH){
+  if(v.path){if(moveAlong(v,dtH)){v.path=null;v.anim='idle';const cb=v.onArrive;v.onArrive=null;if(cb)cb(v);return v._mu;}return dtH;}
+  if(v.timer>0){const use=Math.min(dtH,v.timer);v.timer-=dtH;if(v.tick)v.tick(v,dtH);if(v.timer>0)return dtH;v.tick=null;if(v.onDone){const f=v.onDone;v.onDone=null;f(v);}return use;}
+  v.hidden=false;v.anim='idle';if(v.kind==='bandit')thinkBandit(v);else think(v);return 0;
+}
+function coarseStep(v,dtH){let r=dtH;for(let i=0;i<6&&r>1e-4;i++)r-=updAgentC(v,r);}
 function goInside(v,b,hours,why,thought){
   if(!b){wait(v,hours,'idle',false);return;}
   const [dx,dz]=doorOf(b);if(thought)setThought(v,thought);
