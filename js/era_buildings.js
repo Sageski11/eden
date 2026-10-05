@@ -52,7 +52,7 @@ GEN.factory=(b,c,K)=>{
   T.push('Brick works under a sawn-toothed roof','Two soot-black chimneys','Rail siding for the coal wagons');return {name:'Factory',r:6.2};
 };
 GEN.school=(b,c,K)=>{
-  const {B,G,rng}=K,T=K.traits;const uni=eraNow()>=6;const w=uni?9.4:8,d=uni?5.6:5,hw=w/2,hd=d/2;const [gMin,gMax]=K.rect(hw+.3,hd+.3);const base=gMax+.15;
+  const {B,G,rng}=K,T=K.traits;const uni=b.level!=null?b.level>=1:eraNow()>=6;const w=uni?9.4:8,d=uni?5.6:5,hw=w/2,hd=d/2;const [gMin,gMax]=K.rect(hw+.3,hd+.3);const base=gMax+.15;
   B.box(0,gMin-.6,0,w+.4,base-gMin+.6,d+.4,0x7d766a);const wall=uni?K.pick(CONC):K.pick([0xc9b896,0xb9a888,0xd2c4a2]);
   B.box(0,base,0,w,3.6,d,wall);B.box(0,base+3.6,0,w+.3,.18,d+.3,0x8f8a7e);
   for(let i=0;i<5;i++){const x=-hw+.9+i*(w-1.8)/4;if(Math.abs(x)<1)continue;B.box(x,base+1.2,hd+.01,.8,1.7,.05,0x3a3028);G.box(x,base+1.3,hd+.04,.62,1.5,.05,GLASS);B.box(x,base+1.2,-hd-.01,.8,1.7,.05,0x3a3028);G.box(x,base+1.3,-hd-.04,.62,1.5,.05,GLASS);}

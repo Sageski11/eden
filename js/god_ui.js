@@ -224,14 +224,6 @@ function startGod(seed){enterGodUI();resetG();G.seed=seed||((rnd()*1e6)|0);newWo
   buildToolbox(godToolDefs());setTool('m:settle');G.phase='pick';startAuto=0;refreshMarkers();
   cam.tx=0;cam.tz=0;cam.dist=170;cam.pitch=.95;
   hintEl.textContent='Click the land to show the settlers where to make camp.';updateUI(true);showBanner('A new valley','Choose where your people will settle');}
-function startSandbox(){exitMenu();resetG();G.phase='sandbox';MODE='sandbox';$('title').classList.add('hidden');$('gtop').classList.add('hidden');$('prayers').classList.add('hidden');$('top').classList.remove('hidden');
-  renderer.localClippingEnabled=false;
-  buildToolbox([['Shape the land',[['raise','Raise','1'],['lower','Lower','2'],['smooth','Smooth','3'],['flatten','Flatten','4'],['cliff','Cliff','5'],['terrace','Terrace','6'],['canyon','Canyon','7']]],
-    ['Water',[['pour','Pour','8'],['spring','Spring','9'],['drain','Drain','0']]],['Nature',[['plant','Plant trees','T'],['fell','Fell trees','Y']]],
-    ['Plan',[['road','Road','G'],['inspect','Inspect','I'],['demolish','Demolish','X']]],['Build',Object.entries(BT).map(([k,v])=>['b:'+k,v,''])]]);
-  SNOWF=0;AUTUMN=0;WINTER=0;waterU.uIce.value=0;treesDirty=true;
-  newWorld(1337);setTool('b:house');setTime(+tod.value);layout();
-  try{if(!localStorage.getItem('hearthmere_seen')){$('help').classList.remove('hidden');localStorage.setItem('hearthmere_seen','1');}}catch(e){}}
 function showTitle(){showMenuUI();}
 $('tNew').onclick=()=>{audioInit();showSetup();};$('tSand').onclick=()=>{audioInit();startSandbox();};
 $('gChron').onclick=toggleChron;$('gHelpB').onclick=()=>$('ghelp').classList.toggle('hidden');$('ghelpClose').onclick=()=>$('ghelp').classList.add('hidden');$('chronClose').onclick=toggleChron;$('gPhoto').onclick=togglePhoto;
@@ -258,7 +250,7 @@ function gameStep(dtH){
 }
 const PROF={};
 function frame(now){
-  if(MODE==='title'||(PAUSED&&frame.pr>1)){last=now;requestAnimationFrame(frame);return;}
+  if(MODE==='title'||SB.open||(PAUSED&&frame.pr>1)){last=now;requestAnimationFrame(frame);return;}
   if(PAUSED)frame.pr=(frame.pr||0)+1;else frame.pr=0;
   const dt=HM.fixDt||Math.min(.05,(now-last)/1000);last=now;TT+=dt;if(HM.fixT!=null)TT=HM.fixT;// (test hook: pins time so screenshots are reproducible)
   if(MODE==='god'&&G.menu)menuCam(dt);

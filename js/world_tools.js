@@ -70,23 +70,25 @@ function setTime(h){hour=h;
 // ================================================================ undo / save
 const undoStack=[];
 function snapshot(){return {H:H.slice(),W:W.slice(),R:ROAD.slice(),trees:trees.map(t=>({...t})),springs:springs.map(s=>({...s})),
-  bl:buildings.map(b=>({type:b.type,x:b.x,z:b.z,rot:b.rot,manual:b.manual,seed:b.seed,w:b.w,d:b.d}))};}
+  bl:buildings.map(b=>({type:b.type,x:b.x,z:b.z,rot:b.rot,manual:b.manual,seed:b.seed,w:b.w,d:b.d,lv:b.level,vr:b.variant})),
+  net:MODE==='sandbox'&&G.net?G.net.lines.map(l=>({kind:l.kind,pts:l.pts.map(p=>[p[0],p[1]])})):null,pv:MODE==='sandbox'&&typeof SB!=='undefined'?SB.paved.slice():null};}
 function pushUndo(){undoStack.push(snapshot());if(undoStack.length>30)undoStack.shift();}
 function restore(s){
   H.set(s.H);W.set(s.W);ROAD.set(s.R);F.fill(0);
   trees.length=0;for(const t of s.trees)trees.push({...t});treesDirty=true;
   springs.length=0;for(const p of s.springs)springs.push({...p});refreshSprings();
   for(const b of buildings.slice())removeBuilding(b);
-  for(const r of s.bl){const b=newRecord(r.type,r.x,r.z,r.rot,r.seed);Object.assign(b,{manual:r.manual,w:r.w,d:r.d});addBuilding(b);}
+  for(const r of s.bl){const b=newRecord(r.type,r.x,r.z,r.rot,r.seed);Object.assign(b,{manual:r.manual,w:r.w,d:r.d,level:r.lv==null?null:r.lv,variant:r.vr||null});addBuilding(b);}
+  if(s.pv&&typeof SB!=='undefined'){SB.paved.set(s.pv);G.net={lines:(s.net||[]).map(l=>({kind:l.kind,pts:l.pts.map(p=>[p[0],p[1]])})),paved:false};netReload();}
   refreshCivic();for(const b of buildings)realize(b);
   refreshTerrain();updateSkirt();selected=null;ghostKey='';
 }
 function undo(){const s=undoStack.pop();if(!s){toast('Nothing to undo');return;}restore(s);toast('Undone');}
 function f32b64(a){const u=new Uint8Array(a.buffer.slice(0));let s='';for(let i=0;i<u.length;i+=32768)s+=String.fromCharCode.apply(null,u.subarray(i,i+32768));return btoa(s);}
 function b64f32(s){const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return new Float32Array(u.buffer);}
-function serialize(){const s=snapshot();return JSON.stringify({v:1,N,H:f32b64(s.H),W:f32b64(s.W),R:f32b64(s.R),trees:s.trees,springs:s.springs,bl:s.bl,hour,cam:{tx:cam.tx,tz:cam.tz,yaw:cam.yaw,pitch:cam.pitch,dist:cam.dist}});}
+function serialize(){const s=snapshot();return JSON.stringify({v:1,N,H:f32b64(s.H),W:f32b64(s.W),R:f32b64(s.R),trees:s.trees,springs:s.springs,bl:s.bl,net:s.net,pv:s.pv?f32b64(new Float32Array(Array.from(s.pv))):null,hour,cam:{tx:cam.tx,tz:cam.tz,yaw:cam.yaw,pitch:cam.pitch,dist:cam.dist}});}
 function deserialize(str){const o=JSON.parse(str);if(o.N!==N)throw new Error('size');pushUndo();
-  restore({H:b64f32(o.H),W:b64f32(o.W),R:b64f32(o.R),trees:o.trees,springs:o.springs,bl:o.bl});if(o.cam)Object.assign(cam,o.cam);if(o.hour){tod.value=o.hour;setTime(o.hour);}}
+  restore({H:b64f32(o.H),W:b64f32(o.W),R:b64f32(o.R),trees:o.trees,springs:o.springs,bl:o.bl,net:o.net,pv:o.pv&&MODE==='sandbox'?Uint8Array.from(b64f32(o.pv)):null});if(o.cam)Object.assign(cam,o.cam);if(o.hour){tod.value=o.hour;setTime(o.hour);}}
 
 // ================================================================ input / tools
 const keys={};let shift=false;
@@ -246,7 +248,7 @@ function updateGhost(now){
 }
 function placeGhost(){
   if(!ghostB||!ghostInfo)return;if(ghostErr){toast(ghostErr);return;}
-  pushUndo();const b=newRecord(ghostB.type,ghostB.x,ghostB.z,ghostB.rot,ghostB.seed);b.w=ghostB.w;b.d=ghostB.d;b.manual=ghostB.manual;
+  pushUndo();const b=newRecord(ghostB.type,ghostB.x,ghostB.z,ghostB.rot,ghostB.seed);b.w=ghostB.w;b.d=ghostB.d;b.manual=ghostB.manual;b.level=ghostB.level;b.variant=ghostB.variant;
   addBuilding(b);realize(b);clearTreesAround(b.x,b.z,b.r+(b.type==='camp'||b.type==='castle'?1.5:.4));rebuildNear(b.x,b.z,34,b);realize(b);
   if(['castle','church','market'].includes(b.type))recolorAll();
   toast(`${b.info.name} built`);
