@@ -123,6 +123,7 @@ function goInside(v,b,hours,why,thought){
 }
 function sleepHours(){const h=hod();return ((h>=12?24-h:-h)+5.3+rnd()*.9);}
 function think(v){
+  if(v.mission)return missionStep(v);
   const h=hod(),home=bById(v.home);v._sb=v.inside||0;v.inside=0;
   if(v.leaving){goTo(v,v.lx,v.lz,vv=>removeVillager(vv,'left'));return;}
   if(v.arriving){if(!G.center){wait(v,1);return;}const [x,z]=doorOf(G.center);goTo(v,x+(rnd()-.5)*3,z+(rnd()-.5)*3,vv=>{vv.arriving=false;assignHomes();assignJobs();});return;}

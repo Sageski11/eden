@@ -14,12 +14,13 @@ const path = require('path');
   const r = await page.evaluate(() => {
     PAUSED = true; const out = []; const run = (days) => { for (let i = 0; i < days * 24 * 10; i++) gameStep(0.1); };
     run(25);
-    G.dev.doubt = 70; devSpawnProphet('sword'); G.dev.cult.strength = .8; for (let d = 0; d < 40 && G.dev.atrocities < 2; d++) { G.dev.doubt = 70; run(1); G.food = Math.max(G.food, 80); }
+    G.era = Math.max(G.era, 1); G.hap = 60; for (let k = 0; k < 4 && popN() < 14; k++) { arriveFamily(5); run(2); }
+    G.dev.doubt = 70; devSpawnProphet('sword'); if (!G.dev.cult) { for (const v of G.vill) v.age = Math.max(v.age, 25); devSpawnProphet('sword'); } G.dev.cult.strength = .8; for (let d = 0; d < 40 && G.dev.atrocities < 2; d++) { G.dev.doubt = 70; run(1); G.food = Math.max(G.food, 80); }
     out.push(['atrocities', G.dev.atrocities, 'sin', Math.round(G.dev.sin), 'cult', G.dev.cult && G.dev.cult.strength.toFixed(2), 'pop', popN()]);
     out.push(['log', G.dev.log.map(l => l.t)]);
     // save/load round trip
-    const s = serializeGod(); const parsed = JSON.parse(s); out.push(['saved dev', !!parsed.G.dev, !!(parsed.G.dev.cult)]);
-    loadGod(s); out.push(['loaded', G.dev.sin === parsed.G.dev.sin, G.dev.cult && G.dev.cult.name, G.vill.filter(v => v.cult).length, devGrp.children.length]);
+    const s = serializeGod(); const parsed = JSON.parse(s); const t0 = parsed.towns ? parsed.towns[0].G : parsed.G; out.push(['saved dev', !!t0.dev, !!(t0.dev.cult)]);
+    loadGod(s); out.push(['loaded', G.dev.sin === t0.dev.sin, G.dev.cult && G.dev.cult.name, G.vill.filter(v => v.cult).length, devGrp.children.length]);
     if(!(G.dev.sin>0||G.dev.cult)){out.push(['NOTE no sin/cult after famine; forcing sin']);G.dev.sin=45;} updateUI(true); out.push(['panel has judge', !!document.getElementById('devJudgeB')]);
     document.getElementById('devJudgeB').click(); out.push(['judge menu', document.querySelectorAll('#prayers [data-judge]').length]);
     document.querySelector('#prayers [data-judge="pestilence"]').click(); let g = 0; while (!G.dev.done && g++ < 600) run(0.5);

@@ -117,7 +117,7 @@ function updateUI(force){
   else if(G.phase==='pick')h+=`<div class="pr urgent">Five weary settlers wander into the valley.<em>Click the land to plant a banner where they should make camp. Flat, dry ground near water and forest is best.</em></div><button id="autoPick">Let them choose</button>`;
   else{if(!G.prayers.length)h+='<div class="pr none">The folk are content. No prayers for now.</div>';
     for(const p of G.prayers){const hl=Math.max(0,p.until-G.t);h+=`<div class="pr${p.urgent?' urgent':''}">${esc(p.txt)}<em>${esc(PRAYERS[p.k].how)}</em><span class="rw">Reward ${PRAYERS[p.k].r} faith · ${hl>=24?Math.ceil(hl/24)+' days':Math.ceil(hl)+' hours'} left</span></div>`;}
-    const nx=ERA_REQ[G.era+1];if(nx)h+=`<div class="pr none" style="margin-top:4px">Next: <b>${ERAS[G.era+1].name}</b> — ${nx.txt}</div>`;h+=tfPanelHTML()+devPanelHTML();}
+    const nx=ERA_REQ[G.era+1];if(nx)h+=`<div class="pr none" style="margin-top:4px">Next: <b>${ERAS[G.era+1].name}</b> — ${nx.txt}</div>`;h+=tfPanelHTML()+tradePanelHTML()+devPanelHTML();}
   if(force||$('prayers')._h!==h){$('prayers').innerHTML=h;$('prayers')._h=h;devBind();tfBind();const ap=$('autoPick');if(ap)ap.onclick=()=>autoChooseStart();const cs=$('callS');if(cs)cs.onclick=()=>callSettlers();}
   layoutGod();
 }

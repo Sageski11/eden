@@ -25,6 +25,13 @@ const path = require('path');
   }
   const sw = await page.evaluate(() => { const o = {}; if (TOWNS.list.length > 1) { viewSettlement(1, true); o.after1 = [G.town, buildings.length, popN(), document.getElementById('gTowns').innerText.replace(/\n/g, ' | ')]; updateUI(true); o.prayers = document.getElementById('prayers').innerText.slice(0, 160).replace(/\n/g, ' | '); for (let i = 0; i < 24; i++) gameStep(0.1); o.stillRuns = popN(); cycleSettlement(); o.after2 = [G.town, buildings.length]; } return o; });
   console.log('SWITCH', JSON.stringify(sw));
+  if (process.env.TRADE) {
+    const r = await page.evaluate(() => { const log = []; const run = (d) => { for (let i = 0; i < d * 240; i++) gameStep(0.1); };
+      for (let day = 0; day < 14; day++) { eachSettlement((i) => { G.raid = null; G.raidCool = 1e9; G.bandits.length = 0; G.hap = Math.max(G.hap, 55); if (i === 0) { G.wood = 500; G.stone = 200; G.food = Math.min(G.food, 25); } else { G.food = 500; G.wood = Math.min(G.wood, 15); G.stone = 60; } }); run(1);
+        if (day % 3 === 2) log.push({ day, caravans: allVill().filter(v => v.mission).map(v => [v.mission.from, v.mission.to, v.mission.phase, Math.round(v.x), Math.round(v.z)]), trades: G.tradeN || 0, stock: TOWNS.list.map((t, i) => [Math.round(sGet(i, 'food')), Math.round(sGet(i, 'wood'))]) }); }
+      return { log, tradeLog: G.tradeLog, chron: G.chron.filter(c => /caravan/i.test(c.t)).slice(0, 6).map(c => c.t) }; });
+    console.log('TRADE', JSON.stringify(r));
+  }
   if (process.env.SAVELOAD) {
     const r = await page.evaluate(() => { const before = __st().map(t => [t.name, t.pop, t.blds, t.era]); const str = serializeGod(); loadGod(str);
       const after = __st().map(t => [t.name, t.pop, t.blds, t.era]); let ok = true; try { for (let i = 0; i < 120; i++) gameStep(0.1); } catch (e) { ok = String(e); }

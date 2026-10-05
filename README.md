@@ -23,6 +23,8 @@ sharing one global scope (so order matters):
 | `devotion.js` | piety, doubt, false prophets, atrocities, judgment, the reckoning screen and Ledger of Ages |
 | `terraform.js` | folk terraforming (levelling, quarry pits) and petitions to the player |
 | `eras.js`, `era_buildings.js`, `era_civic.js` | the eight ages: requirements, crafts, factories/stations/power, tall houses, civic styles per age |
+| `settlements.js`, `neighbours.js`, `trade.js` | the settlement layer (several peoples sharing one world), the second people who arrive in the Bronze Age and the tabs to switch between them, and caravans between them |
+| `opening.js` | the opening: arrival in rain, the free first Sunshine, folk fetching their own water |
 | `transport.js` | paved streets, railways, highways, trains and cars |
 | `god_ui.js`, `saves.js`, `menu.js` | powers and UI, main loop, saves, quality presets, menus |
 
@@ -34,8 +36,9 @@ sharing one global scope (so order matters):
 3. **Faith & doubt**: faith pays for miracles. Hunger, fear, sickness, unanswered prayers, and pride/greed breed doubt.
    Doubt raises a **false prophet** whose cult commits worsening atrocities (see `DOCTRINES` in `devotion.js`).
 4. **You may answer** with a sign, a seer or by silencing the prophet — or by easing the real cause.
-5. **Petitions**: the folk ask leave for big works. You decide.
-6. **Judgment**: cleanse a civilisation that is beyond saving. The ledger remembers; the next age begins.
+5. **Other peoples**: a second people arrive in the Bronze Age and live differently; merchants trade between them.
+6. **Petitions**: the folk ask leave for big works. You decide.
+7. **Judgment**: cleanse a civilisation that is beyond saving. The ledger remembers; the next age begins.
 
 ## Testing
 
@@ -49,5 +52,7 @@ node tools/devtest2.js         # atrocities, save/load, judgment, next-age flow
 node tools/tftest.js           # terraforming and petitions
 node tools/eratest.js          # fast-forward through the ages
 node tools/nettest.js out.png  # lay a railway and highway, screenshot
+node tools/nbtest.js 60        # two peoples (JUDGE=1, SAVELOAD=1, TRADE=1 add checks)
+node tools/opentest.js         # rain opening and the free first Sunshine
 node tools/showcase.js out.png "house:4,house:5,factory" 0.5 70 0.4 7   # stage buildings and screenshot
 ```

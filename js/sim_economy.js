@@ -76,7 +76,7 @@ function addFireFx(b){const main=b.obj.children[0];main.geometry.computeBounding
 const SLOTJ={dock:['fisher',3],lodge:['hunter',3],fishmkt:['fishmonger',1],sawmill:['sawyer',2],mason:['mason',2],shipyard:['shipwright',2],farm:['farmer',2],lumber:['wood',2],fish:['fisher',2],quarry:['quarry',2],smith:['smith',1],mill:['miller',1],church:['priest',1],tavern:['keeper',1],market:['merchant',1],tower:['guard',2],castle:['guard',4],hall:['clerk',1]};
 function slotKey(b){return b.type==='camp'?b.variant:b.type;}
 function assignJobs(){
-  const ad=G.vill.filter(v=>v.age>=14&&v.age<=64&&!v.leaving&&!v.arriving&&!v.sick);const p=popN();
+  const ad=G.vill.filter(v=>v.age>=14&&v.age<=64&&!v.leaving&&!v.arriving&&!v.sick&&!v.mission);const p=popN();
   const sites=buildings.filter(siteProj).length,winter=seasonN()===3,foodLow=G.food<p*5;
   const slots=[],food=[],other=[];
   for(const b of buildings){if(b.build)continue;const k=slotKey(b),sj=SLOTJ[k];if(!sj)continue;if(k==='hall'&&!b.level)continue;
@@ -372,7 +372,7 @@ function newDay(){if(G.menu)return;
   if(s===2&&dis===DPS){if(G.food>=p*5&&G.t-G.lastFest>40){startFestival(12,'harvest');chron(`The harvest was gathered. ${G.town} held a Harvest Festival!`,true);}else chron('A lean harvest. There was no festival this year.');}
   G.prodY={...G.prod};G.prod={food:0,wood:0,stone:0};
   G.joy*=.75;G.grief*=.7;G.sad*=.8;
-  assignHomes();assignJobs();checkEra();devDaily();tfDaily();eraDaily();netDaily();waterDaily();nbDaily();if(seasonN()===3||dis===1)buildToolbox(godToolDefs());
+  assignHomes();assignJobs();checkEra();devDaily();tfDaily();eraDaily();netDaily();waterDaily();nbDaily();tradeDaily();if(seasonN()===3||dis===1)buildToolbox(godToolDefs());
 }
 function edgePoint(a){const x=Math.cos(a),z=Math.sin(a),m=Math.max(Math.abs(x),Math.abs(z));let px=x/m*(HALF-1.5),pz=z/m*(HALF-1.5);
   for(let i=0;i<24&&wAt(px,pz)>.3;i++){a+=.15;const x2=Math.cos(a),z2=Math.sin(a),m2=Math.max(Math.abs(x2),Math.abs(z2));px=x2/m2*(HALF-1.5);pz=z2/m2*(HALF-1.5);}return [px,pz];}
