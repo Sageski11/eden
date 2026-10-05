@@ -14,7 +14,7 @@ function tfDust(x,z,n,col){const y=hAt(x,z)+.4;col=col||[.62,.55,.45];for(let i=
 function tfRegion(x,z,R){return [Math.max(0,Math.floor(x-R+HALF)),Math.max(0,Math.floor(z-R+HALF)),Math.min(N,Math.ceil(x+R+HALF)),Math.min(N,Math.ceil(z+R+HALF))];}
 // ---------------- levelling a building plot
 function tfGradeSite(b){
-  if(MODE!=='god'||G.phase!=='play'||!G.tf)return;const type=b.type;
+  if(MODE!=='god'||G.phase!=='play'||!G.tf||(G.era||0)<1)return;const type=b.type;
   if(type==='dock'||type==='shipyard'||type==='fishmkt'||type==='quarry'||(type==='camp'&&b.variant==='fish'))return;
   const r=TYPE_R[type]||2.5,s=[];for(let i=0;i<17;i++){const a=i/8*TAU,rr=i===16?0:i<8?r*1.05:r*.55;s.push(hAt(b.x+Math.cos(a)*rr,b.z+Math.sin(a)*rr));}
   const mn=Math.min(...s),mx=Math.max(...s),range=mx-mn;if(range<.45)return;
@@ -56,8 +56,8 @@ function tfFile(k,o){const T=tfEnsure();const w=dirWord(o.x,o.z);let txt,how,sho
   else{short='cut into the hill';txt=`The quarrymen ask leave to cut deep into the hills ${w} of ${G.town}.`;how='Allowed: the hillside will be scarred and pits dug, but stone flows.';}
   T.pet.push({id:T.pid++,k,x:o.x,z:o.z,n:o.n||0,a:o.a,b:o.b,txt,how,short,until:G.t+5*24});T.cool[k]=dayN()+8;sfx('chime');}
 function tfDaily(){const T=tfEnsure();if(G.phase!=='play'||G.menu||!G.center)return;
-  for(const p of T.pet.slice()){if(G.t>p.until){T.pet.splice(T.pet.indexOf(p),1);G.sad=Math.min(20,G.sad+2);T.cool[p.k]=dayN()+10;chron(`The petition to ${p.short} was left unanswered. The folk grumbled.`);}}
-  if(T.pet.length>=2||(G.era||0)<1)return;const d=dayN(),p=popN(),can=k=>!(T.cool[k]>d)&&!T.pet.some(q=>q.k===k);
+  for(const p of T.pet.slice()){if(G.t>p.until){T.pet.splice(T.pet.indexOf(p),1);G.sad=Math.min(20,G.sad+1);T.cool[p.k]=dayN()+10;chron(`The petition to ${p.short} was left unanswered. The folk grumbled.`);}}
+  if(T.pet.length>=2||(G.era||0)<2)return;const d=dayN(),p=popN(),can=k=>!(T.cool[k]>d)&&!T.pet.some(q=>q.k===k);
   if(can('drain')&&p>=12&&(G.siteFail||cnt('farm')<2+Math.floor(p/20))&&rnd()<.4){const m=tfFindMarsh();if(m)return tfFile('drain',m);}
   if(can('clearcut')&&p>=14&&(G.siteFail||G.wood<p*.8)&&rnd()<.35){const f=tfFindForest();if(f)return tfFile('clearcut',f);}
   if((G.era||0)>=5){const net=netEnsure();

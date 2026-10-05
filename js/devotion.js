@@ -35,7 +35,7 @@ const DOCTRINES={
       {lvl:2,sin:8,f:(c,v)=>{const ch=buildings.find(b=>b.type==='church'&&!b.build&&!b.fire);if(ch){ignite(ch,`Followers of ${c.name} set fire to the chapel, shouting that no god was needed.`);return null;}if(v){devKill(v);return `${fullName(v)} defended the old ways and was beaten by ${c.name}'s followers.`;}return null;}},
       {lvl:3,sin:15,f:(c,v)=>{if(v){devKill(v);return `${c.name} crowned himself above the Spirit, and ${fullName(v)}, who would not kneel, was put to death.`;}return null;}}]}
 };
-function devNew(){return {piety:62,doubt:10,sin:0,atrocities:0,cult:null,seer:0,cool:0,cultCool:20,peak:0,answered:0,ignored:0,judging:null,menu:false,log:[],remnant:0,distress:0,causes:{}};}
+function devNew(){return {piety:62,doubt:10,sin:0,atrocities:0,cult:null,seer:0,cool:0,cultCool:30,peak:0,answered:0,ignored:0,judging:null,menu:false,log:[],remnant:0,distress:0,causes:{}};}
 function devEnsure(){if(!G.dev)G.dev=devNew();const d=G.dev,n=devNew();for(const k in n)if(d[k]===undefined)d[k]=n[k];return d;}
 const _devPct=x=>Math.round(clamp(x,0,100));
 function devKill(v){chron(`${fullName(v)} died.`);removeVillager(v,'died');G.grief=Math.min(18,G.grief+3);G.dev.atrocities++;}
@@ -74,7 +74,7 @@ function devDaily(){const d=devEnsure();if(G.phase!=='play'||G.menu)return;const
   d.piety+=(pT-d.piety)*.1;d.doubt+=(dT-d.doubt)*.12;d.answered*=.85;
   if(d.seer>0)d.seer--;if(d.cool>0)d.cool--;if(d.cultCool>0)d.cultCool--;
   // a prophet rises from doubt, not from nowhere
-  if(!d.cult&&p>=8&&d.cultCool<=0&&d.doubt>((cs.pride>0||cs.greed>.2||cs.machine>.2)&&dist<.2?28:40)){const k=devDoctrineFor(cs);if(k&&rnd()<.35)devSpawnProphet(k);}
+  if(!d.cult&&p>=14&&(G.era||0)>=1&&d.cultCool<=0&&d.doubt>((cs.pride>0||cs.greed>.2||cs.machine>.2)&&dist<.2?28:40)){const k=devDoctrineFor(cs);if(k&&rnd()<.35)devSpawnProphet(k);}
   const c=d.cult;
   if(c){const D=DOCTRINES[c.key];
     c.strength=clamp(c.strength+((d.doubt-34)/100)*.1-((d.piety-50)/100)*.05-(d.seer>0?.018:0)-(G.hap>72?.012:0)+(G.joy>8?-.01:0),0,1);

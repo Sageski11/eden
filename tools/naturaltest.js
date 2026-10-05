@@ -8,11 +8,21 @@ const path = require('path');
   const page = await browser.newPage({ viewport: { width: 1400, height: 800 } });
   const errs = [];
   page.on('pageerror', e => errs.push('PAGEERROR ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 5).join('\n')));
+  const SEED = +(process.env.SEED || 0);
+  if (SEED) await page.addInitScript((seed) => { let a = seed; Math.random = function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }, SEED);
   await page.goto('file://' + path.resolve('Eden.html')); await page.waitForTimeout(2500);
   await page.evaluate(() => document.getElementById('tNew').click()); await page.waitForTimeout(800);
   await page.evaluate(() => document.getElementById('setupGo').click()); await page.waitForTimeout(2000);
   await page.evaluate(() => { [...document.querySelectorAll('#prayers button')].find(x => /settlers/i.test(x.textContent)).click(); autoChooseStart(); });
   await page.waitForTimeout(800);
+  const OFF = (process.env.OFF || '').split(',');
+  await page.evaluate((OFF) => {
+    if (OFF.includes('tf')) tfGradeSite = function () {};
+    if (OFF.includes('dev')) { devDaily = function () {}; devHourly = function () {}; }
+    if (OFF.includes('mod')) modernizeTick = function () {};
+    if (OFF.includes('era')) for (const k in ERA_BUILD) ERA_BUILD[k] = 0;
+    if (OFF.includes('pet')) tfDaily = function () {};
+  }, OFF);
   await page.evaluate(() => { PAUSED = true; window.__run = (n) => { for (let i = 0; i < n * 24 * 10; i++) gameStep(0.1); }; });
   for (let d = 0; d < days; d += 20) {
     const r = await page.evaluate(() => {

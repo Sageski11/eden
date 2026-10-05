@@ -55,8 +55,12 @@ function netFrame(dt){if(MODE!=='god'||!G.net||!G.net.lines.length)return;netT+=
     v.m.position.set(x-dz/l*off,hAt(x,z)+.14,z+dx/l*off);v.m.rotation.y=Math.atan2(dx,dz)+(v.dir<0?PI:0);}}
 // ---------------- building a line
 function netRoute(a,b){const p=findPath(a[0],a[1],b[0],b[1],0,0);if(!p)return null;return [a,...p];}
+// buildings in the way of a new line are pulled down (the hall and stations are spared)
+function netClearCorridor(pts,wid,kind){let n=0;for(const b of buildings.slice()){if(b===G.center||b.type==='station'||b.type==='hall')continue;let d=1e9;for(const p of pts)d=Math.min(d,Math.hypot(b.x-p[0],b.z-p[1]));
+    if(d<wid+1.4+(b.r||2)*.55){for(const v of G.vill){if(v.home===b.id)v.home=0;if(v.work===b.id){v.work=0;v.job=null;}if(v.site===b.id)v.site=0;if(v.inside===b.id)v.inside=0;}removeBuilding(b);n++;}}
+  if(n){G.sad=Math.min(20,G.sad+Math.min(5,n*.6));griefAdd(n);chron(`${n} building${n>1?'s were':' was'} pulled down to make way for the ${kind==='rail'?'railway':'highway'}.`,true);assignHomes();assignJobs();gridDirty=true;refreshCivic();}return n;}
 function netBuild(kind,a,b){const route=netRoute(a,b);if(!route||route.length<3)return false;const pts=netSmooth(route);const wid=kind==='highway'?3.6:2.2;
-  netGrade(pts,wid,kind==='highway'?.34:.2);const L={kind,pts};netEnsure().lines.push(L);netPaint();netSyncVehicles();
+  netClearCorridor(pts,wid,kind);netGrade(pts,wid,kind==='highway'?.34:.2);const L={kind,pts};netEnsure().lines.push(L);netPaint();netSyncVehicles();
   let sc=0;for(let i=0;i<animals.length;i++){const an=animals[i];for(const p of pts){if(Math.hypot(an.x-p[0],an.z-p[1])<9){sc++;break;}}}
   return {len:Math.round(netLen(pts).slice(-1)[0]),scared:sc};}
 function netPave(){const N2=netEnsure();if((G.era||0)<5)return;if(!N2.paved){N2.paved=true;chron(`The streets of ${G.town} were paved with tar and stone, and the mud of the old lanes was gone.`,true);}netPaint();}
