@@ -5,7 +5,7 @@
 const TIERED=['church','market','tavern','smith','mill','well'];
 const tierOf=b=>b.level==null?(b.type==='church'?2:0):b.level;
 function eraTierFor(type,e){e=e==null?(G.era||0):e;if(type==='church')return e<=1?0:e===2?1:2;return e>=7?3:e>=6?2:e>=5?1:0;}
-const ERA_BUILD={smith:1,church:1,fishmkt:1,mill:2,market:2,tower:2,shipyard:2,sawmill:2,mason:2,tavern:2,castle:3};
+const ERA_BUILD={well:1,smith:1,church:1,fishmkt:1,mill:2,market:2,tower:2,shipyard:2,sawmill:2,mason:2,tavern:2,castle:3};
 function modernizeTick(){if(G.phase!=='play'||G.menu||(G.era||0)<1)return;if(buildings.filter(b=>b.upg).length>=1+Math.floor(popN()/60)||G.hap<40)return;
   const c=buildings.filter(b=>TIERED.includes(b.type)&&!b.build&&!b.upg&&!b.fire&&tierOf(b)<eraTierFor(b.type));if(!c.length)return;
   const b=pickA(c),[w,s]=costOf(b.type,b.variant,0);if(G.wood<w*.6||G.stone<s*.6)return;startUpgrade(b,tierOf(b)+1);}

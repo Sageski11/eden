@@ -288,7 +288,7 @@ function computeHap(){
   f.Events=Math.round(G.joy-G.grief*2-G.sad);
   const sick=vs.filter(v=>v.sick).length;if(sick)f.Sickness=-Math.min(15,sick*2);
   if(p>40)f.Crowding=-Math.min(14,Math.round((p-40)/11));
-  if(typeof devHapF==='function')devHapF(f);if(typeof eraHapF==='function')eraHapF(f);
+  if(typeof devHapF==='function')devHapF(f);if(typeof eraHapF==='function')eraHapF(f);if(typeof openingHapF==='function')openingHapF(f);
   G.hapF=f;let s=50;for(const k in f)s+=f[k];G.hapT=clamp(s,0,100);
 }
 // ---------------- prayers
@@ -372,7 +372,7 @@ function newDay(){if(G.menu)return;
   if(s===2&&dis===DPS){if(G.food>=p*5&&G.t-G.lastFest>40){startFestival(12,'harvest');chron(`The harvest was gathered. ${G.town} held a Harvest Festival!`,true);}else chron('A lean harvest. There was no festival this year.');}
   G.prodY={...G.prod};G.prod={food:0,wood:0,stone:0};
   G.joy*=.75;G.grief*=.7;G.sad*=.8;
-  assignHomes();assignJobs();checkEra();devDaily();tfDaily();eraDaily();netDaily();if(seasonN()===3||dis===1)buildToolbox(godToolDefs());
+  assignHomes();assignJobs();checkEra();devDaily();tfDaily();eraDaily();netDaily();waterDaily();if(seasonN()===3||dis===1)buildToolbox(godToolDefs());
 }
 function edgePoint(a){const x=Math.cos(a),z=Math.sin(a),m=Math.max(Math.abs(x),Math.abs(z));let px=x/m*(HALF-1.5),pz=z/m*(HALF-1.5);
   for(let i=0;i<24&&wAt(px,pz)>.3;i++){a+=.15;const x2=Math.cos(a),z2=Math.sin(a),m2=Math.max(Math.abs(x2),Math.abs(z2));px=x2/m2*(HALF-1.5);pz=z2/m2*(HALF-1.5);}return [px,pz];}

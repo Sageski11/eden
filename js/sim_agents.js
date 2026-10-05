@@ -144,6 +144,7 @@ function childPlay(v,home){const b=home||G.center;if(!b){wait(v,1);return;}
 function festive(v){const c=festSpot();goTo(v,c[0]+(rnd()-.5)*8,c[1]+(rnd()-.5)*8,vv=>wait(vv,.8+rnd(),'dance',false));setThought(v,pickA(['What a feast!','Dance with me!','Praise the Spirit of the valley!','More ale!']));}
 function festSpot(){const m=built('market')[0]||built('well')[0]||G.center;if(!m)return [0,0];const [x,z]=doorOf(m);return [x,z];}
 function leisure(v,home){
+  if(typeof fetchWater==='function'&&rnd()<.14&&fetchWater(v))return;
   const tav=built('tavern')[0],mk=built('market')[0]||built('well')[0];
   if(tav&&rnd()<.45&&v.age>=16){goInside(v,tav,1.2+rnd()*1.5,'tavern',pickA(['An ale after a long day.','Did you hear the news?','To the tavern!']));return;}
   if(mk&&rnd()<.5){const [x,z]=doorOf(mk);goTo(v,x+(rnd()-.5)*5,z+(rnd()-.5)*5,vv=>wait(vv,.8+rnd(),'idle',false));setThought(v,pickA(['Lovely evening.','Gossip by the well…','Have you met the new family?']));return;}
@@ -166,7 +167,7 @@ function doJob(v){
   }
 }
 const seasonFood=()=>[.9,1.15,1.4,0][seasonN()];
-function workMul(){return (hasBuilt('smith')?1.2:1)*(.85+G.hap/100*.3)*(typeof eraMul==='function'?eraMul():1);}
+function workMul(){return (hasBuilt('smith')?1.2:1)*(.85+G.hap/100*.3)*(typeof eraMul==='function'?eraMul():1)*(typeof waterMul==='function'?waterMul():1);}
 function farmRate(f){if(!f||f.build)return 0;let r=.64*seasonFood()*(G.unl.rotation?1.2:1)*(1+(skLvl('farm')-1)*.04)*(G.sun>0?1.25:1)*(G.snow>0?0:1);if(f._mill)r*=1.3;if(G.harvest>0)r*=1.5;if(G.drought)r*=.6;if(wAt(f.x,f.z)>.15)r=0;return r*workMul();}
 function storeFor(m,x,z){let best=G.center,bd=G.center?Math.hypot(G.center.x-x,G.center.z-z):1e9;
   for(const b of buildings){if(b.build)continue;const ok=(m==='wood'&&b.type==='camp'&&b.variant==='lumber')||(m==='stone'&&b.type==='quarry');if(!ok)continue;const d=Math.hypot(b.x-x,b.z-z);if(d<bd){bd=d;best=b;}}return best;}

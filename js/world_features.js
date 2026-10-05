@@ -79,7 +79,7 @@ function impact(x,z){const R=11;flash=2;shake=1.6;sfx('thunder');setTimeout(()=>
   for(const b of buildings)if(Math.hypot(b.x-x,b.z-z)<R*2)realize(b);
 }
 function castWeather(id){
-  if(id==='p:sun'){if(G.sun>12){toast('The sun already shines');return true;}if(!spend(25))return true;G.sun=24;G.rain=0;G.snow=0;G.storm=0;chron('The Spirit parted the clouds. A golden day.');G.joy=Math.min(25,G.joy+2);sfx('chime');return true;}
+  if(id==='p:sun'){if(G.sun>12){toast('The sun already shines');return true;}if(G.openRain){G.openRain=false;chron('The Spirit parted the clouds. The first fire caught at last, and the settlers wept with relief.',true);}else if(!spend(25))return true;else chron('The Spirit parted the clouds. A golden day.');G.sun=24;G.rain=0;G.snow=0;G.storm=0;G.joy=Math.min(25,G.joy+2);sfx('chime');return true;}
   if(id==='p:storm'){if(!spend(70))return true;G.rain=20;G.rainI=1.6;G.storm=20;G.sun=0;chron('The Spirit called a thunderstorm over the valley.',true);sfx('thunder');return true;}
   if(id==='p:snow'){if(!spend(30))return true;G.snow=24;G.rain=0;G.sun=0;chron(seasonN()===3?'Deep snow fell at the Spirit’s word.':'Snow fell out of season. The folk shivered and wondered.');sfx('chime');return true;}
   if(id==='p:rainbow'){if(G.rain<=0&&G.t-(G.lastRain||-99)>14){toast('A rainbow needs rain first');return true;}if(G.rainbow>0){toast('The rainbow already shines');return true;}if(!spend(40))return true;G.rainbow=10;G.joy=Math.min(25,G.joy+6);chron('A great rainbow arched over '+G.town+'. The folk took it as a blessing.',true);sfx('chime');return true;}
