@@ -5,7 +5,7 @@ const COST={house:[[8,0,5],[10,0,6],[12,6,8],[10,16,10]],farm:[6,0,4],lumber:[5,
 function costOf(type,variant,level){if(type==='house'||type==='hall')return COST[type][level||0];if(type==='camp')return COST[variant]||COST.lumber;return COST[type];}
 const TYPE_R={house:2.4,farm:5.5,camp:4.4,quarry:3.9,well:1.7,smith:3.3,mill:3.2,tavern:4.7,church:6.6,market:4.9,tower:2.1,castle:12.5,hall:5.4,dock:3.2,fishmkt:4.4,lodge:3.6,shipyard:4.6,sawmill:3.8,mason:3.4};
 function startSite(type,x,z,rot,o={}){
-  const b=newRecord(type,x,z,rot,o.seed||((rnd()*1e9)|0));b.manual=true;b.cw=skLvl('work');b.cs=skLvl('stone');b.level=o.level!=null?o.level:(type==='house'||type==='hall'?0:null);b.variant=o.variant||null;
+  const b=newRecord(type,x,z,rot,o.seed||((rnd()*1e9)|0));b.manual=true;b.cw=skLvl('work');b.cs=skLvl('stone');b.level=o.level!=null?o.level:(type==='house'||type==='hall'?0:(typeof TIERED!=='undefined'&&TIERED.includes(type)?eraTierFor(type):null));b.variant=o.variant||null;
   if(o.w){b.w=o.w;b.d=o.d;}
   const [w,s,wk]=costOf(type,b.variant,b.level);
   b.build={need:{wood:w,stone:s},have:{wood:0,stone:0},inb:{wood:0,stone:0},work:wk,done:0,blessed:false};
@@ -251,7 +251,7 @@ function stuckCheck(){for(const b of buildings.slice()){const P=b.build;if(!P||b
     G.failCool[b.type+(b.variant||'')]=G.t+48;chron(`The folk gave up on the ${siteName(b)} — they could not work there.`);for(const v of G.vill)if(v.site===b.id)v.site=0;removeBuilding(b);gridDirty=true;}}}
 function upgradeTick(){
   const p=popN();const ups=buildings.filter(b=>b.upg).length;
-  if(G.center&&!G.center.build&&!G.center.upg){const want=G.era>=3?2:G.era>=1?1:0;if((G.center.level||0)<want){startUpgrade(G.center,(G.center.level||0)+1);return;}}
+  if(G.center&&!G.center.build&&!G.center.upg){const want=G.era>=7?5:G.era>=6?4:G.era>=5?3:G.era>=3?2:G.era>=1?1:0;if((G.center.level||0)<want){startUpgrade(G.center,(G.center.level||0)+1);return;}}
   if(ups>=1+Math.floor(p/30)||G.hap<42)return;
   const maxL=[0,1,2,3,3,4,5,6][G.era];
   const cand=buildings.filter(b=>b.type==='house'&&!b.build&&!b.upg&&(b.level||0)<maxL&&G.vill.some(v=>v.home===b.id));
@@ -415,7 +415,7 @@ function hourTick(){
   prayerTick();devHourly();
   const h=Math.floor(hod());
   if(h>=6&&h<=18&&h%2===0)planTick();
-  if(h%6===1)upgradeTick();if(h%3===0)stuckCheck();
+  if(h%6===1){upgradeTick();modernizeTick();}if(h%3===0)stuckCheck();
   if(h===5||h===12)assignJobs();
   if(G.center&&!G.center.build){const st=G.center.stock||{},sig=[Math.ceil(G.wood/8),Math.ceil(G.stone/8),Math.ceil(G.food/14)].map(x=>Math.min(x,14)).join();if(sig!==G.center._stockSig){G.center._stockSig=sig;G.center.stock={wood:G.wood,stone:G.stone,food:G.food};if(!G.center.upg&&!G.center.fire)realize(G.center);}}
 }

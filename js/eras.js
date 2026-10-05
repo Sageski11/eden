@@ -29,7 +29,7 @@ pickNeed=function(sites){
   if(e>=6)want('powerplant',p>=300&&!cnt('powerplant')&&stoneOk(60));
   if(e>=7)want('fusion',p>=480&&!cnt('fusion')&&stoneOk(90));
   if(e>=6&&cnt('school')<2)want('school',p>=300&&stoneOk(36));
-  return L.filter(n=>(G.failCool[n.type+(n.variant||'')]||0)<=G.t);
+  return L.filter(n=>(G.failCool[n.type+(n.variant||'')]||0)<=G.t&&(ERA_BUILD[n.type]||0)<=e);
 };
 // ---------------- effects of the machine age
 function eraBuilt(t){return buildings.filter(b=>b.type===t&&!b.build&&G.vill.some(v=>v.work===b.id)).length;}
