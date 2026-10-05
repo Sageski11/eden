@@ -64,3 +64,11 @@ node tools/showcase.js out.png "house:4,house:5,factory" 0.5 70 0.4 7   # stage 
 ## Sandbox
 
 Choose **Sandbox** on the title screen to build a whole city with no rules. Press **TAB** to open the Buildings page: every building of every age, with a small picture of each, grouped by age (Stone Age holds only Stone Age buildings, and so on). Click a plate to choose it, then click the land (R rotates, V varies). Dirt roads, paved streets, railways and highways are on the plates too, and in the Roads group of the toolbox. When the city is ready, press **Populate city** (you need a Town Hall of any age): the folk move in, the age of the city is taken from its newest building, and the god game carries on from there. `node tools/sbtest.js` exercises all of this headlessly.
+
+### More buildings, each with variants
+Every age now has at least ten buildings (forty-three new ones were added, e.g. Totem Pole, Granary, Monastery, Cathedral, Bank, Office Tower, Vertical Farm). Each new building has three named variants: pick one on its plate in the Buildings page, or press **C** while placing (or with a building selected) to step through them. They are described once with `defBuilding()` in `js/bdefs.js`; `node tools/bshot.js <ages>` draws a contact sheet of every variant.
+
+### How the simulation stays light
+- Villagers are simulated by distance from where you look: up to 30 units every frame, 30–100 once in four frames, beyond 100 once in sixteen, in longer steps (no hours of work are lost, so the economy does not depend on the camera). Hover the Folk count to see what everyone is doing.
+- Routes are remembered until the land or buildings change; chimneys out of sight spend no smoke particles.
+- Workshops are rows of data (`CHAINS` in `js/chains.js`: inputs, outputs, workers); the town as a whole is run once a day against household demand, not per person. Fires, harvests, fairs and fevers are rows of `EVENTS`, looked at once a day.
