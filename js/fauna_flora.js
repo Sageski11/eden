@@ -311,12 +311,12 @@ GRASS.mesh=new THREE.InstancedMesh(GRASS.geo,GRASS.mat,GRASS.cap);GRASS.mesh.set
   const fg=new THREE.BufferGeometry();fg.setAttribute('position',new THREE.Float32BufferAttribute(P,3));fg.setAttribute('color',new THREE.Float32BufferAttribute(C,3));fg.computeVertexNormals();
   GRASS.fmesh=new THREE.InstancedMesh(fg,GRASS.mat,3000);GRASS.fmesh.setColorAt(0,new THREE.Color());GRASS.fmesh.count=0;GRASS.fmesh.frustumCulled=false;scene.add(GRASS.fmesh);}
 const OCC=new Uint8Array(V);let occVer=-1;
-function stampOcc(){OCC.fill(0);for(const b of buildings){const r=(b.type==='farm'?Math.max(b.w||7,b.d||5)*.62:(b.r||2)*.95)+.6;const i0=Math.max(0,Math.floor(b.x-r+HALF)),i1=Math.min(N,Math.ceil(b.x+r+HALF)),j0=Math.max(0,Math.floor(b.z-r+HALF)),j1=Math.min(N,Math.ceil(b.z+r+HALF));
+function stampOcc(){OCC.fill(0);for(const b of allB()){const r=(b.type==='farm'?Math.max(b.w||7,b.d||5)*.62:(b.r||2)*.95)+.6;const i0=Math.max(0,Math.floor(b.x-r+HALF)),i1=Math.min(N,Math.ceil(b.x+r+HALF)),j0=Math.max(0,Math.floor(b.z-r+HALF)),j1=Math.min(N,Math.ceil(b.z+r+HALF));
   for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){if(Math.hypot(i-HALF-b.x,j-HALF-b.z)<r)OCC[j*S+i]=1;}}}
 const FLW=[0xf4f0e6,0xf2d24a,0xb48ad8,0xe86a5a,0x8ab0f0,0xf6a0c0];
 const _gm=new THREE.Matrix4(),_gq=new THREE.Quaternion(),_ge=new THREE.Euler(),_gv=new THREE.Vector3(),_gs=new THREE.Vector3(),_gc=new THREE.Color();
 function rebuildGrass(cx,cz,R){
-  const sig=buildings.length*7919+(buildings.length?buildings[buildings.length-1].id:0);if(sig!==occVer){occVer=sig;stampOcc();}
+  const AB=allB(),sig=AB.length*7919+(AB.length?AB[AB.length-1].id:0);if(sig!==occVer){occVer=sig;stampOcc();}
   const cell=.62,n0x=Math.floor((cx-R)/cell),n1x=Math.ceil((cx+R)/cell),n0z=Math.floor((cz-R)/cell),n1z=Math.ceil((cz+R)/cell);
   let n=0,nf=0;const M=GRASS.mesh,FM=GRASS.fmesh,snowy=SNOWF>.45;
   if(!snowy)for(let gz=n0z;gz<=n1z&&n<GRASS.cap;gz++)for(let gx=n0x;gx<=n1x&&n<GRASS.cap;gx++){

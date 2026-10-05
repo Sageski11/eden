@@ -322,15 +322,15 @@ function newDay(){if(G.menu)return;
   const d=dayN(),s=seasonN(),dis=dayInSeason(),p=popN();
   // season start
   if(dis===1){
-    if(s===0){G.snowmelt=2;chron('Spring came; snowmelt swelled the springs.');if(yearN()>=2&&rnd()<.3){G.rain=30;G.rainI=2.2;chron('Heavy spring rains lashed the valley.',true);}}
-    if(s===1&&rnd()<(yearN()>=2?.32:.18)){G.drought=true;chron('A hot, dry summer began. The ponds are shrinking.',true);}
-    if(s===2){G.drought=false;}
-    if(s===3){G.drought=false;chron('Winter settled over '+G.town+'. The water froze at the edges.');}
+    if(SHARED&&s===0){G.snowmelt=2;chron('Spring came; snowmelt swelled the springs.');if(yearN()>=2&&rnd()<.3){G.rain=30;G.rainI=2.2;chron('Heavy spring rains lashed the valley.',true);}}
+    if(SHARED&&s===1&&rnd()<(yearN()>=2?.32:.18)){G.drought=true;chron('A hot, dry summer began. The ponds are shrinking.',true);}
+    if(SHARED&&s===2){G.drought=false;}
+    if(SHARED&&s===3){G.drought=false;chron('Winter settled over '+G.town+'. The water froze at the edges.');}
     if(G.era>=2&&d>=G.raidCool&&!G.raid&&rnd()<(G.raids?.4:.55)){scheduleRaid();}
     if(G.era>=3&&d>=G.plagueCool&&rnd()<.12){startPlague();}
   }
-  if(G.snowmelt>0)G.snowmelt--;
-  G.noTrees=false;growForest();breedAnimals();if(G.center)G.env=envScan(G.center.x,G.center.z,70);G.fish=Math.min(1,(G.fish||1)+.07);if(G.noGame&&animals.filter(a=>G.center&&Math.hypot(a.x-G.center.x,a.z-G.center.z)<80).length>6)G.noGame=false;
+  if(SHARED&&G.snowmelt>0)G.snowmelt--;
+  G.noTrees=false;if(SHARED){growForest();breedAnimals();}if(G.center)G.env=envScan(G.center.x,G.center.z,70);G.fish=Math.min(1,(G.fish||1)+.07);if(G.noGame&&animals.filter(a=>G.center&&Math.hypot(a.x-G.center.x,a.z-G.center.z)<80).length>6)G.noGame=false;
   const mills=built('mill');for(const f of buildings)if(f.type==='farm')f._mill=mills.some(m=>Math.hypot(m.x-f.x,m.z-f.z)<26);
   // aging, deaths
   for(const v of G.vill.slice()){if(v.arriving||v.leaving)continue;v.age+=.2;
@@ -393,11 +393,11 @@ function hourTick(){
   const ch=buildings.some(b=>b.type==='church'&&!b.build&&G.vill.some(v=>v.work===b.id));
   G.faith=Math.min(faithCap(),G.faith+p*(.012+.05*G.hap/100)+.7+(ch?p*.015:0));
   if(isSunday()&&Math.floor(hod())===11&&ch){const att=G.vill.filter(v=>v.inside&&bById(v.inside)&&bById(v.inside).type==='church').length;G.faith=Math.min(faithCap(),G.faith+att*.6+3);if(att>3)sfx('bell');}
-  weatherHour();
+  if(SHARED){weatherHour();
   // weather
   const sm=(G.snowmelt>0?2.2:1)*(G.rain>0?1.6:1)*(G.drought?.4:1)*(wint?.5:1);for(const s of springs){if(s.base==null)s.base=s.rate;s.rate=s.base*sm;}
   if(G.rain>0){G.rain--;const add=.0045*G.rainI;for(let k=0;k<V;k++)if(W[k]>.05)W[k]+=add;if(G.drought){G.drought=false;chron('Rain broke the drought.');}if(G.rain<=0)G.rainI=1;}
-  if(G.drought){for(let k=0;k<V;k++)if(W[k]>0)W[k]=Math.max(0,W[k]-.0035);}
+  if(G.drought){for(let k=0;k<V;k++)if(W[k]>0)W[k]=Math.max(0,W[k]-.0035);}}
   if(G.harvest>0)G.harvest--;if(G.festival>0){G.festival--;if(G.festival<=0)endFestival();}
   // fires
   for(const b of buildings.slice()){if(!b.fire)continue;b.fire.t+=1;

@@ -103,9 +103,9 @@ let forestMask=new Float32Array(V);
 const AOF=new Float32Array(V);let aoSig='';
 function stampAOAt(x,z,r0,r1,amt){const i0=Math.max(0,Math.floor(x-r1+HALF)),i1=Math.min(N,Math.ceil(x+r1+HALF)),j0=Math.max(0,Math.floor(z-r1+HALF)),j1=Math.min(N,Math.ceil(z+r1+HALF));
   for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const d=Math.hypot(i-HALF-x,j-HALF-z);if(d>r1)continue;const v=amt*(d<r0?1:1-(d-r0)/(r1-r0));const k=j*S+i;if(v>AOF[k])AOF[k]=v;}}
-function updateAO(force){if(typeof buildings==='undefined')return;const sig=buildings.length+':'+(buildings.length?buildings[buildings.length-1].id:0)+':'+trees.length;if(!force&&sig===aoSig)return;aoSig=sig;AOF.fill(0);
+function updateAO(force){if(typeof buildings==='undefined')return;const AB=allB(),sig=AB.length+':'+(AB.length?AB[AB.length-1].id:0)+':'+trees.length;if(!force&&sig===aoSig)return;aoSig=sig;AOF.fill(0);
   for(const t of trees){if(t.t===4||t.t===5)continue;stampAOAt(t.x,t.z,.4,1.6*(t.s||1),.22);}
-  for(const b of buildings){if(b.type==='farm')continue;const r=(b.r||2)*.8;stampAOAt(b.x,b.z,r,r+1.8,.32);}}
+  for(const b of allB()){if(b.type==='farm')continue;const r=(b.r||2)*.8;stampAOAt(b.x,b.z,r,r+1.8,.32);}}
 function colorVert(i,j){
   const k=j*S+i,h=H[k];
   const sx=(H[j*S+Math.min(i+1,N)]-H[j*S+Math.max(i-1,0)])*.5,sz=(H[Math.min(j+1,N)*S+i]-H[Math.max(j-1,0)*S+i])*.5;

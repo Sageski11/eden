@@ -15,7 +15,7 @@ function townName(){return pickA(['Ash','Oak','Bram','Thorn','Wil','Elder','Stan
 function resetG(){for(const k in G)delete G[k];if(typeof netReset==='function')netReset();Object.assign(G,{dev:devNew(),tf:tfNew(),t:7,speed:1,paused:false,faith:160,food:70,wood:45,stone:0,era:0,hap:62,hapT:62,hapF:{},
   vill:[],bandits:[],markers:[],prayers:[],chron:[],center:null,rain:0,rainI:1,drought:false,snowmelt:0,harvest:0,festival:0,festCool:0,raid:null,raidCool:40,
   sad:0,grief:0,joy:0,nextV:1,town:townName(),phase:'pick',wantHouse:[],lastDay:-1,lastHour:-1,pid:1,flooded:0,floodMap:new Uint8Array(NN),siteFail:null,noTrees:false,
-  follow:null,pathBudget:0,prod:{food:0,wood:0,stone:0},prodY:{food:0,wood:0,stone:0},failCool:{},sk:{wood:0,work:0,stone:0,farm:0,fish:0,hunt:0},unl:{},fish:1,boatsBuilt:0,boatWork:0,sun:0,snow:0,rainbow:0,storm:0,env:null,lastRain:-99,noGame:false,cons:0,firstHut:false,raids:0,births:0,deaths:0,arrivals:0,prayerCool:{},plagueCool:0,lastFest:-9,storm:0});}
+  follow:null,pathBudget:0,prod:{food:0,wood:0,stone:0},prodY:{food:0,wood:0,stone:0},failCool:{},sk:{wood:0,work:0,stone:0,farm:0,fish:0,hunt:0},unl:{},fish:1,boatsBuilt:0,boatWork:0,sun:0,snow:0,rainbow:0,storm:0,env:null,lastRain:-99,noGame:false,cons:0,firstHut:false,raids:0,births:0,deaths:0,arrivals:0,prayerCool:{},plagueCool:0,lastFest:-9,storm:0});if(typeof sInit==='function')sInit();}
 const dayN=()=>Math.floor(G.t/24),hod=()=>G.t%24,seasonN=()=>Math.floor(dayN()/DPS)%4,yearN=()=>Math.floor(dayN()/(DPS*4))+1,dayInSeason=()=>dayN()%DPS+1;
 const isSunday=()=>dayN()%7===6;
 const dateStr=()=>`Year ${yearN()}, ${SEASONS[seasonN()]}, day ${dayInSeason()}`;
@@ -39,7 +39,7 @@ function rebuildGrid(){
     let c=1+sl*2.2;if(sl>1.3||w>.6)c=Infinity;else if(w>.12)c+=5;
     if(c<Infinity&&sampleArr(ROAD,x,z)>.3)c*=.6;gCost[k]=c;}
   gOcc.fill(0);
-  for(const b of buildings){if(b.type==='farm')continue;const r=b.r*.7;const i0=Math.floor((b.x-r+HALF)/GC),i1=Math.floor((b.x+r+HALF)/GC),j0=Math.floor((b.z-r+HALF)/GC),j1=Math.floor((b.z+r+HALF)/GC);
+  for(const b of allB()){if(b.type==='farm')continue;const r=b.r*.7;const i0=Math.floor((b.x-r+HALF)/GC),i1=Math.floor((b.x+r+HALF)/GC),j0=Math.floor((b.z-r+HALF)/GC),j1=Math.floor((b.z+r+HALF)/GC);
     for(let j=Math.max(0,j0);j<=Math.min(GN-1,j1);j++)for(let i=Math.max(0,i0);i<=Math.min(GN-1,i1);i++){const x=i*GC+1-HALF,z=j*GC+1-HALF;if(Math.hypot(x-b.x,z-b.z)<r)gOcc[j*GN+i]=b.id;}}
   gridDirty=false;
 }
@@ -75,7 +75,7 @@ function findPath(x0,z0,x1,z1,tb,sb){
 const SKIN=[0xe8c8a8,0xd8b090,0xc89878,0xe0bc98,0xb88a68,0x9a6a48,0x7a5038];
 const selRing=new THREE.Mesh(new THREE.RingGeometry(.45,.6,24),new THREE.MeshBasicMaterial({color:0xffe080,transparent:true,opacity:.9,depthTest:false,side:THREE.DoubleSide}));selRing.rotation.x=-PI/2;selRing.renderOrder=9;selRing.visible=false;scene.add(selRing);
 function renderAgents(){
-  drawPeople(G.vill.concat(G.bandits),TT);
+  drawPeople(allVill().concat(allBandits()),TT);
   const f=G.follow;if(f&&!f.hidden){selRing.visible=true;selRing.position.set(f.x,hAt(f.x,f.z)+.06,f.z);}else selRing.visible=false;
 }
 // ---------------------------------------------------------------- villagers

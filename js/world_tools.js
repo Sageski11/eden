@@ -13,7 +13,7 @@ let pCur=0;
 function spawn(x,y,z,vx,vy,vz,max,size,r,g,b,kind){const p=parts[pCur];pCur=(pCur+1)%PN;Object.assign(p,{x,y,z,vx,vy,vz,life:0,max,size,r,g,b,kind});}
 let nightF=0;
 function updateParticles(dt){
-  for(const b of buildings)for(const e of b.emit){e.acc+=dt*e.rate*4;while(e.acc>1){e.acc-=1;const s=e.dark?.32:.72;const n=nightF*.6;
+  for(const b of allB())for(const e of b.emit){e.acc+=dt*e.rate*4;while(e.acc>1){e.acc-=1;const s=e.dark?.32:.72;const n=nightF*.6;
     spawn(e.wx+(Math.random()-.5)*.2,e.wy,e.wz+(Math.random()-.5)*.2,(Math.random()-.5)*.2,.7+Math.random()*.4,(Math.random()-.5)*.2,3.5+Math.random()*2,.9,s*(1-n),s*(1-n),s*(1-n)*1.03,0);}}
   for(let i=0;i<PN;i++){const p=parts[i];if(p.life>=p.max){pAlpha[i]=0;continue;}p.life+=dt;const t=p.life/p.max;
     if(p.kind===1){p.vy-=18*dt;}else if(p.kind===3){p.vy-=3*dt;p.vx*=.98;p.vz*=.98;}else if(p.kind===0){p.vx+=.35*dt;p.vy*=.995;}
@@ -220,7 +220,7 @@ function applyBrush(dt){
 }
 function endStroke(){
   if(strokeBox){const [i0,j0,i1,j1]=strokeBox;const x0=i0-HALF,x1=i1-HALF,z0=j0-HALF,z1=j1-HALF;
-    for(const b of buildings){if(b.x+b.r>x0&&b.x-b.r<x1&&b.z+b.r>z0&&b.z-b.r<z1)realize(b);}
+    for(const b of allB()){if(b.x+b.r>x0&&b.x-b.r<x1&&b.z+b.r>z0&&b.z-b.r<z1)realize(b);}
     if(tool==='road'){for(const b of buildings)if(!b.manual&&b.type!=='house'&&b.x+12>x0&&b.x-12<x1&&b.z+12>z0&&b.z-12<z1){}recolorAll();}}
   if(MODE==='god')godStrokeEnd(strokeVol,hover);
   strokeBox=null;

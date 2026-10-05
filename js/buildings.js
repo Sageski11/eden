@@ -535,7 +535,7 @@ function realize(b){
 function addBuilding(rec){rec.id=nextId++;buildings.push(rec);return rec;}
 function removeBuilding(b){const i=buildings.indexOf(b);if(i>=0)buildings.splice(i,1);if(b.obj){scene.remove(b.obj);disposeObj(b.obj);}}
 function rebuildNear(x,z,R,skip,force){for(const o of buildings){if(o===skip)continue;if(Math.hypot(o.x-x,o.z-z)<R+o.r){if(force||sigOf(analyze(o))!==o.sig)realize(o);}}refreshCivic();}
-function refreshCivic(){civicSpots=buildings.filter(b=>['castle','church','market'].includes(b.type)).map(b=>[b.x,b.z,(b.type==='castle'?26:16)**2]);}
+function refreshCivic(){civicSpots=allB().filter(b=>['castle','church','market'].includes(b.type)).map(b=>[b.x,b.z,(b.type==='castle'?26:16)**2]);}
 function canPlace(b,r){
   if(Math.abs(b.x)>HALF-r*.6||Math.abs(b.z)>HALF-r*.6)return 'Too close to the edge of the world';
   const wc=wAt(b.x,b.z);

@@ -9,7 +9,7 @@ const path = require('path');
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'] }).catch(async () => chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox'] }));
   const page = await browser.newPage({ viewport: { width: 1400, height: 800 } });
   const errs = [];
-  page.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
+  page.on('pageerror', e => errs.push('PAGEERROR ' + e.message + ' @ ' + (e.stack || '').split('\n').slice(1, 4).join(' / ')));
   page.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE ' + m.text()); });
   await page.goto('file://' + file);
   await page.waitForTimeout(+flag('--wait') || 4000);

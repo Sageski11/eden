@@ -20,7 +20,7 @@ Object.assign(HINTS,{
 const MK={settle:{c:0xd4a73c,c2:0x8e2f1f,n:'Settle here'},farm:{c:0x7aa04a,c2:0xd8b84a,n:'Farm here'},worship:{c:0xe8e2d2,c2:0x2f4a8e,n:'Worship here'},forbid:{c:0x2a2018,c2:0xb03020,n:'Keep clear'}};
 const markGrp=new THREE.Group();scene.add(markGrp);
 function refreshMarkers(){while(markGrp.children.length){const m=markGrp.children.pop();m.traverse(o=>o.geometry&&o.geometry.dispose());}
-  for(const m of G.markers){const B=new Builder(rnd,0),F=new Builder(rnd,0);const g=hAt(m.x,m.z);const d=MK[m.k];
+  for(const m of allMarkers()){const B=new Builder(rnd,0),F=new Builder(rnd,0);const g=hAt(m.x,m.z);const d=MK[m.k];
     B.box(0,g-.2,0,.14,4.6,.14,0x5a4030);B.box(0,g+4.3,0,.12,.12,1.6,0x5a4030);
     F.box(0,-1.5,.75,.05,1.5,1.3,d.c);F.box(0,-1.1,.75,.06,.35,1.32,d.c2);if(m.k==='forbid'){F.beam(0,-2.2,.2,0,-.6,1.3,.12,d.c2);}
     const grp=new THREE.Group();grp.position.set(m.x,0,m.z);grp.add(B.mesh(matB));const f=F.mesh(matB);f.position.set(0,g+4.35,0);grp.add(f);grp.userData.flag=f;markGrp.add(grp);
@@ -88,7 +88,7 @@ function smite(x,z){lightning(x,z);sfx('thunder');
   let k=0;for(const b of G.bandits.slice())if(Math.hypot(b.x-x,b.z-z)<3.8){hitBandit(b,99);k++;}
   for(let i=trees.length-1;i>=0;i--){const t=trees[i];if(Math.hypot(t.x-x,t.z-z)<2.2){trees.splice(i,1);treesDirty=true;}}
   for(const v of G.vill.slice())if(!v.hidden&&Math.hypot(v.x-x,v.z-z)<1.6){chron(`The Spirit’s lightning struck down ${fullName(v)}. The folk are afraid.`,true);G.grief+=4;removeVillager(v,'died');}
-  for(const b of buildings)if(Math.hypot(b.x-x,b.z-z)<b.r+.3&&rnd()<.5)ignite(b,`Lightning set the ${b.info?b.info.name:'building'} alight!`);
+  for(const b of allB())if(Math.hypot(b.x-x,b.z-z)<b.r+.3&&rnd()<.5)ignite(b,`Lightning set the ${b.info?b.info.name:'building'} alight!`);
   if(k)chron(`The Spirit’s lightning struck down ${k} raider${k>1?'s':''}.`);}
 // ---------------- rain / snow
 const RN=2600,rGeo=new THREE.BufferGeometry(),rP=new Float32Array(RN*2*3),rE=new Float32Array(RN*2);
@@ -223,9 +223,9 @@ let aoT=0,treeT=0,last=performance.now(),TT=0,recolorT=0,drownT=0,evalI=0,evalT=
 function gameStep(dtH){
   G.pathBudget=14;
   const h0=Math.floor(G.t);G.t+=dtH;
-  for(let h=h0+1;h<=Math.floor(G.t);h++){if(h%24===5&&G.phase==='play')newDay();if(G.phase==='play')hourTick();}
+  for(let h=h0+1;h<=Math.floor(G.t);h++)eachSettlement(i=>{SHARED=i===0;if(h%24===5&&G.phase==='play')newDay();if(G.phase==='play')hourTick();});SHARED=true;
   const n=Math.max(1,Math.ceil(dtH/.06)),sd=dtH/n;
-  for(let s=0;s<n;s++){for(const v of G.vill.slice())updAgent(v,sd);for(const b of G.bandits.slice())updAgent(b,sd);towersShoot(sd);}
+  for(let s=0;s<n;s++)eachSettlement(()=>{for(const v of G.vill.slice())updAgent(v,sd);for(const b of G.bandits.slice())updAgent(b,sd);towersShoot(sd);});
   if(dtH>0)updateAnimals(dtH);
   // seasons
   const se=seasonN(),k=dtH;
@@ -235,7 +235,7 @@ function gameStep(dtH){
   if(WINTER!==prevWinter||Math.abs(AUTUMN-prevAut)>.08){prevWinter=WINTER;prevAut=AUTUMN;treesDirty=true;}
   if(G.hill){const hl=G.hill,step=Math.min(dtH*4,1-hl.t);hl.t+=step;const R=14;const i0=Math.max(0,Math.floor(hl.x+HALF-R)),i1=Math.min(N,Math.ceil(hl.x+HALF+R)),j0=Math.max(0,Math.floor(hl.z+HALF-R)),j1=Math.min(N,Math.ceil(hl.z+HALF+R));
     for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const d=Math.hypot(i-HALF-hl.x,j-HALF-hl.z);if(d<R){const f=.5+.5*Math.cos(PI*d/R);H[j*S+i]+=step*9.5*f;}}
-    refreshTerrain(i0,j0,i1,j1);treesDirty=true;if(hl.t>=1){G.hill=null;for(const b of buildings)if(Math.hypot(b.x-hl.x,b.z-hl.z)<R+b.r)realize(b);gridDirty=true;}}
+    refreshTerrain(i0,j0,i1,j1);treesDirty=true;if(hl.t>=1){G.hill=null;for(const b of allB())if(Math.hypot(b.x-hl.x,b.z-hl.z)<R+b.r)realize(b);gridDirty=true;}}
 }
 const PROF={};
 function frame(now){
@@ -253,9 +253,9 @@ function frame(now){
   if(painting)applyBrush(dt);
   let _pt=performance.now();const PT=k=>{const n=performance.now();PROF[k]=(PROF[k]||0)+n-_pt;_pt=n;};
   if(MODE==='god'){
-    let dtH=0;if(!G.paused&&!PAUSED){const hh=hod();const night=(hh>22.3||hh<4.6)&&!(G.raid&&G.raid.active)&&!buildings.some(b=>b.fire)&&G.speed<10;dtH=dt/HOUR_REAL*G.speed*(night?3:1);}
+    let dtH=0;if(!G.paused&&!PAUSED){const hh=hod();const night=(hh>22.3||hh<4.6)&&!(G.raid&&G.raid.active)&&!allB().some(b=>b.fire)&&G.speed<10;dtH=dt/HOUR_REAL*G.speed*(night?3:1);}
     if(G.phase==='pick'||G.phase==='shape'){if(G.phase==='pick')startAuto+=dt;dtH=0;updateAnimals(dt/HOUR_REAL);}
-    gameStep(dtH);updateBoats(dtH);netFrame(dt);PT('game');
+    gameStep(dtH);eachSettlement(()=>updateBoats(dtH));netFrame(dt);PT('game');
     if(G.phase==='shape'){envT+=dt;if(envT>1.5){envT=0;envRep=null;updateUI();}}
     setTime(G.menu?menuSkyHour():hod());
     const rv=G.rain>0||G.snow>0?1:0;rainU.uA.value+=((rv?.55:0)-rainU.uA.value)*Math.min(1,dt*1.5);rainU.uSnow.value=seasonN()===3||G.snow>0?1:0;rainU.uT.value=TT;rainU.uC.value.set(cam.tx,cam.ty,cam.tz);rainMesh.visible=rainU.uA.value>.01;
@@ -264,7 +264,7 @@ function frame(now){
     for(const b of bolts){b.t-=dt;b.L.material.opacity=Math.max(0,b.t/.35);}bolts=bolts.filter(b=>{if(b.t<=0){scene.remove(b.L);b.L.geometry.dispose();return false;}return true;});
     SIM.steps=G.paused?0:waterU.uIce.value>.7?1:(G.speed>=3?6:4);
     updateSites(dt);
-    for(const b of buildings)if(b._flames&&b.fire)for(const f of b._flames){const s=.75+.3*Math.sin(TT*13+f.userData.ph)+.15*Math.sin(TT*29+f.userData.ph);f.scale.set(1,s,1);}
+    for(const b of allB())if(b._flames&&b.fire)for(const f of b._flames){const s=.75+.3*Math.sin(TT*13+f.userData.ph)+.15*Math.sin(TT*29+f.userData.ph);f.scale.set(1,s,1);}
     for(const g of markGrp.children){const f=g.userData.flag;if(f)f.rotation.y=Math.sin(TT*2.3+g.position.x)*.4;}
     PT('godmisc');renderAgents();PT('agents');
     rainbow.visible=G.rainbow>0;if(rainbow.visible){rainbow.userData.t=Math.min(1,(rainbow.userData.t||0)+dt*.3);const c=G.center||{x:cam.tx,z:cam.tz};const sd=skyU.sunDir.value;rainbow.position.set(c.x-sd.x*200,hAt(c.x,c.z)-10,c.z-sd.z*200);rainbow.rotation.y=Math.atan2(-sd.x,-sd.z);}else rainbow.userData.t=0;
@@ -284,10 +284,10 @@ function frame(now){
   aoT+=dt;if(aoT>1.5){aoT=0;updateAO();}
   PT('misc');recolorStep(Math.ceil(S/24));PT('recolor');
   drownT+=dt;if(drownT>1.5){drownT=0;const n=trees.length;for(let i=trees.length-1;i>=0;i--){const t=trees[i];if(t.t!==4&&wAt(t.x,t.z)>(t.t===3?1.2:.7))trees.splice(i,1);}if(n!==trees.length){treesDirty=true;gridDirty=true;}}
-  evalT+=dt;if(evalT>.25&&buildings.length&&!painting){evalT=0;for(let q=0;q<3;q++){evalI=(evalI+1)%buildings.length;const b=buildings[evalI];if(!b)break;const s=sigOf(analyze(b));if(s!==b.sig){realize(b);if(selected===b)showInspector();}}}
+  evalT+=dt;if(evalT>.25&&buildings.length&&!painting){evalT=0;const AB=allB();for(let q=0;q<3;q++){evalI=(evalI+1)%AB.length;const b=AB[evalI];if(!b)break;const s=sigOf(analyze(b));if(s!==b.sig){realize(b);if(selected===b)showInspector();}}}
   treeT+=dt;if(typeof TREE2!=='undefined'){TREE2.u.uTime.value=TT;TREE2.u.uWind.value=1+rainU.uA.value*1.5;if(Math.hypot(cam.tx-TREE2.cx,cam.tz-TREE2.cz)>20)treesDirty=true;}PT('misc');if(treesDirty&&treeT>.25){treeT=0;rebuildTrees();}PT('trees');
   if(MODE==='sandbox')updateGhost(now);updateRing();
-  for(const b of buildings)for(const a of b.anims){const o=a.obj;if(!o)continue;
+  for(const b of allB())for(const a of b.anims){const o=a.obj;if(!o)continue;
     if(a.type==='spin')o.rotation[a.axis]+=a.speed*dt*(MODE==='god'&&G.paused?0:1);
     else if(a.type==='flag')o.rotation.y=a.base+Math.sin(TT*2.6+a.ph)*.45+Math.sin(TT*5.3+a.ph)*.12;
     else if(a.type==='swing')o.rotation.x=Math.sin(TT*1.7+a.ph)*.12;

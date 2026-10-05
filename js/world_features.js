@@ -36,7 +36,7 @@ function updateBoats(dtH){
   for(const d of docks){if(!d._berth){const wl=d._wl||analyze(d).wLocal;d._wl=wl;let len=6;for(let s=2;s<16;s+=.5){if(wAt(d.x+(wl.x*Math.cos(d.rot)+wl.z*Math.sin(d.rot))*s,d.z+(-wl.x*Math.sin(d.rot)+wl.z*Math.cos(d.rot))*s)>1.1){len=s+2.5;break;}}
       const wx=wl.x*Math.cos(d.rot)+wl.z*Math.sin(d.rot),wz=-wl.x*Math.sin(d.rot)+wl.z*Math.cos(d.rot);d._berth=[d.x+wx*(len+1.5),d.z+wz*(len+1.5)];}
     const want=Math.min(2,G.boatsBuilt||0);let mine=boats.filter(b=>b.dock===d.id);
-    while(mine.length<want&&boats.length<(G.boatsBuilt||0)){const m=makeBoatMesh(G.unl.sails,pickA([0x6b4a2e,0x5a3d26,0x7a5634]));scene.add(m);const bo={dock:d.id,m,x:d._berth[0],z:d._berth[1],rot:0,state:'moor',t:0};boats.push(bo);mine=boats.filter(b=>b.dock===d.id);}
+    while(mine.length<want&&boats.filter(q=>docks.some(o=>o.id===q.dock)).length<(G.boatsBuilt||0)){const m=makeBoatMesh(G.unl.sails,pickA([0x6b4a2e,0x5a3d26,0x7a5634]));scene.add(m);const bo={dock:d.id,m,x:d._berth[0],z:d._berth[1],rot:0,state:'moor',t:0};boats.push(bo);mine=boats.filter(b=>b.dock===d.id);}
     const crew=G.vill.filter(v=>v.work===d.id&&v.inside===d.id).length;d._crew=crew;
     mine.forEach((bo,i)=>{if(bo.sail!==!!G.unl.sails){scene.remove(bo.m);bo.m.geometry.dispose();bo.m=makeBoatMesh(G.unl.sails,0x6b4a2e);scene.add(bo.m);bo.sail=!!G.unl.sails;}
       const sp=(G.unl.sails?14:9)*dtH;
@@ -45,7 +45,7 @@ function updateBoats(dtH){
         else{bo.x+=dx/dd*Math.min(sp,dd);bo.z+=dz/dd*Math.min(sp,dd);bo.rot+=angDiff(Math.atan2(dx,dz),bo.rot)*.1;}}
       else if(bo.state==='fish'){bo.t-=dtH;if(bo.t<=0||crew<=i||hod()>18.5){bo.state='back';bo.tx=d._berth[0]+i*2.5;bo.tz=d._berth[1];}}
       const y=hAt(bo.x,bo.z)+wAt(bo.x,bo.z);bo.m.position.set(bo.x,y-.12+Math.sin(TT*1.7+i)*.04,bo.z);bo.m.rotation.set(Math.sin(TT*1.3+i)*.04,bo.rot,Math.sin(TT*1.1+i)*.05);});}
-  for(let i=boats.length-1;i>=0;i--){if(!docks.some(d=>d.id===boats[i].dock)){scene.remove(boats[i].m);boats.splice(i,1);}}
+  const ABd=allB().filter(b=>b.type==='dock'&&!b.build);for(let i=boats.length-1;i>=0;i--){if(!ABd.some(d=>d.id===boats[i].dock)){scene.remove(boats[i].m);boats.splice(i,1);}}
 }
 function findFishingWater(x,z,R){for(let t=0;t<30;t++){const a=Math.random()*TAU,r=8+Math.random()*R,tx=x+Math.cos(a)*r,tz=z+Math.sin(a)*r;if(wAt(tx,tz)<1)continue;
     let ok=true;for(let s=0;s<=1;s+=.05){if(wAt(lerp(x,tx,s),lerp(z,tz,s))<.45){ok=false;break;}}if(ok)return [tx,tz];}return null;}
