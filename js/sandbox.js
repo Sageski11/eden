@@ -225,7 +225,7 @@ function sbPopulate(fill){const st=sbStats();if(!st.hall)return;const lines=G.ne
   for(const b of keep){b.manual=true;b.cw=skLvl('work');b.cs=skLvl('stone');b.build=null;b.upg=null;if(b.type==='house'&&b.level==null)b.level=3;}
   G.center=st.hall;makePlan(G.center);for(const b of keep)onPlannedBuild(b);
   const target=Math.max(5,Math.round(st.beds*fill));
-  G.food=target*9+80;G.wood=90+target*2;G.stone=age>=1?80+target*2:0;G.faith=120;G.hap=G.hapT=64;
+  G.food=target*9+80;G.wood=90+target*2;G.stone=age>=1?80+target*2:0;G.faith=120;G.hap=G.hapT=64;G.center.stock={wood:G.wood,stone:G.stone,food:G.food};
   // families move in
   let left=target;const homes=keep.filter(b=>b.type==='house'||b.type==='hall');
   for(const h of homes.sort(()=>rnd()-.5)){if(left<=0)break;const cap=h.type==='house'?(h._cap||3):(h.level?2:6),n=Math.min(cap,left);const fam=pickA(FAM),[dx,dz]=doorOf(h);let prev=null;

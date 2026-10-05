@@ -200,7 +200,7 @@ function loadTown(td){for(const b of buildings.slice())removeBuilding(b);let mx=
   G.center=bById(td.center);if(!G.sk)G.sk={wood:0,work:0,stone:0,farm:0,fish:0,hunt:0};if(!G.unl)G.unl={};if(!G.failCool)G.failCool={};devEnsure();tfEnsure();
   if(G.center&&!G.plan)makePlan(G.center);}
 function loadGod(str){const o=JSON.parse(str);if(o.mode!=='god'||o.N!==N)throw new Error('bad');
-  enterGodUI();resetG();
+  enterGodUI();resetG();SB.paved.fill(0);
   H.set(b64f32(o.H));W.set(b64f32(o.W));ROAD.set(b64f32(o.R));F.fill(0);trees.length=0;for(const t of o.trees)trees.push(t);treesDirty=true;
   springs.length=0;for(const p of o.springs)springs.push(p);refreshSprings();
   nextId=1;
@@ -250,7 +250,7 @@ function gameStep(dtH){
 }
 const PROF={};
 function frame(now){
-  if(MODE==='title'||SB.open||(PAUSED&&frame.pr>1)){last=now;requestAnimationFrame(frame);return;}
+  if(MODE==='title'||SB.open||SB.iconBusy||(PAUSED&&frame.pr>1)){last=now;requestAnimationFrame(frame);return;}
   if(PAUSED)frame.pr=(frame.pr||0)+1;else frame.pr=0;
   const dt=HM.fixDt||Math.min(.05,(now-last)/1000);last=now;TT+=dt;if(HM.fixT!=null)TT=HM.fixT;// (test hook: pins time so screenshots are reproducible)
   if(MODE==='god'&&G.menu)menuCam(dt);
