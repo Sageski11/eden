@@ -1,7 +1,7 @@
 'use strict';
 // ================================================================ GOD GAME — powers, UI, visuals, loop
 const $=id=>document.getElementById(id);
-function godToolDefs(){const e=G.era||0,L=r=>e>=r?null:`Unlocks in the ${ERAS[r].name} era`;
+function godToolDefs(){const e=G.era||0,L=r=>e>=r?null:`Unlocks in the ${ERAS[r].name}`;
   return [
     ['Shape the land',[['raise','Raise','1','~'],['lower','Lower','2','~'],['smooth','Smooth','3','~'],['flatten','Flatten','4','~'],['cliff','Cliff','5','~',L(1)],['canyon','Canyon','6','~',L(1)],['greathill','Great hill','7',120,L(3)]]],
     ['Water & nature',[['pour','Pour water','8','~'],['spring','Spring','9',30,L(1)],['drain','Drain','0','~'],['plant','Grow forest','T','~'],['w:deer','Deer herd','',20],['w:boar','Boar','',20,L(1)],['w:hare','Hares','',8],['w:fox','Foxes','',10],['w:horse','Wild horses','',25,L(1)]]],

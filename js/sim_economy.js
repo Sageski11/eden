@@ -226,6 +226,8 @@ function findSite(need){
   if(type==='house'&&G.era>=1&&!G.plan){for(const o of buildings){if(o.type!=='house')continue;const w=Math.round((3.1+rnd()*.9)*10)/10;
     for(const side of [-1,1]){const off=(o.w+w)/2*side,cs=Math.cos(o.rot),sn=Math.sin(o.rot);cands.push([o.x+off*cs,o.z-off*sn,{o,rot:o.rot,w,d:o.d,size:rowSize(o)}]);}}}
   const ok=[];for(const [x,z,snap] of cands){const s=evalSite(need,x,z,snap);if(s==null)continue;ok.push({x,z,snap,s});}
+  if(!ok.length&&G.plan&&['market','tavern','church','mill','smith','mason','sawmill','school','well'].includes(type)){// frontage is full: build on the edge of town instead
+    for(let i=0;i<160;i++){const a=rnd()*TAU,d=R0*.3+rnd()*(R0+28),x=c.x+Math.cos(a)*d,z=c.z+Math.sin(a)*d,snap={rot:faceStreetRot(x,z,rnd()*TAU)};const s=evalSite(need,x,z,snap);if(s!=null)ok.push({x,z,snap,s});}}
   ok.sort((a,b)=>b.s-a.s);const [cx,cz]=doorOf(c);
   for(const o of ok.slice(0,6)){const p=findPath(cx,cz,o.x,o.z,0,c.id);if(p){const last=p[p.length-2]||p[0];if(!last||Math.hypot(last[0]-o.x,last[1]-o.z)<TYPE_R[type]+4)return o;}}
   return null;

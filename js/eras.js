@@ -17,6 +17,7 @@ Object.assign(TYPE_R,{factory:6.2,school:4.8,station:7,powerplant:7.5,fusion:6})
 Object.assign(FPR,{factory:[-5.2,5.2,-4.2,4.2],school:[-4.6,4.6,-3.4,3.4],station:[-6.5,6.5,-4.5,4.5],powerplant:[-7,7,-6,6],fusion:[-5.5,5.5,-5.5,5.5]});
 Object.assign(SLOTJ,{factory:['machinist',4],school:['scholar',2],station:['stationmaster',1],powerplant:['engineer',3],fusion:['engineer',2]});
 Object.assign(BT,{factory:'Factory',school:'Academy',station:'Railway Station',powerplant:'Power Station',fusion:'Fusion Reactor'});
+for(const g of TOOLDEFS)if(g[0]==='Build')for(const k of ['factory','school','station','powerplant','fusion'])g[1].push(['b:'+k,BT[k],'']);
 // the planner asks for the buildings of the age
 const _pickNeed0=pickNeed;
 pickNeed=function(sites){
