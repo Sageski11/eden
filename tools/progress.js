@@ -22,15 +22,17 @@ const path = require('path');
       // the bot: feed, calm, protect, approve
       G.food = Math.max(G.food, popN() * 6 + 40); G.faith = Math.max(G.faith, 200); G.hap = Math.max(G.hap, 58); G.hapT = Math.max(G.hapT, 58);
       G.wood = Math.max(G.wood, 120); G.stone = Math.max(G.stone, 120); G.raid = null; G.raidCool = 1e9; G.bandits.length = 0; G.sad = Math.min(G.sad, 3);
-      if (G.dev) { G.dev.doubt = Math.min(G.dev.doubt, 12); }
+      if (G.dev && !window.__doubt) { G.dev.doubt = Math.min(G.dev.doubt, 12); }
+      if (G.dev && window.__doubt) { G.dev.doubt = Math.max(G.dev.doubt, 60); G.hap = Math.max(G.hap, 58); }
       for (const v of G.vill) if (v.sick && Math.random() < .5) v.sick = 0;
       for (const p of G.tf.pet.slice()) tfDecide(p.id, true);
-      if (window.__cheat) { for (const k in G.sk) G.sk[k] = Math.max(G.sk[k], 700); checkUnlocks(); if (popN() < 130 && G.center && !G.center.build && dayN() % 2 === 0) arriveFamily(3); }
+      if (window.__jump && dayN() >= 30 && G.era < window.__jump) { G.era = window.__jump; G.unl.steam = true; if (window.__jump >= 6) G.unl.electric = true; if (window.__jump >= 7) G.unl.computing = true; G.sk.machine = 800; G.sk.science = 800; }
+      if (window.__cheat) { for (const k in G.sk) G.sk[k] = Math.max(G.sk[k], 700); checkUnlocks(); if (popN() < (window.__jump ? 560 : 130) && G.center && !G.center.build && dayN() % 2 === 0) arriveFamily(3); }
       for (let i = 0; i < 240; i++) gameStep(0.1);
     };
     window.__stat = () => { const cnt = {}; for (const b of buildings) cnt[b.type + (b.type === 'house' ? 'L' + (b.level == null ? '?' : b.level) : '')] = (cnt[b.type + (b.type === 'house' ? 'L' + (b.level == null ? '?' : b.level) : '')] || 0) + 1; return { day: dayN(), year: yearN(), era: ERAS[G.era].name, castle: (() => { const c = buildings.find(b => b.type === 'castle'); if (!c) return 'none'; const P = c.build; return P ? { build: true, done: +P.done.toFixed(1), work: P.work, have: P.have, need: P.need, inb: P.inb, idle: P._idle, builders: G.vill.filter(v => v.site === c.id).length } : 'built'; })(), towers: buildings.filter(b => b.type === 'tower').map(b => b.build ? 'b' : 'ok').join(''), failCool: Object.keys(G.failCool).filter(k => G.failCool[k] > G.t).join(), siteFail: G.siteFail && G.siteFail.type, pop: popN(), hap: Math.round(G.hap), blds: buildings.length, poll: Math.round(G.poll || 0), lines: G.net ? G.net.lines.map(l => l.kind).join() : '', sk: Object.fromEntries(Object.entries(G.sk).map(([k, v]) => [k, skLvl(k)])), next: ERA_REQ[G.era + 1] && ERA_REQ[G.era + 1].txt, ok: ERA_REQ[G.era + 1] && ERA_REQ[G.era + 1].ok(), cnt }; };
   });
-  if (process.env.CHEAT) await page.evaluate(() => { window.__cheat = true; });
+  if (process.env.CHEAT) await page.evaluate((j) => { window.__cheat = true; if (j) window.__jump = +j; }, process.env.JUMP || 0); if (process.env.DOUBT) await page.evaluate(() => { window.__doubt = true; });
   let lastEra = -1;
   for (let d = 0; d < maxDays; d += 10) {
     const r = await page.evaluate(() => { for (let i = 0; i < 10; i++) __day(); const s = __stat(); s.era_i = G.era; return s; });
@@ -39,6 +41,8 @@ const path = require('path');
     if (errs.length) break;
   }
   console.log('CASTLELOG', JSON.stringify(await page.evaluate(() => __castleLog)), JSON.stringify(await page.evaluate(() => G.chron.filter(c => /castle|gave up/i.test(c.t)).slice(0, 12).map(c => c.d + ' ' + c.t))));
+  if (process.env.FINISH) { const j = await page.evaluate(() => { const o = { cult: G.dev.cult && { name: G.dev.cult.name, key: G.dev.cult.key, s: +G.dev.cult.strength.toFixed(2) }, atrocities: G.dev.atrocities, sin: Math.round(G.dev.sin), pop: popN(), log: G.dev.log.slice(-4).map(l => l.t) }; devJudge('firestorm'); return o; });
+    console.log('BEFORE', JSON.stringify(j)); const r2 = await page.evaluate(() => { let n = 0; while (!G.dev.done && n++ < 200) { for (let i = 0; i < 24; i++) gameStep(0.1); } return { done: G.dev.done, pop: popN(), blds: buildings.length, hrs: n, reckon: document.getElementById('reckon').innerText.replace(/\n+/g, ' | ').slice(0, 400) }; }); console.log('AFTER', JSON.stringify(r2)); }
   const last = await page.evaluate(() => __stat()); console.log('FINAL', JSON.stringify(last));
   console.log(errs.length ? errs.slice(0, 6).join('\n') : 'NO ERRORS');
   await browser.close(); process.exit(errs.length ? 1 : 0);

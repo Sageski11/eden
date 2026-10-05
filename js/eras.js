@@ -22,7 +22,7 @@ for(const g of TOOLDEFS)if(g[0]==='Build')for(const k of ['factory','school','st
 const _pickNeed0=pickNeed;
 pickNeed=function(sites){
   const L=_pickNeed0(sites),p=popN(),e=G.era||0,building=t=>sites.some(s=>s.type===t&&s.build),stoneOk=n=>cnt('quarry')>0||G.stone>=n;
-  const want=(t,ok)=>{if(ok&&!building(t)&&!L.some(n=>n.type===t))L.push({type:t});};
+  const want=(t,ok)=>{if(ok&&!building(t)&&!L.some(n=>n.type===t))L.unshift({type:t});};// the age's own works come first
   if(e>=5){
     want('factory',p>=140&&cnt('factory')<Math.min(3,1+Math.floor(p/200))&&stoneOk(40));
     want('school',p>=150&&!cnt('school')&&stoneOk(36));

@@ -159,12 +159,12 @@ function devReckoning(){const d=G.dev,j=d.judging;if(!j||d.done)return;d.done=tr
   const L=devLedger();L.push(e);devSaveLedger(L);devShowReckoning(e,L);}
 function devShowReckoning(e,L){const el=$('reckon');if(!el)return;
   const verdict=e.justified?'Their sins were many. The judgment was just.':'Their sins did not yet outweigh their goodness. The Spirit may regret this.';
-  el.innerHTML=`<div class="rcard glass"><h2>THE RECKONING</h2><div class="sub">${esc(e.town)} · an age of ${esc(e.era)}</div>
+  el.innerHTML=`<div class="rcard glass"><h2>THE RECKONING</h2><div class="sub">${esc(e.town)} · the ${esc(e.era)}</div>
     <div class="rrow"><span>Lasted</span><b>${e.years} year${e.years===1?'':'s'}</b></div><div class="rrow"><span>Greatest number of souls</span><b>${e.peak}</b></div>
     <div class="rrow"><span>Atrocities committed</span><b>${e.atrocities}</b></div>${e.doctrine?`<div class="rrow"><span>False creed</span><b>${esc(e.doctrine)}</b></div>`:''}
     <div class="rrow"><span>Judgment</span><b>${esc(e.judgment)}</b></div><div class="rrow"><span>The faithful who escaped</span><b>${e.remnant}</b></div>
     <p class="verdict">${verdict}</p>
-    ${L.length>1?`<div class="rages"><i>Ages before this one</i>${L.slice(0,-1).slice(-5).reverse().map(a=>`<div>${esc(a.town)} — ${esc(a.era)}, ${a.years}y · ${esc(a.judgment)}</div>`).join('')}</div>`:''}
+    ${L.length>1?`<div class="rages"><i>Ages before this one</i>${L.slice(0,-1).slice(-5).reverse().map(a=>`<div>${esc(a.town)} — the ${esc(a.era)}, ${a.years}y · ${esc(a.judgment)}</div>`).join('')}</div>`:''}
     <div style="text-align:center;margin-top:14px"><button class="primary" id="rkNext">Begin the next age</button></div></div>`;
   el.classList.remove('hidden');$('rkNext').onclick=()=>{el.classList.add('hidden');for(const id of ['gtop','prayers'])$(id)&&$(id).classList.add('hidden');showSetup();};}
 function devApplyMeta(){const L=devLedger();if(!L.length)return;const rem=L.slice(-5).reduce((a,x)=>a+(x.remnant||0),0);const bonus=Math.min(120,L.length*10+rem*6);G.faith=Math.min(faithCap(),G.faith+bonus);G.dev.legacy=bonus;}

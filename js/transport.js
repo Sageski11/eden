@@ -47,7 +47,7 @@ function netMakeVehicle(kind,seed){const r=mulberry(seed),B=new Builder(r,0);
 function netSyncVehicles(){for(const v of netVeh.splice(0)){netGrp.remove(v.m);v.m.geometry.dispose();}const N2=G.net;if(!N2)return;
   N2.lines.forEach((L,li)=>{Object.defineProperty(L,'cum',{value:netLen(L.pts),enumerable:false,writable:true,configurable:true});const n=L.kind==='rail'?1:5;for(let i=0;i<n;i++){const m=netMakeVehicle(L.kind==='rail'?'train':'car',li*77+i);netGrp.add(m);netVeh.push({m,li,s:Math.random()*L.cum[L.cum.length-1],dir:L.kind==='rail'?1:(i%2?1:-1),sp:L.kind==='rail'?9:14+Math.random()*6});}});}
 function netFrame(dt){if(MODE!=='god'||!G.net||!G.net.lines.length)return;netT+=dt;
-  if(netDirty&&netT>.8){netT=0;netDirty=false;netBuildMesh();}
+  if(netDirty&&(netT>.8||!netMesh)){netT=0;netDirty=false;netBuildMesh();}
   if(PAUSED||G.paused)return;const spd=Math.max(1,G.speed||1);
   for(const v of netVeh){const L=G.net.lines[v.li];if(!L)continue;const tot=L.cum[L.cum.length-1];v.s+=v.dir*v.sp*dt*Math.min(spd,4)*.35;if(v.s>tot){v.s=tot;v.dir=-1;}if(v.s<0){v.s=0;v.dir=1;}
     let i=1;while(i<L.cum.length-1&&L.cum[i]<v.s)i++;const t=(v.s-L.cum[i-1])/Math.max(1e-6,L.cum[i]-L.cum[i-1]);const x=lerp(L.pts[i-1][0],L.pts[i][0],t),z=lerp(L.pts[i-1][1],L.pts[i][1],t);
