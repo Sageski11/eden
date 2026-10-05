@@ -19,7 +19,7 @@ function startSite(type,x,z,rot,o={}){
 function startUpgrade(b,to){b.cw=skLvl('work');b.cs=skLvl('stone');const [w,s,wk]=costOf(b.type,b.variant,to);b.upg={to,need:{wood:w,stone:s},have:{wood:0,stone:0},inb:{wood:0,stone:0},work:wk,done:0,blessed:false};realize(b);}
 function completeSite(b){
   const wasUp=!!b.upg,wasHall=b.type==='hall';
-  if(b.build){b.build=null;}else if(b.upg){b.level=b.upg.to;b.upg=null;}
+  BVER++;if(b.build){b.build=null;}else if(b.upg){b.level=b.upg.to;b.upg=null;}
   realize(b);rebuildNear(b.x,b.z,34,b);gridDirty=true;refreshCivic();
   for(let i=0;i<26;i++){const a=rnd()*TAU;spawn(b.x+Math.cos(a)*b.r*.6,hAt(b.x,b.z)+.5,b.z+Math.sin(a)*b.r*.6,Math.cos(a)*.8,.5+rnd()*.5,Math.sin(a)*.8,1.6,1.4,.62,.55,.45,0);}
   for(const v of G.vill)if(v.site===b.id)v.site=0;

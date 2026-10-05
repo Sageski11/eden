@@ -31,7 +31,7 @@ function simStep(){
       if(w<.01)w*=.97;if(w<2e-4)w=0;
       if(w===0){if(W[k]!==0||SPD[k]!==0){W[k]=0;SPD[k]=0;FX[k]=0;FZ[k]=0;}F[k4]=F[k4+1]=F[k4+2]=F[k4+3]=0;continue;}
       const vx=(inL-F[k4]+F[k4+1]-inR)*.5,vz=(inT-F[k4+2]+F[k4+3]-inB)*.5;
-      const iw=1/Math.max(w,.08);SPD[k]+=(Math.hypot(vx,vz)*iw-SPD[k])*.15;FX[k]+=(vx*iw-FX[k])*.1;FZ[k]+=(vz*iw-FZ[k])*.1;
+      const iw=1/Math.max(w,.08);SPD[k]+=(Math.sqrt(vx*vx+vz*vz)*iw-SPD[k])*.15;FX[k]+=(vx*iw-FX[k])*.1;FZ[k]+=(vz*iw-FZ[k])*.1;
       W[k]=w;if(i<wLo)wLo=i;wHi=i;}
     RLO[j]=wLo;RHI[j]=wHi;}
 }

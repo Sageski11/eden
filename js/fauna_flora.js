@@ -184,8 +184,13 @@ function populateAnimals(seed,mult=1){animals.length=0;const r=mulberry(seed*13+
 function animalCaps(){const f=trees.filter(t=>t.t!==4&&t.t!==5).length;return {deer:12+f/120,boar:f/260,hare:30,fox:3+f/700,horse:WORLD==='blank'||WORLD==='high'?8:18};}
 function breedAnimals(){const caps=animalCaps();for(const sp in SPEC){const list=animals.filter(a=>a.sp===sp);const n=list.length,cap=caps[sp];if(n<2||n>=cap)continue;
   const births=Math.min(Math.ceil(n*.08*(1-n/cap)),6);for(let i=0;i<births;i++){const p=pickA(list);if(goodGround(p.x+1,p.z+1))spawnAnimal(sp,p.x+(Math.random()-.5)*2,p.z+(Math.random()-.5)*2,{hx:p.hx,hz:p.hz,sc:.65});}}}
-function animalNearPeople(a,R){const list=(typeof G!=='undefined'&&G.vill)?G.vill:[];let best=null,bd=R;for(const v of list){if(v.hidden||v.job==='hunter')continue;const d=Math.hypot(v.x-a.x,v.z-a.z);const r2=R;if(d<r2&&d<bd){bd=d;best=v;}}return best;}
-function updateAnimals(dtH){
+// animals notice people: villagers are bucketed into 8-unit cells once per update instead of scanned per animal
+let PH=null;const _pk=(i,j)=>(i+64)*256+(j+64);
+function buildPeopleHash(){const m=new Map();const list=typeof allVill==='function'?allVill():((typeof G!=='undefined'&&G.vill)?G.vill:[]);
+  for(const v of list){if(v.hidden||v.job==='hunter')continue;const k=_pk(Math.floor(v.x/8),Math.floor(v.z/8));let a=m.get(k);if(!a)m.set(k,a=[]);a.push(v);}return m;}
+function animalNearPeople(a,R){if(!PH)PH=buildPeopleHash();let best=null,bd=R;const ci=Math.floor(a.x/8),cj=Math.floor(a.z/8),r=Math.ceil(R/8);
+  for(let di=-r;di<=r;di++)for(let dj=-r;dj<=r;dj++){const l=PH.get(_pk(ci+di,cj+dj));if(!l)continue;for(const v of l){const d=Math.hypot(v.x-a.x,v.z-a.z);if(d<R&&d<bd){bd=d;best=v;}}}return best;}
+function updateAnimals(dtH){PH=null;
   const night=typeof hod==='function'&&MODE==='god'?(hod()>21||hod()<5):false;
   for(const a of animals){const S2=SPEC[a.sp];a.sc=Math.min(1.08,a.sc+dtH*.004);
     if(a.state!=='flee'&&Math.random()<dtH*4){const p=animalNearPeople(a,a.sp==='boar'?5:8);if(p){const dx=a.x-p.x,dz=a.z-p.z,d=Math.hypot(dx,dz)||1;a.tx=a.x+dx/d*(14+Math.random()*10);a.tz=a.z+dz/d*(14+Math.random()*10);a.state='flee';a.timer=0;}}

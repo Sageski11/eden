@@ -4,7 +4,7 @@ You are the spirit of the valley. Your people think and build for themselves; yo
 prayers and keep their faith. Watch a civilisation grow from a stone-age camp to a futuristic city — and, when it
 strays into atrocity and false gods, destroy it and begin again.
 
-Open `Eden.html` in a browser (no build step; scripts are plain files loaded in order).
+Open `Eden.html` in a browser (no build step; scripts are plain files loaded in order), or open the single self-contained `dist/Hearthmere.html` (minified build of the same code; rebuild with `npm i && npm run build`).
 
 ## Layout
 
@@ -39,6 +39,10 @@ sharing one global scope (so order matters):
 5. **Other peoples**: a second people arrive in the Bronze Age and live differently; merchants trade between them.
 6. **Petitions**: the folk ask leave for big works. You decide.
 7. **Judgment**: cleanse a civilisation that is beyond saving. The ledger remembers; the next age begins.
+
+## Performance
+
+Profiled on a saved big game (two peoples, about 770 folk): `node tools/mkstate.js big.json` builds one, `node tools/profile.js big.json sim` gives a CPU profile of the simulation and `frame` the per-frame costs. Compare screenshots of a frozen scene with `tools/shot.js` and `tools/imgdiff.js`. Hot paths use indexes (buildings by id/type, trees and people in spatial cells), a typed-array heap for pathfinding, hourly caches, and spread-out neighbour rebuilds.
 
 ## Testing
 

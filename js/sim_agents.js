@@ -20,10 +20,14 @@ const dayN=()=>Math.floor(G.t/24),hod=()=>G.t%24,seasonN=()=>Math.floor(dayN()/D
 const isSunday=()=>dayN()%7===6;
 const dateStr=()=>`Year ${yearN()}, ${SEASONS[seasonN()]}, day ${dayInSeason()}`;
 const hhmm=h=>`${String(Math.floor(h)).padStart(2,'0')}:${String(Math.floor((h%1)*60)).padStart(2,'0')}`;
-const bById=id=>id?buildings.find(b=>b.id===id):null;
+// building lookups are indexed (rebuilt only when the set of buildings changes, completes, or the settlement is swapped)
+let BVER=0,SWAPV=0;const BI={len:-1,ver:-1,swap:-1,byId:new Map(),done:new Map()};
+function bIdx(){if(BI.len===buildings.length&&BI.ver===BVER&&BI.swap===SWAPV)return BI;BI.len=buildings.length;BI.ver=BVER;BI.swap=SWAPV;BI.byId.clear();BI.done.clear();
+  for(const b of buildings){BI.byId.set(b.id,b);if(!b.build){let l=BI.done.get(b.type);if(!l)BI.done.set(b.type,l=[]);l.push(b);}}return BI;}
+const bById=id=>id?(bIdx().byId.get(id)||null):null;
 const done=b=>b&&!b.build;
-const built=t=>buildings.filter(b=>b.type===t&&!b.build);
-const hasBuilt=t=>buildings.some(b=>b.type===t&&!b.build);
+const built=t=>bIdx().done.get(t)||[];
+const hasBuilt=t=>bIdx().done.has(t);
 const adults=()=>G.vill.filter(v=>v.age>=14&&!v.leaving);
 const popN=()=>G.vill.filter(v=>!v.leaving&&!v.arriving).length;
 function chron(txt,major){if(typeof TOWNS!=='undefined'&&TOWNS.list.length>1&&G.town&&!txt.includes(G.town))txt=G.town+': '+txt;G.chron.unshift({d:dateStr(),t:txt,m:!!major});if(G.chron.length>300)G.chron.pop();if(major)toast(txt.length>70?txt.slice(0,68)+'…':txt);}
@@ -45,10 +49,11 @@ function rebuildGrid(){
 }
 const gS=new Float32Array(NN),gSt=new Int32Array(NN),gCl=new Int32Array(NN),gFrom=new Int32Array(NN);let gStamp=0;
 const hpK=new Int32Array(NN*4),hpF=new Float32Array(NN*4);let hpN=0;
-function hPush(k,f){let i=hpN++;hpK[i]=k;hpF[i]=f;while(i>0){const p=(i-1)>>1;if(hpF[p]<=hpF[i])break;[hpK[p],hpK[i]]=[hpK[i],hpK[p]];[hpF[p],hpF[i]]=[hpF[i],hpF[p]];i=p;}}
-function hPop(){const k=hpK[0];hpN--;hpK[0]=hpK[hpN];hpF[0]=hpF[hpN];let i=0;for(;;){const l=i*2+1,r=l+1;let m=i;if(l<hpN&&hpF[l]<hpF[m])m=l;if(r<hpN&&hpF[r]<hpF[m])m=r;if(m===i)break;[hpK[m],hpK[i]]=[hpK[i],hpK[m]];[hpF[m],hpF[i]]=[hpF[i],hpF[m]];i=m;}return k;}
+// binary min-heap on typed arrays (hole-based sifting: no swaps, no allocation)
+function hPush(k,f){let i=hpN++;while(i>0){const p=(i-1)>>1;if(hpF[p]<=f)break;hpK[i]=hpK[p];hpF[i]=hpF[p];i=p;}hpK[i]=k;hpF[i]=f;}
+function hPop(){const top=hpK[0];hpN--;if(hpN>0){const k=hpK[hpN],f=hpF[hpN];let i=0;for(;;){let c=i*2+1;if(c>=hpN)break;if(c+1<hpN&&hpF[c+1]<hpF[c])c++;if(hpF[c]>=f)break;hpK[i]=hpK[c];hpF[i]=hpF[c];i=c;}hpK[i]=k;hpF[i]=f;}return top;}
 const cellOf=(x,z)=>[clamp(Math.floor((x+HALF)/GC),0,GN-1),clamp(Math.floor((z+HALF)/GC),0,GN-1)];
-const DIRS=[[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.414],[1,-1,1.414],[-1,1,1.414],[-1,-1,1.414]];
+const DI=[1,-1,0,0,1,1,-1,-1],DJ=[0,0,1,-1,1,-1,1,-1],DCOST=[1,1,1,1,1.414,1.414,1.414,1.414];
 function findPath(x0,z0,x1,z1,tb,sb){
   if(gridDirty)rebuildGrid();
   const [si,sj]=cellOf(x0,z0),[ti,tj]=cellOf(x1,z1),s=sj*GN+si,t=tj*GN+ti;
@@ -56,12 +61,13 @@ function findPath(x0,z0,x1,z1,tb,sb){
   gStamp++;hpN=0;gS[s]=0;gSt[s]=gStamp;gFrom[s]=-1;hPush(s,0);let it=0,found=false;
   while(hpN&&it<30000){it++;const k=hPop();if(gCl[k]===gStamp)continue;gCl[k]=gStamp;if(k===t){found=true;break;}
     const ki=k%GN,kj=(k/GN)|0;
-    for(const [di,dj,dc] of DIRS){const ni=ki+di,nj=kj+dj;if(ni<0||nj<0||ni>=GN||nj>=GN)continue;const n=nj*GN+ni;if(gCl[n]===gStamp)continue;
-      let c=gCost[n];if(n===t&&c===Infinity)c=3;if(c===Infinity)continue;
+    const gk=gS[k];
+    for(let d=0;d<8;d++){const ni=ki+DI[d],nj=kj+DJ[d];if(ni<0||nj<0||ni>=GN||nj>=GN)continue;const n=nj*GN+ni;if(gCl[n]===gStamp)continue;
+      let c=gCost[n];if(n===t&&c===Infinity)c=3;if(c===Infinity)continue;const dc=DCOST[d];
       if(dc>1&&(gCost[kj*GN+ni]===Infinity||gCost[nj*GN+ki]===Infinity))continue;
       const o=gOcc[n];if(o&&o!==tb&&o!==sb)c+=7;
-      const g=gS[k]+c*dc;if(gSt[n]===gStamp&&g>=gS[n])continue;gS[n]=g;gSt[n]=gStamp;gFrom[n]=k;
-      const hx=Math.abs(ni-ti),hz=Math.abs(nj-tj);hPush(n,g+(Math.max(hx,hz)+.414*Math.min(hx,hz))*.62);}}
+      const g=gk+c*dc;if(gSt[n]===gStamp&&g>=gS[n])continue;gS[n]=g;gSt[n]=gStamp;gFrom[n]=k;
+      const hx=ni>ti?ni-ti:ti-ni,hz=nj>tj?nj-tj:tj-nj;hPush(n,g+((hx>hz?hx:hz)+.414*(hx>hz?hz:hx))*.62);}}
   if(!found)return null;
   const cells=[];for(let k=t;k!==-1&&k!==s;k=gFrom[k])cells.push(k);cells.reverse();
   const out=[];let pdx=9,pdz=9;
@@ -197,10 +203,15 @@ function chooseSite(v){const sites=buildings.filter(b=>siteProj(b));if(!sites.le
 // large civic works must not be starved of builders by the many small jobs of a big town
 const SITE_PRIORITY={castle:8,church:5,market:4,tavern:3,mill:3,smith:3,school:4,factory:5,station:5,powerplant:6,fusion:6,tower:2,mason:3,sawmill:3,shipyard:3};
 function siteName(b){return b.type==='house'?(b.upg?'house':'new home'):b.type==='camp'?(b.variant==='lumber'?'lumber camp':b.variant==='fish'?'fishing camp':'camp'):(BT[b.type]||b.type).toLowerCase();}
+// trees in 16-unit cells so a woodcutter only looks near the camp
+const TI={h:-9,cells:new Map()};const _tk=(i,j)=>(i+64)*256+(j+64);
+function treeCells(){const h=Math.floor(G.t*2);if(TI.h===h)return TI.cells;TI.h=h;TI.cells.clear();for(const t of trees){if(t.t===4||t.t===5||t.s<.6)continue;const k=_tk(Math.floor(t.x/16),Math.floor(t.z/16));let a=TI.cells.get(k);if(!a)TI.cells.set(k,a=[]);a.push(t);}return TI.cells;}
+function pickTree(v,base){const cells=treeCells(),ci=Math.floor(base.x/16),cj=Math.floor(base.z/16);let bt=null,bd=1e9;
+  for(let di=-3;di<=3;di++)for(let dj=-3;dj<=3;dj++){const l=cells.get(_tk(ci+di,cj+dj));if(!l)continue;for(const t of l){if(t.res&&G.t-t.res<8)continue;const d=Math.hypot(t.x-base.x,t.z-base.z);if(d<46){const dv=Math.hypot(t.x-v.x,t.z-v.z)+d*.5;if(dv<bd){bd=dv;bt=t;}}}}return bt;}
 function woodTask(v){
   const base=bById(v.work)||G.center;if(!base)return wait(v,1);
   if(v.carry==='wood'){setThought(v,'A fine log for the store.');goTo(v,...doorOf(base),vv=>{G.wood+=vv.amt;G.prod.wood+=vv.amt;vv.carry=null;wait(vv,.2);},base.id);return;}
-  let bt=null,bd=1e9;for(const t of trees){if(t.t===4||t.t===5||t.s<.6||(t.res&&G.t-t.res<8))continue;const d=Math.hypot(t.x-base.x,t.z-base.z);if(d<46){const dv=Math.hypot(t.x-v.x,t.z-v.z)+d*.5;if(dv<bd){bd=dv;bt=t;}}}
+  let bt=pickTree(v,base);if(bt&&trees.indexOf(bt)<0){TI.h=-9;bt=pickTree(v,base);}// the index is refreshed twice an hour; a felled tree is never chosen
   if(!bt){G.noTrees=true;setThought(v,'No trees left near the camp!');return forageTask(v);}
   bt.res=G.t;setThought(v,'Off to fell a tree.');
   goTo(v,bt.x+.7,bt.z+.4,vv=>{vv.rot=Math.atan2(bt.x-vv.x,bt.z-vv.z);wait(vv,1.3,'work',false,ww=>{const i=trees.indexOf(bt);if(i>=0){trees.splice(i,1);treesDirty=true;}ww.carry='wood';ww.amt=Math.round((6*bt.s*workMul()+1.5)*(G.unl.axes?1.2:1)*(sawStaffed()?1.25:1));gainXP('wood',1);});});

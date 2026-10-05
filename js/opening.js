@@ -10,7 +10,8 @@ function openingStart(){G.openRain=true;G.rain=150;G.rainI=.25;chron(`Rain fell 
 function openingHapF(f){if(G.openRain&&G.rain>0)f.Rain=-8;}
 // how far the homes are from water (a well counts); far water means slower work
 function waterDaily(){if(G.phase!=='play'||G.menu||!G.center)return;const homes=buildings.filter(b=>(b.type==='house'||b.type==='hall')&&!b.build);if(!homes.length){G.waterDist=0;return;}
-  const wells=buildings.filter(b=>b.type==='well'&&!b.build);let sum=0;for(const h of homes){let d=nearWater(h.x,h.z,40);for(const w of wells)d=Math.min(d,Math.hypot(w.x-h.x,w.z-h.z));sum+=d;}G.waterDist=sum/homes.length;}
+  const wells=built('well');const stride=Math.max(1,Math.ceil(homes.length/30)),off=dayN()%stride;let sum=0,n=0;// at most ~30 homes a day: the average is what matters
+  for(let i=off;i<homes.length;i+=stride){const h=homes[i];let d=nearWater(h.x,h.z,40);for(const w of wells)d=Math.min(d,Math.hypot(w.x-h.x,w.z-h.z));sum+=d;n++;}G.waterDist=n?sum/n:0;}
 function waterMul(){return clamp(1-Math.max(0,(G.waterDist||0)-9)/140,.82,1);}
 // leisure errand: the folk walk to the well or the shore for water
 function fetchWater(v){if(v.age<10||v.hidden)return false;let tx,tz,th;const wells=built('well');let bw=null,bd=40;for(const w of wells){const d=Math.hypot(w.x-v.x,w.z-v.z);if(d<bd){bd=d;bw=w;}}

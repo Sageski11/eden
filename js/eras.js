@@ -33,8 +33,10 @@ pickNeed=function(sites){
   return L.filter(n=>(G.failCool[n.type+(n.variant||'')]||0)<=G.t&&(ERA_BUILD[n.type]||0)<=e);
 };
 // ---------------- effects of the machine age
-function eraBuilt(t){return buildings.filter(b=>b.type===t&&!b.build&&G.vill.some(v=>v.work===b.id)).length;}
-function eraMul(){let m=1;m+=Math.min(3,eraBuilt('factory'))*.08;if(eraBuilt('powerplant'))m+=.1;if(eraBuilt('fusion'))m+=.15;if(eraBuilt('school'))m+=.04;if(G.net)m+=Math.min(2,G.net.lines.length)*.05;return m;}
+function eraBuilt(t){const l=built(t);if(!l.length)return 0;let n=0;for(const b of l)if(G.vill.some(v=>v.work===b.id))n++;return n;}
+const EMC=new Map();// era multiplier per settlement, refreshed each game hour
+function eraMul(){const key=G.center?G.center.id:0,h=Math.floor(G.t),c=EMC.get(key);if(c&&c.h===h)return c.v;const v=eraMul0();EMC.set(key,{h,v});return v;}
+function eraMul0(){let m=1;m+=Math.min(3,eraBuilt('factory'))*.08;if(eraBuilt('powerplant'))m+=.1;if(eraBuilt('fusion'))m+=.15;if(eraBuilt('school'))m+=.04;if(G.net)m+=Math.min(2,G.net.lines.length)*.05;return m;}
 function eraPollution(){return G.poll||0;}
 function eraHapF(f){const e=G.era||0;if(e<5)return;const pl=G.poll||0;if(pl>10)f.Smog=-Math.min(14,Math.round(pl/6));
   if(eraBuilt('powerplant')||eraBuilt('fusion'))f.Power=3;if(eraBuilt('school'))f.Learning=2;if(hasBuilt('station'))f.Travel=2;if(G.net&&G.net.lines.some(l=>l.kind==='highway'))f.Highway=2;}

@@ -16,7 +16,7 @@ function sInit(){TOWNS.list=[{st:null,bld:[],dead:false}];TOWNS.cur=0;TOWNS.act=
 const sMulti=()=>TOWNS.list.length>1;
 const firstAlive=()=>TOWNS.list.findIndex(s=>!s.dead);
 function swapOut(){const s=TOWNS.list[TOWNS.cur];if(!s)return;s.st={};for(const k of PERKEYS)s.st[k]=G[k];s.bld=buildings.slice();}
-function swapIn(i){const s=TOWNS.list[i];if(!s||!s.st)return;for(const k of PERKEYS)G[k]=s.st[k];buildings.length=0;for(const b of s.bld)buildings.push(b);TOWNS.cur=i;}
+function swapIn(i){const s=TOWNS.list[i];if(!s||!s.st)return;SWAPV++;for(const k of PERKEYS)G[k]=s.st[k];buildings.length=0;for(const b of s.bld)buildings.push(b);TOWNS.cur=i;}
 function withSettlement(i,fn){if(i===TOWNS.cur)return fn();const prev=TOWNS.cur;swapOut();swapIn(i);try{return fn();}finally{swapOut();swapIn(prev);}}
 function eachSettlement(fn){if(TOWNS.list.length<=1){fn(0);return;}for(let i=0;i<TOWNS.list.length;i++){if(TOWNS.list[i].dead)continue;withSettlement(i,()=>fn(i));}}
 // everything that is drawn or stamped on the terrain must see every settlement

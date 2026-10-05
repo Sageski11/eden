@@ -62,16 +62,21 @@ function makeLook(v){const r=Math.random;const L={};
   return L;}
 const _B=new THREE.Matrix4(),_U=new THREE.Matrix4(),_T=new THREE.Matrix4(),_O=new THREE.Matrix4(),_A=new THREE.Matrix4(),_Q=new THREE.Quaternion(),_E=new THREE.Euler(),_P=new THREE.Vector3(),_Sv=new THREE.Vector3(1,1,1),_C=new THREE.Color();
 const pcnt={};
-function pput(k,M,col){const n=pcnt[k]||0;if(n>=PCAP)return;PM[k].setMatrixAt(n,M);PM[k].setColorAt(n,_C.setHex(col));pcnt[k]=n+1;}
+const _cc=new Map();// hex -> linear rgb, converted once
+function pput(k,M,col){const n=pcnt[k]||0;if(n>=PCAP)return;const m=PM[k];m.setMatrixAt(n,M);let c=_cc.get(col);if(!c){_C.setHex(col);c=[_C.r,_C.g,_C.b];_cc.set(col,c);}const a=m.instanceColor.array,o=n*3;a[o]=c[0];a[o+1]=c[1];a[o+2]=c[2];pcnt[k]=n+1;}
+// people far outside the view (plus a margin that covers their shadows) are not drawn
+const _pfr=new THREE.Frustum(),_pfm=new THREE.Matrix4(),_psp=new THREE.Sphere(new THREE.Vector3(),12);
 function local(px,py,pz,rx,ry,rz,s=1){_E.set(rx,ry,rz,'YXZ');_Q.setFromEuler(_E);_T.compose(_P.set(px,py,pz),_Q,_Sv.set(s,s,s));return _T;}
 const JOBTOOL={builder:'tHammer',wood:'tAxe',farmer:'tHoe',quarry:'tPick',fisher:'tRod',hunter:'tSpear',guard:'tSpear',priest:'tStaff',forager:'tBasket',mason:'tHammer',sawyer:'tAxe',shipwright:'tHammer'};
 const JOBHAT={farmer:'hatStraw',guard:'hatHelm',priest:'hatCoif',hunter:'hatHood',fisher:'hatFeltCone',miller:'hatCoif',smith:null,quarry:'hatCap',bandit:'hatHood'};
 function drawPeople(list,T){
   for(const k in pcnt)pcnt[k]=0;
+  camera.updateMatrixWorld();camera.matrixWorldInverse.copy(camera.matrixWorld).invert();_pfm.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);_pfr.setFromProjectionMatrix(_pfm);
   for(const v of list){if(v.hidden)continue;
+    const y=hAt(v.x,v.z)+Math.max(0,wAt(v.x,v.z)-.3)*.7;
+    _psp.center.set(v.x,y+1,v.z);if(!_pfr.intersectsSphere(_psp))continue;
     if(!v.look)v.look=makeLook(v);const L=v.look;
     const kid=v.age<14,sc=(kid?.55+v.age*.03:1)*L.h,elder=v.age>58;
-    const y=hAt(v.x,v.z)+Math.max(0,wAt(v.x,v.z)-.3)*.7;
     const moving=!!v.path;let legA=0,armL=0,armR=0,bob=0,lean=elder?.16:0,twist=0,headY=0,armLz=.08,armRz=.08,armRx=0,spin=0;
     const ph=(v.wph||0);
     if(moving){legA=Math.sin(ph)*.62;armL=-legA*.8;armR=legA*.8;bob=Math.abs(Math.cos(ph))*.045;if(v.kind==='bandit'||v.flee){legA*=1.2;lean+=.12;}}

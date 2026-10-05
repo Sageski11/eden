@@ -194,7 +194,7 @@ function serializeGod(){const s=snapshot();
     cam:{tx:cam.tx,tz:cam.tz,yaw:cam.yaw,pitch:cam.pitch,dist:cam.dist}});}
 // restore one settlement into the context that is currently active
 function loadTown(td){for(const b of buildings.slice())removeBuilding(b);let mx=0;
-  for(const r of td.bl){const b=newRecord(r.type,r.x,r.z,r.rot,r.seed);Object.assign(b,r);buildings.push(b);mx=Math.max(mx,b.id);}nextId=Math.max(nextId,mx+1);
+  for(const r of td.bl){const b=newRecord(r.type,r.x,r.z,r.rot,r.seed);Object.assign(b,r);buildings.push(b);BVER++;mx=Math.max(mx,b.id);}nextId=Math.max(nextId,mx+1);
   Object.assign(G,td.G);G.raid=null;G.bandits=[];G.vill=[];
   for(const r of td.vill){const v=newVillager(r);v.id=r.id;v.timer=rnd()*.3;}
   G.center=bById(td.center);if(!G.sk)G.sk={wood:0,work:0,stone:0,farm:0,fish:0,hunt:0};if(!G.unl)G.unl={};if(!G.failCool)G.failCool={};devEnsure();tfEnsure();
@@ -240,7 +240,7 @@ for(const b of document.querySelectorAll('#gtop .speed button'))b.onclick=()=>se
 // ---------------- main loop
 let aoT=0,treeT=0,last=performance.now(),TT=0,recolorT=0,drownT=0,evalI=0,evalT=0,statT=0,uiT=0,saveT=0,prevWinter=0,prevAut=0;
 function gameStep(dtH){
-  G.pathBudget=14;
+  if(PAUSED)drainRealize(1e9);G.pathBudget=14;
   const h0=Math.floor(G.t);G.t+=dtH;
   for(let h=h0+1;h<=Math.floor(G.t);h++)eachSettlement(i=>{SHARED=i===firstAlive();if(h%24===5&&G.phase==='play')newDay();if(G.phase==='play')hourTick();});SHARED=true;
   const n=Math.max(1,Math.ceil(dtH/.06)),sd=dtH/n;
@@ -260,7 +260,7 @@ const PROF={};
 function frame(now){
   if(MODE==='title'||(PAUSED&&frame.pr>1)){last=now;requestAnimationFrame(frame);return;}
   if(PAUSED)frame.pr=(frame.pr||0)+1;else frame.pr=0;
-  const dt=Math.min(.05,(now-last)/1000);last=now;TT+=dt;
+  const dt=HM.fixDt||Math.min(.05,(now-last)/1000);last=now;TT+=dt;if(HM.fixT!=null)TT=HM.fixT;// (test hook: pins time so screenshots are reproducible)
   if(MODE==='god'&&G.menu)menuCam(dt);
   else if(MODE==='god'&&G.follow){const v=G.follow;if(!G.vill.includes(v))G.follow=null;else{cam.tx+=(v.x-cam.tx)*Math.min(1,dt*4);cam.tz+=(v.z-cam.tz)*Math.min(1,dt*4);}}
   updateCamera(dt);
@@ -305,7 +305,7 @@ function frame(now){
   drownT+=dt;if(drownT>1.5){drownT=0;const n=trees.length;for(let i=trees.length-1;i>=0;i--){const t=trees[i];if(t.t!==4&&wAt(t.x,t.z)>(t.t===3?1.2:.7))trees.splice(i,1);}if(n!==trees.length){treesDirty=true;gridDirty=true;}}
   evalT+=dt;if(evalT>.25&&buildings.length&&!painting){evalT=0;const AB=allB();for(let q=0;q<3;q++){evalI=(evalI+1)%AB.length;const b=AB[evalI];if(!b)break;const s=sigOf(analyze(b));if(s!==b.sig){realize(b);if(selected===b)showInspector();}}}
   treeT+=dt;if(typeof TREE2!=='undefined'){TREE2.u.uTime.value=TT;TREE2.u.uWind.value=1+rainU.uA.value*1.5;if(Math.hypot(cam.tx-TREE2.cx,cam.tz-TREE2.cz)>20)treesDirty=true;}PT('misc');if(treesDirty&&treeT>.25){treeT=0;rebuildTrees();}PT('trees');
-  if(MODE==='sandbox')updateGhost(now);updateRing();
+  drainRealize(4);if(MODE==='sandbox')updateGhost(now);updateRing();
   for(const b of allB())for(const a of b.anims){const o=a.obj;if(!o)continue;
     if(a.type==='spin')o.rotation[a.axis]+=a.speed*dt*(MODE==='god'&&G.paused?0:1);
     else if(a.type==='flag')o.rotation.y=a.base+Math.sin(TT*2.6+a.ph)*.45+Math.sin(TT*5.3+a.ph)*.12;

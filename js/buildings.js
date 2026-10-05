@@ -532,9 +532,13 @@ function realize(b){
   const g=generate(b,false);b.obj=g.grp;b.info=g.info;b.r=g.info.r;b.anims=g.anims;b.emit=g.emit;b.sig=sigOf(g.ctx);scene.add(b.obj);
   onRealize(b);
 }
-function addBuilding(rec){rec.id=nextId++;buildings.push(rec);return rec;}
-function removeBuilding(b){const i=buildings.indexOf(b);if(i>=0)buildings.splice(i,1);if(b.obj){scene.remove(b.obj);disposeObj(b.obj);}}
-function rebuildNear(x,z,R,skip,force){for(const o of buildings){if(o===skip)continue;if(Math.hypot(o.x-x,o.z-z)<R+o.r){if(force||sigOf(analyze(o))!==o.sig)realize(o);}}refreshCivic();}
+function addBuilding(rec){rec.id=nextId++;buildings.push(rec);BVER++;return rec;}
+function removeBuilding(b){const i=buildings.indexOf(b);if(i>=0)buildings.splice(i,1);BVER++;b._gone=true;RQ.delete(b);if(b.obj){scene.remove(b.obj);disposeObj(b.obj);}}
+// Neighbours of a changed building are re-examined and regenerated over the next frames (a few ms at a time) rather than all at once,
+// so placing a building in a big town does not stall the frame.
+const RQ=new Map();
+function rebuildNear(x,z,R,skip,force){for(const o of buildings){if(o===skip)continue;if(Math.hypot(o.x-x,o.z-z)<R+o.r)RQ.set(o,!!force||RQ.get(o)===true);}refreshCivic();}
+function drainRealize(ms){if(!RQ.size)return;const t0=performance.now();for(const [o,f] of RQ){RQ.delete(o);if(o._gone||!o.obj&&!f)continue;if(f||sigOf(analyze(o))!==o.sig)realize(o);if(performance.now()-t0>ms)break;}}
 function refreshCivic(){civicSpots=allB().filter(b=>['castle','church','market'].includes(b.type)).map(b=>[b.x,b.z,(b.type==='castle'?26:16)**2]);}
 function canPlace(b,r){
   if(Math.abs(b.x)>HALF-r*.6||Math.abs(b.z)>HALF-r*.6)return 'Too close to the edge of the world';
