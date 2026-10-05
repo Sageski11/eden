@@ -3,7 +3,7 @@
 // The Buildings page (TAB) lists every building of every age with a small picture of each, grouped by age. Pick one and
 // place it. Roads, paved streets, railways and highways are laid here too. "Populate" turns the finished city into a living
 // settlement of the Spirit's realm and lets the folk carry on from there.
-const SB={cat:null,paved:new Uint8Array(ROAD.length),icons:{},open:false,line:null,shown:'',pop:false,iconBusy:false};
+const SB={cat:null,paved:new Uint8Array(ROAD.length),icons:{},q:[],spot:null,open:false,line:null,shown:'',pop:false,iconBusy:false};
 // [age, type, level, variant, placeholder name]. The real name and first trait are read from the generator when the picture is drawn.
 const SBA=['Stone Age','Bronze Age','Iron Age','Medieval','High Medieval','Industrial','Modern','Futuristic'];
 const SBTAG=['Flint, hide and fire','Copper, timber and the first wells','Iron tools and market towns','Castles, guilds and stone','Gothic spires and great halls','Steam, brick and rail','Concrete, glass and power','Spires of light and fusion'];
@@ -39,8 +39,8 @@ setTool=function(id){
   if(MODE==='sandbox'){if(ghostB&&SB.cat){ghostB.level=SB.cat.level;ghostB.variant=SB.cat.variant;ghostKey='';}
     const key=SB.cat?SB.cat.id:'';if(key!==SB.shown){SB.shown=key;buildToolbox(sbToolDefs());}}
 };
-function sbPick(c){SB.cat=c;if(c.tool){SB.cat=null;SB.shown='';setTool(c.tool);}else{SB.shown='';setTool('b:'+c.type);}
-  toast(c.tool?c.n:`${c.n} ready — click the land to build it (R rotates, V varies)`);}
+function sbPick(c,v){SB.cat=Object.assign({},c);if(c.variants)SB.cat.variant=v||c.variants[0];if(c.tool){SB.cat=null;SB.shown='';setTool(c.tool);}else{SB.shown='';setTool('b:'+c.type);}
+  toast(c.tool?c.n:`${c.n}${c.variants?' ('+SB.cat.variant+')':''} ready — click the land (R rotate, V vary${c.variants?', C variant':''})`);}
 // the sandbox's own hand-laid paving survives the network repaint
 const _netPaint0=netPaint;
 netPaint=function(){_netPaint0();const p=SB.paved;for(let k=0;k<p.length;k++)if(p[k])ROADT[k]=2;};
@@ -125,6 +125,10 @@ const sbCss=document.createElement('style');sbCss.textContent=`
 #sbPage .plate{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ac);letter-spacing:1px;margin:8px 0 1px;display:flex;justify-content:space-between}
 #sbPage .nm{font-family:Cinzel,serif;font-size:14.5px;font-weight:600;color:#fff;line-height:1.2;letter-spacing:.4px}
 #sbPage .ds{font-size:13.5px;color:#8fb2cc;line-height:1.25;margin-top:3px;min-height:34px}
+#sbPage .vs{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+#sbPage .vc{font:11px ui-monospace,Menlo,Consolas,monospace;color:#a9c7dc;border:1px solid #2d526f;border-radius:10px;padding:1px 8px;cursor:pointer;background:rgba(255,255,255,.03)}
+#sbPage .vc:hover,#sbPage .vc.on{color:#10243a;background:var(--ac);border-color:var(--ac)}
+#sbPage .card:focus-visible{outline:2px solid #f3e3b0}
 #sbPage .empty{color:#8fb2cc;font-style:italic;padding:30px 0}
 #sbPage .x{all:unset;position:absolute;right:16px;top:12px;z-index:2;cursor:pointer;font:13px ui-monospace,Menlo,Consolas,monospace;color:#8fb2cc;border:1px solid #3d6a8c;padding:4px 10px;border-radius:2px;background:rgba(5,14,26,.6)}
 #sbPage .x:hover{color:#fff;border-color:#f3e3b0}
@@ -149,55 +153,73 @@ const sbGlyph={road:'<path d="M10 54 C26 40 34 36 54 14" stroke="#c9a36a" stroke
   street:'<path d="M8 50 L56 20" stroke="#4a4f57" stroke-width="12" stroke-linecap="round"/><path d="M8 50 L56 20" stroke="#e4c64a" stroke-width="2" stroke-dasharray="5 4"/>',
   rail:'<path d="M10 56 L54 8" stroke="#7a6a58" stroke-width="12" stroke-linecap="round" stroke-dasharray="2 3"/><path d="M4 50 L48 2 M16 58 L60 10" stroke="#aab3bb" stroke-width="2.4"/>',
   highway:'<path d="M6 54 L58 14" stroke="#33363c" stroke-width="18" stroke-linecap="round"/><path d="M6 54 L58 14" stroke="#e4c64a" stroke-width="1.6"/><path d="M2 49 L54 9 M10 59 L62 19" stroke="#e8e4d0" stroke-width="1.6" stroke-dasharray="6 5"/>'};
+const sbKey=(c,v)=>c.id+(v?'|'+v:'');
+const sbDefV=c=>c.variants?c.variants[0]:null;
+function sbCard(c,a,i){const v=sbDefV(c),k=sbKey(c,v),ic=SB.icons[k];
+  const chips=c.variants?`<div class="vs">${c.variants.map(x=>`<span class="vc${x===v?' on':''}" data-v="${esc(x)}">${esc(x)}</span>`).join('')}</div>`:'';
+  return `<div class="card${SB.cat&&SB.cat.id===c.id?' sel':''}" data-c="${c.id}" tabindex="0"><div class="pic" data-pic="${c.id}">${c.tool?`<svg viewBox="0 0 64 64">${sbGlyph[c.tool]}</svg>`:(ic?`<img src="${ic.url}" alt="">`:'<div class="wait"></div>')}</div>
+    <div class="plate"><span>PLATE ${ROMAN[a]}-${String(i+1).padStart(2,'0')}</span><span>${c.tool?'ROAD':'BUILD'}</span></div><div class="nm" data-nm="${c.id}">${esc(ic?ic.name:c.n)}</div><div class="ds" data-ds="${c.id}">${esc(ic?ic.tr:c.d)}</div>${chips}</div>`;}
 function sbBuildPage(){
   const q=(sbPage._q||'').toLowerCase();let rail='',main='';
-  for(let a=0;a<8;a++){const items=SBC.filter(c=>c.age===a&&(!q||(c.n+' '+c.d+' '+c.type).toLowerCase().includes(q)));
+  for(let a=0;a<8;a++){const all=SBC.filter(c=>c.age===a),items=all.filter(c=>!q||(c.n+' '+c.d+' '+c.type+' '+(c.variants||[]).join(' ')).toLowerCase().includes(q));
     rail+=`<button data-a="${a}" style="--ac:${sbAC[a]}">${SBA[a]}<i>${items.length}</i></button>`;
     main+=`<section class="sec" id="sbs${a}" style="--ac:${sbAC[a]};--sky:${sbSKY[a]}"><header><span class="num">AGE ${ROMAN[a]}</span><h2>${SBA[a]}</h2><span>${SBTAG[a]}</span></header><div class="grid">`+
-      (items.length?items.map((c,i)=>`<button class="card${SB.cat===c?' sel':''}" data-c="${c.id}"><div class="pic" data-pic="${c.id}">${c.tool?`<svg viewBox="0 0 64 64">${sbGlyph[c.tool]}</svg>`:(SB.icons[c.id]?`<img src="${SB.icons[c.id].url}" alt="">`:'<div class="wait"></div>')}</div>
-        <div class="plate"><span>PLATE ${ROMAN[a]}-${String(SBC.filter(x=>x.age===a).indexOf(c)+1).padStart(2,'0')}</span><span>${c.tool?'ROAD':'BUILD'}</span></div><div class="nm" data-nm="${c.id}">${esc(SB.icons[c.id]?SB.icons[c.id].name:c.n)}</div><div class="ds" data-ds="${c.id}">${esc(SB.icons[c.id]?SB.icons[c.id].tr:c.d)}</div></button>`).join(''):'<div class="empty">Nothing of that name in this age.</div>')+`</div></section>`;}
+      (items.length?items.map(c=>sbCard(c,a,all.indexOf(c))).join(''):'<div class="empty">Nothing of that name in this age.</div>')+`</div></section>`;}
   sbPage.innerHTML=`<div class="fr"><aside class="rail"><h1>The Builders’ Almanac</h1><p class="sub">Every work of every age</p><input id="sbQ" placeholder="Search the plates…" value="${esc(sbPage._q||'')}"><nav class="tl">${rail}</nav>
-    <div class="keys"><b>Click</b> a plate to choose it<br><b>R</b> rotate · <b>V</b> vary · <b>Tab</b> close<br>Roads &amp; rails are on plates too</div></aside><div class="main" id="sbMain">${main}</div><button class="x" id="sbX">Esc ✕</button></div>`;
-  sbPage.querySelectorAll('.card').forEach(b=>b.onclick=()=>{const c=SBC.find(x=>x.id===b.dataset.c);sbToggle(false);sbPick(c);});
+    <div class="keys"><b>Click</b> a plate to choose it, or one of its<br>variant tabs to choose that form<br><b>R</b> rotate · <b>V</b> vary · <b>C</b> next variant<br><b>Tab</b> close</div></aside><div class="main" id="sbMain">${main}</div><button class="x" id="sbX">Esc ✕</button></div>`;
+  sbPage.querySelectorAll('.card').forEach(b=>{const c=SBC.find(x=>x.id===b.dataset.c);b.onclick=()=>{sbToggle(false);sbPick(c);};
+    b.onkeydown=e=>{if(e.code==='Enter'||e.code==='Space'){e.preventDefault();b.click();}};
+    b.querySelectorAll('.vc').forEach(ch=>{ch.onclick=e=>{e.stopPropagation();sbToggle(false);sbPick(c,ch.dataset.v);};
+      ch.onmouseenter=()=>{b.querySelectorAll('.vc').forEach(x=>x.classList.toggle('on',x===ch));const k=sbKey(c,ch.dataset.v);if(SB.icons[k])sbShow(c,ch.dataset.v);else sbEnqueue([[c,ch.dataset.v,true]]);};});});
   sbPage.querySelectorAll('.tl button').forEach(b=>b.onclick=()=>{const s=document.getElementById('sbs'+b.dataset.a);if(s)s.scrollIntoView({block:'start'});});
   $('sbX').onclick=()=>sbToggle(false);
   const qi=$('sbQ');qi.oninput=()=>{sbPage._q=qi.value;const pos=qi.selectionStart;sbBuildPage();const n=$('sbQ');n.focus();n.setSelectionRange(pos,pos);};
   const main2=$('sbMain');main2.onscroll=sbSpy;sbSpy();}
+function sbShow(c,v){const ic=SB.icons[sbKey(c,v)];if(!ic)return;const pic=sbPage.querySelector(`[data-pic="${c.id}"]`);if(pic)pic.innerHTML=`<img src="${ic.url}" alt="">`;
+  const nm=sbPage.querySelector(`[data-nm="${c.id}"]`);if(nm)nm.textContent=ic.name;const ds=sbPage.querySelector(`[data-ds="${c.id}"]`);if(ds)ds.textContent=ic.tr;}
 function sbSpy(){const m=$('sbMain');if(!m)return;let cur=0;for(let a=0;a<8;a++){const s=document.getElementById('sbs'+a);if(s&&s.offsetTop<=m.scrollTop+90)cur=a;}
   sbPage.querySelectorAll('.tl button').forEach(b=>b.classList.toggle('on',+b.dataset.a===cur));}
 function sbToggle(on){if(MODE!=='sandbox')return;if(on==null)on=!SB.open;if(on===SB.open)return;
-  if(on){if(UIBLOCK)return;SB.open=true;UIBLOCK=true;sbPage._q='';sbBuildPage();sbPage.classList.remove('hidden');sbIcons();}
+  if(on){if(UIBLOCK)return;SB.open=true;UIBLOCK=true;sbPage._q='';sbBuildPage();sbPage.classList.remove('hidden');sbEnqueue(SBC.filter(c=>!c.tool).map(c=>[c,sbDefV(c)]));}
   else{SB.open=false;UIBLOCK=false;sbPage.classList.add('hidden');for(const k in keys)keys[k]=false;}}
 addEventListener('keydown',e=>{if(MODE!=='sandbox')return;
   if(e.code==='Tab'){e.preventDefault();e.stopImmediatePropagation();if(SB.pop)return;sbToggle(!SB.open);return;}
   if(e.code==='Escape'&&SB.pop){sbPopClose();e.stopImmediatePropagation();return;}
-  if(e.code==='Escape'&&SB.open){sbToggle(false);e.stopImmediatePropagation();}},true);
+  if(e.code==='Escape'&&SB.open){sbToggle(false);e.stopImmediatePropagation();return;}
+  if(e.code==='KeyC'&&!SB.open&&!SB.pop&&!UIBLOCK&&e.target.tagName!=='INPUT')sbCycleVariant();},true);
+// C: next variant of the building being placed, or of the selected building
+function sbCycleVariant(){const nxt=(vs,cur)=>vs[(Math.max(0,vs.indexOf(cur))+1)%vs.length];
+  if(ghostB&&SB.cat&&SB.cat.variants){SB.cat.variant=ghostB.variant=nxt(SB.cat.variants,ghostB.variant);ghostKey='';toast('Variant: '+ghostB.variant);return;}
+  const d=selected&&BDEF[selected.type];if(d){pushUndo();selected.variant=nxt(d.variants,selected.variant);realize(selected);rebuildNear(selected.x,selected.z,12,selected);showInspector();toast('Variant: '+selected.variant);}}
 
 // ---------------- the little pictures: each building is built on a bare, level spot and photographed
 let sbIS=null,sbICam=null;
 function sbFlatSpot(){let best=[0,0],bs=1e9;for(let n=0;n<700;n++){const x=(Math.random()-.5)*(N-140),z=(Math.random()-.5)*(N-140);if(wAt(x,z)>.01)continue;let mn=hAt(x,z),mx=mn,wet=false;
     for(let k=0;k<16;k++){const a=k/16*TAU,r=k%2?9:16,h=hAt(x+Math.cos(a)*r,z+Math.sin(a)*r);mn=Math.min(mn,h);mx=Math.max(mx,h);if(wAt(x+Math.cos(a)*r,z+Math.sin(a)*r)>.01)wet=true;}
     if(wet)continue;let tr=0;for(const t of trees)if(Math.abs(t.x-x)<20&&Math.abs(t.z-z)<20)tr++;const s=(mx-mn)*6+tr;if(s<bs){bs=s;best=[x,z];}}return best;}
-function sbIcons(){if(SB.iconBusy)return;const todo=SBC.filter(c=>!c.tool&&!SB.icons[c.id]);if(!todo.length)return;SB.iconBusy=true;
+// items are [catalog entry, variant, show-now]; pictures are drawn a few at a time
+function sbEnqueue(items){for(const it of items)if(!SB.icons[sbKey(it[0],it[1])]&&!SB.q.some(q=>q[0]===it[0]&&q[1]===it[1])){if(it[2])SB.q.unshift(it);else SB.q.push(it);}if(SB.q.length&&!SB.iconBusy)sbRun();}
+function sbShot(c,v,sx,sz,PX,pr,cv){
+  const b=newRecord(c.type,sx,sz,0.5,1000+SBC.indexOf(c)*37);b.level=c.level;b.variant=v||c.variant;b.manual=true;
+  const g=generate(b,false);sbIS.add(g.grp);sbIS.background=new THREE.Color(sbSKY[c.age]).lerp(new THREE.Color(0x10243a),.35);
+  const box=new THREE.Box3().setFromObject(g.grp),ctr=box.getCenter(new THREE.Vector3()),sz2=box.getSize(new THREE.Vector3()),rad=box.getBoundingSphere(new THREE.Sphere()).radius;
+  const dist=rad/Math.sin(sbICam.fov*PI/360)*.92,dir=new THREE.Vector3(.75,.62,1).normalize();sbICam.position.copy(ctr).addScaledVector(dir,dist);sbICam.lookAt(ctr.x,ctr.y-sz2.y*.08,ctr.z);
+  renderer.setViewport(0,0,PX/pr,PX/pr);renderer.setScissorTest(false);renderer.render(sbIS,sbICam);
+  const cn=document.createElement('canvas');cn.width=cn.height=PX;cn.getContext('2d').drawImage(cv,0,cv.height-PX,PX,PX,0,0,PX,PX);
+  const o={url:cn.toDataURL('image/png'),name:g.info.name,tr:(g.info.traits&&g.info.traits[0])||''};sbIS.remove(g.grp);disposeObj(g.grp);return o;}
+function sbRun(){if(SB.iconBusy||!SB.q.length)return;SB.iconBusy=true;
   if(!sbIS){sbIS=new THREE.Scene();sbIS.add(new THREE.HemisphereLight(0xe6f0ff,0x7a6a4f,.6));const d=new THREE.DirectionalLight(0xfff1d6,1.15);d.position.set(-50,80,60);sbIS.add(d);sbICam=new THREE.PerspectiveCamera(27,1,1,900);}
-  const [sx,sz]=sbFlatSpot(),gy=hAt(sx,sz),saved=buildings.splice(0);BVER++;const PX=Math.round(160),pr=renderer.getPixelRatio(),cv=renderer.domElement;
+  if(!SB.spot)SB.spot=sbFlatSpot();const [sx,sz]=SB.spot,gy=hAt(sx,sz),saved=buildings.splice(0);BVER++;const PX=160,pr=renderer.getPixelRatio(),cv=renderer.domElement;
   const disc=new THREE.Mesh(new THREE.CylinderGeometry(15,17,.6,40),new THREE.MeshStandardMaterial({color:0x56703f,roughness:1}));disc.position.set(sx,gy-.35,sz);sbIS.add(disc);
   const part=()=>{const t0=performance.now();
-    try{while(todo.length&&performance.now()-t0<60){const c=todo.shift();
-      const b=newRecord(c.type,sx,sz,0.5,1000+SBC.indexOf(c)*37);b.level=c.level;b.variant=c.variant;b.manual=true;
-      const g=generate(b,false);sbIS.add(g.grp);sbIS.background=new THREE.Color(sbSKY[c.age]).lerp(new THREE.Color(0x10243a),.35);
-      const box=new THREE.Box3().setFromObject(g.grp),ctr=box.getCenter(new THREE.Vector3()),sz2=box.getSize(new THREE.Vector3()),rad=box.getBoundingSphere(new THREE.Sphere()).radius;
-      const dist=rad/Math.sin(sbICam.fov*PI/360)*.92,dir=new THREE.Vector3(.75,.62,1).normalize();sbICam.position.copy(ctr).addScaledVector(dir,dist);sbICam.lookAt(ctr.x,ctr.y-sz2.y*.08,ctr.z);
-      renderer.setViewport(0,0,PX/pr,PX/pr);renderer.setScissorTest(false);renderer.render(sbIS,sbICam);
-      const cn=document.createElement('canvas');cn.width=cn.height=PX;cn.getContext('2d').drawImage(cv,0,cv.height-PX,PX,PX,0,0,PX,PX);
-      SB.icons[c.id]={url:cn.toDataURL('image/png'),name:g.info.name,tr:(g.info.traits&&g.info.traits[0])||''};c.n=g.info.name;
-      sbIS.remove(g.grp);disposeObj(g.grp);
-      const pic=sbPage.querySelector(`[data-pic="${c.id}"]`);if(pic)pic.innerHTML=`<img src="${SB.icons[c.id].url}" alt="">`;
-      const nm=sbPage.querySelector(`[data-nm="${c.id}"]`);if(nm)nm.textContent=g.info.name;const ds=sbPage.querySelector(`[data-ds="${c.id}"]`);if(ds)ds.textContent=SB.icons[c.id].tr;}}
-    catch(err){console.error(err);todo.length=0;}
-    if(todo.length)return setTimeout(part,0);
+    try{while(SB.q.length&&performance.now()-t0<60){const [c,v]=SB.q.shift();
+      try{const o=sbShot(c,v,sx,sz,PX,pr,cv);SB.icons[sbKey(c,v)]=o;if(!v||v===sbDefV(c))c.n=o.name;
+        if(sbPage.querySelector(`[data-pic="${c.id}"]`)){const on=sbPage.querySelector(`[data-c="${c.id}"] .vc.on`);if(!on||on.dataset.v===v||!c.variants)sbShow(c,v);}}
+      catch(err){console.error('icon',c.type,v,err);SB.icons[sbKey(c,v)]={url:'',name:c.n,tr:'(could not be drawn)'};}}}
+    catch(err){console.error(err);SB.q.length=0;}
+    if(SB.q.length)return setTimeout(part,0);
     sbIS.remove(disc);disc.geometry.dispose();disc.material.dispose();buildings.push(...saved);BVER++;renderer.setViewport(0,0,innerWidth,innerHeight);
-    SB.iconBusy=false;SB.shown='';if(MODE==='sandbox')buildToolbox(sbToolDefs());};
+    SB.iconBusy=false;if(MODE==='sandbox'&&SB.shown!==undefined){SB.shown='';buildToolbox(sbToolDefs());}};
   setTimeout(part,0);}
 
 // ---------------- populate: the city comes alive
