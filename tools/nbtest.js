@@ -25,6 +25,15 @@ const path = require('path');
   }
   const sw = await page.evaluate(() => { const o = {}; if (TOWNS.list.length > 1) { viewSettlement(1, true); o.after1 = [G.town, buildings.length, popN(), document.getElementById('gTowns').innerText.replace(/\n/g, ' | ')]; updateUI(true); o.prayers = document.getElementById('prayers').innerText.slice(0, 160).replace(/\n/g, ' | '); for (let i = 0; i < 24; i++) gameStep(0.1); o.stillRuns = popN(); cycleSettlement(); o.after2 = [G.town, buildings.length]; } return o; });
   console.log('SWITCH', JSON.stringify(sw));
+  if (process.env.SAVELOAD) {
+    const r = await page.evaluate(() => { const before = __st().map(t => [t.name, t.pop, t.blds, t.era]); const str = serializeGod(); loadGod(str);
+      const after = __st().map(t => [t.name, t.pop, t.blds, t.era]); let ok = true; try { for (let i = 0; i < 120; i++) gameStep(0.1); } catch (e) { ok = String(e); }
+      const old = JSON.parse(str); delete old.towns; return { bytes: str.length, before, after, same: JSON.stringify(before) === JSON.stringify(after), runsAfter: ok, cur: TOWNS.cur, n: TOWNS.list.length, tabs: document.getElementById('gTowns').innerText.replace(/\n/g, ' | '), pop2: __st().map(t => t.pop), shrineGroups: devGrp.children.length }; });
+    console.log('SAVELOAD', JSON.stringify(r));
+    const lg = await page.evaluate(() => { const o = JSON.parse(serializeGod()); const t0 = o.towns[0]; const v2 = Object.assign({}, o, { v: 2, bl: t0.bl, vill: t0.vill, G: Object.assign({}, o.G, t0.G), center: t0.center }); delete v2.towns; delete v2.act;
+      loadGod(JSON.stringify(v2)); for (let i = 0; i < 120; i++) gameStep(0.1); return { n: TOWNS.list.length, name: G.town, pop: popN(), blds: buildings.length, era: ERAS[G.era].name }; });
+    console.log('LEGACY_V2', JSON.stringify(lg));
+  }
   if (process.env.JUDGE) {
     const j = await page.evaluate(() => { const o = {}; const before = TOWNS.list.map(s => s.dead); const judged = TOWNS.cur; G.dev.sin = 50; devJudge('firestorm'); let n = 0; while (!G.dev.done && n++ < 400) { for (let i = 0; i < 24; i++) gameStep(0.1); }
       o.judgedDone = G.dev.done; o.dead = TOWNS.list.map(s => s.dead); o.paused = G.paused; o.reckon = document.getElementById('reckon').innerText.replace(/\n+/g, ' | ').slice(-120);

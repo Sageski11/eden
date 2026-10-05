@@ -180,24 +180,43 @@ function autoFindSpot(lim){let best=null,bs=-1e9;for(let i=0;i<600;i++){const x=
   if(wet||mx-mn>lim||Math.abs(x)>HALF-16||Math.abs(z)>HALF-16)continue;const wd=nearWater(x,z,14);let tr=0;for(const t of trees)if(t.t!==4&&Math.abs(t.x-x)<20&&Math.abs(t.z-z)<20)tr++;
   const s=-(mx-mn)*3-Math.abs(wd-8)*.8+Math.min(tr,40)*.15-Math.hypot(x,z)*.05;if(s>bs){bs=s;best=[x,z];}}
   return best;}
-function serializeGod(){const s=snapshot();const pick=(o,ks)=>{const r={};for(const k of ks)r[k]=o[k];return r;};
-  return JSON.stringify({v:2,mode:'god',N,H:f32b64(s.H),W:f32b64(s.W),R:f32b64(s.R),trees:s.trees.map(t=>({x:t.x,z:t.z,t:t.t,s:t.s,r:t.r,c:t.c})),springs:springs.map(p=>({x:p.x,z:p.z,rate:p.base||p.rate})),
-    bl:buildings.map(b=>pick(b,['id','type','x','z','rot','manual','seed','w','d','level','variant','build','upg','forFam','stock','blessedUp','flooded','cw','cs'])),
-    vill:G.vill.filter(v=>!v.leaving).map(v=>pick(v,['id','name','fam','female','age','job','home','work','x','z','spouse','parents','sick','skin','site','hp','arriving','look','cult','prophet','seer'])),
-    G:pick(G,['t','speed','faith','food','wood','stone','era','hap','markers','prayers','chron','town','raids','births','deaths','arrivals','raidCool','plagueCool','drought','rain','rainI','harvest','firstHut','wantHouse','nextV','prayerCool','lastFest','phase','realm','seed','plan','sk','unl','fish','boatsBuilt','boatWork','world','sun','snow','storm','rainbow','lastRain','dev','tf','net']),animals:animals.map(a=>({sp:a.sp,x:+a.x.toFixed(1),z:+a.z.toFixed(1),male:a.male,sc:a.sc})),
-    center:G.center?G.center.id:0,cam:{tx:cam.tx,tz:cam.tz,yaw:cam.yaw,pitch:cam.pitch,dist:cam.dist}});}
+// Saves hold the shared world once and one entry per settlement (v3). v2 saves hold a single settlement and still load.
+const SAVE_SHARED=['t','speed','faith','phase','realm','seed','world','sun','snow','storm','rainbow','lastRain','rain','rainI','drought','snowmelt','chron','nextV','openRain','nbDone','nbAt'];
+const SAVE_PER=['food','wood','stone','era','hap','markers','prayers','town','raids','births','deaths','arrivals','raidCool','plagueCool','harvest','firstHut','wantHouse','prayerCool','lastFest','plan','sk','unl','fish','boatsBuilt','boatWork','dev','tf','net','poll','waterDist'];
+const _pickK=(o,ks)=>{const r={};for(const k of ks)r[k]=o[k];return r;};
+function serializeTown(){return {bl:buildings.map(b=>_pickK(b,['id','type','x','z','rot','manual','seed','w','d','level','variant','build','upg','forFam','stock','blessedUp','flooded','cw','cs'])),
+  vill:G.vill.filter(v=>!v.leaving).map(v=>_pickK(v,['id','name','fam','female','age','job','home','work','x','z','spouse','parents','sick','skin','site','hp','arriving','look','cult','prophet','seer'])),
+  G:_pickK(G,SAVE_PER),center:G.center?G.center.id:0};}
+function serializeGod(){const s=snapshot();
+  const towns=TOWNS.list.map((t,i)=>Object.assign(withSettlement(i,serializeTown),{dead:!!t.dead}));
+  return JSON.stringify({v:3,mode:'god',N,H:f32b64(s.H),W:f32b64(s.W),R:f32b64(s.R),trees:s.trees.map(t=>({x:t.x,z:t.z,t:t.t,s:t.s,r:t.r,c:t.c})),springs:springs.map(p=>({x:p.x,z:p.z,rate:p.base||p.rate})),
+    G:_pickK(G,SAVE_SHARED),towns,act:TOWNS.cur,animals:animals.map(a=>({sp:a.sp,x:+a.x.toFixed(1),z:+a.z.toFixed(1),male:a.male,sc:a.sc})),
+    cam:{tx:cam.tx,tz:cam.tz,yaw:cam.yaw,pitch:cam.pitch,dist:cam.dist}});}
+// restore one settlement into the context that is currently active
+function loadTown(td){for(const b of buildings.slice())removeBuilding(b);let mx=0;
+  for(const r of td.bl){const b=newRecord(r.type,r.x,r.z,r.rot,r.seed);Object.assign(b,r);buildings.push(b);mx=Math.max(mx,b.id);}nextId=Math.max(nextId,mx+1);
+  Object.assign(G,td.G);G.raid=null;G.bandits=[];G.vill=[];
+  for(const r of td.vill){const v=newVillager(r);v.id=r.id;v.timer=rnd()*.3;}
+  G.center=bById(td.center);if(!G.sk)G.sk={wood:0,work:0,stone:0,farm:0,fish:0,hunt:0};if(!G.unl)G.unl={};if(!G.failCool)G.failCool={};devEnsure();tfEnsure();
+  if(G.center&&!G.plan)makePlan(G.center);}
 function loadGod(str){const o=JSON.parse(str);if(o.mode!=='god'||o.N!==N)throw new Error('bad');
   enterGodUI();resetG();
   H.set(b64f32(o.H));W.set(b64f32(o.W));ROAD.set(b64f32(o.R));F.fill(0);trees.length=0;for(const t of o.trees)trees.push(t);treesDirty=true;
   springs.length=0;for(const p of o.springs)springs.push(p);refreshSprings();
-  for(const b of buildings.slice())removeBuilding(b);let mx=0;
-  for(const r of o.bl){const b=newRecord(r.type,r.x,r.z,r.rot,r.seed);Object.assign(b,r);buildings.push(b);mx=Math.max(mx,b.id);}nextId=mx+1;
-  Object.assign(G,o.G);G.paused=false;G.raid=null;G.bandits=[];G.vill=[];
-  for(const r of o.vill){const v=newVillager(r);v.id=r.id;v.timer=rnd()*.3;}G.nextV=Math.max(G.nextV,...G.vill.map(v=>v.id+1),1);
-  G.center=bById(o.center);if(o.cam)Object.assign(cam,o.cam);WORLD=G.world||'river';animals.length=0;for(const a of (o.animals||[]))spawnAnimal(a.sp,a.x,a.z,{male:a.male,sc:a.sc});if(!G.sk)G.sk={wood:0,work:0,stone:0,farm:0,fish:0,hunt:0};if(!G.unl)G.unl={};devEnsure();tfEnsure();devRefreshShrine();netReload();
-  if(G.center&&!G.plan)makePlan(G.center);
-  refreshCivic();for(const b of buildings)realize(b);refreshTerrain();updateSkirt();updateWaterMesh(true);refreshMarkers();
-  if(G.phase==='shape'){buildToolbox(shapeToolDefs());setTool('raise');}else{buildToolbox(godToolDefs());setTool('inspect');}assignHomes();gridDirty=true;treesDirty=true;rebuildTrees();updateUI(true);applyUI();
+  nextId=1;
+  // v2 saves: one settlement whose data lives at the top level
+  const towns=o.towns||[{bl:o.bl,vill:o.vill,G:o.G,center:o.center}];const shared=o.towns?o.G:o.G;
+  Object.assign(G,_pickK(shared,SAVE_SHARED.filter(k=>shared[k]!==undefined)));G.paused=false;
+  towns.forEach((td,i)=>{if(i===0){loadTown(td);}else{TOWNS.list.push({st:sDefaults(td.G&&td.G.town),bld:[],dead:!!td.dead});withSettlement(TOWNS.list.length-1,()=>loadTown(td));}
+    if(td.dead&&i===0)TOWNS.list[0].dead=true;});
+  for(const t of TOWNS.list){const nv=((t.st&&t.st.vill)||G.vill).reduce((a,v)=>Math.max(a,v.id+1),1);G.nextV=Math.max(G.nextV||1,nv);}
+  for(let i=0;i<TOWNS.list.length;i++)withSettlement(i,()=>{for(const v of G.vill)G.nextV=Math.max(G.nextV,v.id+1);});
+  const act=Math.min(o.act||0,TOWNS.list.length-1);if(act!==TOWNS.cur){swapOut();swapIn(act);}TOWNS.act=act;
+  if(o.cam)Object.assign(cam,o.cam);WORLD=G.world||'river';animals.length=0;for(const a of (o.animals||[]))spawnAnimal(a.sp,a.x,a.z,{male:a.male,sc:a.sc});
+  devRefreshShrine();netReload();refreshCivic();for(const b of allB())realize(b);refreshTerrain();updateSkirt();updateWaterMesh(true);refreshMarkers();
+  if(G.phase==='shape'){buildToolbox(shapeToolDefs());setTool('raise');}else{buildToolbox(godToolDefs());setTool('inspect');}
+  for(let i=0;i<TOWNS.list.length;i++)if(!TOWNS.list[i].dead)withSettlement(i,()=>assignHomes());
+  gridDirty=true;treesDirty=true;rebuildTrees();updateUI(true);applyUI();
 }
 function enterGodUI(){exitMenu();MODE='god';$('title').classList.add('hidden');$('top').classList.add('hidden');$('gtop').classList.remove('hidden');$('prayers').classList.remove('hidden');$('help').classList.add('hidden');
   renderer.localClippingEnabled=true;}
