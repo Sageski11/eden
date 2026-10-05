@@ -11,7 +11,7 @@ function startSite(type,x,z,rot,o={}){
   b.build={need:{wood:w,stone:s},have:{wood:0,stone:0},inb:{wood:0,stone:0},work:wk,done:0,blessed:false};
   if(o.forFam)b.forFam=o.forFam;
   addBuilding(b);if(MODE==='god'&&G.plan)onPlannedBuild(b);
-  const nt=trees.length;clearTreesAround(b.x,b.z,(TYPE_R[type]||2.5)+(type==='camp'||type==='castle'?1.2:.3));const cut=nt-trees.length;if(cut>0){G.wood+=cut;}
+  tfGradeSite(b);const nt=trees.length;clearTreesAround(b.x,b.z,(TYPE_R[type]||2.5)+(type==='camp'||type==='castle'?1.2:.3));const cut=nt-trees.length;if(cut>0){G.wood+=cut;}
   realize(b);rebuildNear(b.x,b.z,34,b);gridDirty=true;
   if(['church','castle','smith','mill','tavern','market','quarry','well'].includes(type))chron(`The folk began raising a ${siteName(b)}.`);
   return b;
@@ -160,7 +160,7 @@ function evalSite(need,x,z,snap){
   if(wAt(x,z)>.06)return null;
   let mn=1e9,mx=-1e9;for(let i=0;i<17;i++){const a=i/8*TAU,rr=i===16?0:i<8?r*1.05:r*.55;const h=hAt(x+Math.cos(a)*rr,z+Math.sin(a)*rr);if(h<mn)mn=h;if(h>mx)mx=h;
     if(i<16&&wAt(x+Math.cos(a)*rr,z+Math.sin(a)*rr)>.15&&!['camp','dock','shipyard','fishmkt'].includes(type))return null;}
-  const range=mx-mn;if(range>({house:2.6,farm:3.2,castle:9,camp:3.6,quarry:8,church:3.4,market:3.6}[type]||3.2))return null;
+  const range=mx-mn;if(range>({house:2.6,farm:3.2,castle:9,camp:3.6,quarry:8,church:3.4,market:3.6}[type]||3.2)+((type==='quarry'||type==='castle'||type==='dock'||type==='shipyard')?0:tfExtra()))return null;
   const rec={id:-1,type,x,z,rot:snap?snap.rot:0,w:snap?snap.w:3.4,d:snap?snap.d:3.4};
   if(G.plan){if(blockedAt(type,x,z,snap?snap.rot:0,snap&&snap.w,null))return null;}
   else for(const o of buildings){const d=Math.hypot(o.x-x,o.z-z);if(snap&&o===snap.o)continue;const k=(type==='house'&&o.type==='house')?.78:.98;if(d<(r+o.r)*k)return null;}
@@ -365,7 +365,7 @@ function newDay(){if(G.menu)return;
   if(s===2&&dis===DPS){if(G.food>=p*5&&G.t-G.lastFest>40){startFestival(12,'harvest');chron(`The harvest was gathered. ${G.town} held a Harvest Festival!`,true);}else chron('A lean harvest. There was no festival this year.');}
   G.prodY={...G.prod};G.prod={food:0,wood:0,stone:0};
   G.joy*=.75;G.grief*=.7;G.sad*=.8;
-  assignHomes();assignJobs();checkEra();devDaily();if(seasonN()===3||dis===1)buildToolbox(godToolDefs());
+  assignHomes();assignJobs();checkEra();devDaily();tfDaily();if(seasonN()===3||dis===1)buildToolbox(godToolDefs());
 }
 function edgePoint(a){const x=Math.cos(a),z=Math.sin(a),m=Math.max(Math.abs(x),Math.abs(z));let px=x/m*(HALF-1.5),pz=z/m*(HALF-1.5);
   for(let i=0;i<24&&wAt(px,pz)>.3;i++){a+=.15;const x2=Math.cos(a),z2=Math.sin(a),m2=Math.max(Math.abs(x2),Math.abs(z2));px=x2/m2*(HALF-1.5);pz=z2/m2*(HALF-1.5);}return [px,pz];}

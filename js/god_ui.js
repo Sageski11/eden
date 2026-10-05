@@ -117,8 +117,8 @@ function updateUI(force){
   else if(G.phase==='pick')h+=`<div class="pr urgent">Five weary settlers wander into the valley.<em>Click the land to plant a banner where they should make camp. Flat, dry ground near water and forest is best.</em></div><button id="autoPick">Let them choose</button>`;
   else{if(!G.prayers.length)h+='<div class="pr none">The folk are content. No prayers for now.</div>';
     for(const p of G.prayers){const hl=Math.max(0,p.until-G.t);h+=`<div class="pr${p.urgent?' urgent':''}">${esc(p.txt)}<em>${esc(PRAYERS[p.k].how)}</em><span class="rw">Reward ${PRAYERS[p.k].r} faith · ${hl>=24?Math.ceil(hl/24)+' days':Math.ceil(hl)+' hours'} left</span></div>`;}
-    const nx=ERA_REQ[G.era+1];if(nx)h+=`<div class="pr none" style="margin-top:4px">Next: <b>${ERAS[G.era+1].name}</b> — ${nx.txt}</div>`;h+=devPanelHTML();}
-  if(force||$('prayers')._h!==h){$('prayers').innerHTML=h;$('prayers')._h=h;devBind();const ap=$('autoPick');if(ap)ap.onclick=()=>autoChooseStart();const cs=$('callS');if(cs)cs.onclick=()=>callSettlers();}
+    const nx=ERA_REQ[G.era+1];if(nx)h+=`<div class="pr none" style="margin-top:4px">Next: <b>${ERAS[G.era+1].name}</b> — ${nx.txt}</div>`;h+=tfPanelHTML()+devPanelHTML();}
+  if(force||$('prayers')._h!==h){$('prayers').innerHTML=h;$('prayers')._h=h;devBind();tfBind();const ap=$('autoPick');if(ap)ap.onclick=()=>autoChooseStart();const cs=$('callS');if(cs)cs.onclick=()=>callSettlers();}
   layoutGod();
 }
 function layoutGod(){applyUI();}
@@ -184,7 +184,7 @@ function serializeGod(){const s=snapshot();const pick=(o,ks)=>{const r={};for(co
   return JSON.stringify({v:2,mode:'god',N,H:f32b64(s.H),W:f32b64(s.W),R:f32b64(s.R),trees:s.trees.map(t=>({x:t.x,z:t.z,t:t.t,s:t.s,r:t.r,c:t.c})),springs:springs.map(p=>({x:p.x,z:p.z,rate:p.base||p.rate})),
     bl:buildings.map(b=>pick(b,['id','type','x','z','rot','manual','seed','w','d','level','variant','build','upg','forFam','stock','blessedUp','flooded','cw','cs'])),
     vill:G.vill.filter(v=>!v.leaving).map(v=>pick(v,['id','name','fam','female','age','job','home','work','x','z','spouse','parents','sick','skin','site','hp','arriving','look','cult','prophet','seer'])),
-    G:pick(G,['t','speed','faith','food','wood','stone','era','hap','markers','prayers','chron','town','raids','births','deaths','arrivals','raidCool','plagueCool','drought','rain','rainI','harvest','firstHut','wantHouse','nextV','prayerCool','lastFest','phase','realm','seed','plan','sk','unl','fish','boatsBuilt','boatWork','world','sun','snow','storm','rainbow','lastRain','dev']),animals:animals.map(a=>({sp:a.sp,x:+a.x.toFixed(1),z:+a.z.toFixed(1),male:a.male,sc:a.sc})),
+    G:pick(G,['t','speed','faith','food','wood','stone','era','hap','markers','prayers','chron','town','raids','births','deaths','arrivals','raidCool','plagueCool','drought','rain','rainI','harvest','firstHut','wantHouse','nextV','prayerCool','lastFest','phase','realm','seed','plan','sk','unl','fish','boatsBuilt','boatWork','world','sun','snow','storm','rainbow','lastRain','dev','tf']),animals:animals.map(a=>({sp:a.sp,x:+a.x.toFixed(1),z:+a.z.toFixed(1),male:a.male,sc:a.sc})),
     center:G.center?G.center.id:0,cam:{tx:cam.tx,tz:cam.tz,yaw:cam.yaw,pitch:cam.pitch,dist:cam.dist}});}
 function loadGod(str){const o=JSON.parse(str);if(o.mode!=='god'||o.N!==N)throw new Error('bad');
   enterGodUI();resetG();
@@ -194,7 +194,7 @@ function loadGod(str){const o=JSON.parse(str);if(o.mode!=='god'||o.N!==N)throw n
   for(const r of o.bl){const b=newRecord(r.type,r.x,r.z,r.rot,r.seed);Object.assign(b,r);buildings.push(b);mx=Math.max(mx,b.id);}nextId=mx+1;
   Object.assign(G,o.G);G.paused=false;G.raid=null;G.bandits=[];G.vill=[];
   for(const r of o.vill){const v=newVillager(r);v.id=r.id;v.timer=rnd()*.3;}G.nextV=Math.max(G.nextV,...G.vill.map(v=>v.id+1),1);
-  G.center=bById(o.center);if(o.cam)Object.assign(cam,o.cam);WORLD=G.world||'river';animals.length=0;for(const a of (o.animals||[]))spawnAnimal(a.sp,a.x,a.z,{male:a.male,sc:a.sc});if(!G.sk)G.sk={wood:0,work:0,stone:0,farm:0,fish:0,hunt:0};if(!G.unl)G.unl={};devEnsure();devRefreshShrine();
+  G.center=bById(o.center);if(o.cam)Object.assign(cam,o.cam);WORLD=G.world||'river';animals.length=0;for(const a of (o.animals||[]))spawnAnimal(a.sp,a.x,a.z,{male:a.male,sc:a.sc});if(!G.sk)G.sk={wood:0,work:0,stone:0,farm:0,fish:0,hunt:0};if(!G.unl)G.unl={};devEnsure();tfEnsure();devRefreshShrine();
   if(G.center&&!G.plan)makePlan(G.center);
   refreshCivic();for(const b of buildings)realize(b);refreshTerrain();updateSkirt();updateWaterMesh(true);refreshMarkers();
   if(G.phase==='shape'){buildToolbox(shapeToolDefs());setTool('raise');}else{buildToolbox(godToolDefs());setTool('inspect');}assignHomes();gridDirty=true;treesDirty=true;rebuildTrees();updateUI(true);applyUI();

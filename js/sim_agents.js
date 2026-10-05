@@ -11,7 +11,7 @@ const NM=['Aldric','Bram','Cedric','Duncan','Edric','Finn','Gareth','Hugh','Ivo'
 const NF=['Agnes','Beatrix','Cecily','Edith','Elena','Gisela','Hilda','Isolde','Joan','Juliana','Linnet','Mabel','Matilda','Maud','Nell','Odila','Rosamund','Sybil','Tilda','Wynn','Alys','Emma','Ida','Avice','Margery','Petra','Eleanor','Ysolde','Eda','Rose'];
 const FAM=['Ashby','Brook','Cooper','Thatcher','Miller','Fletcher','Wright','Hollins','Marsh','Fenwick','Underwood','Hale','Tanner','Shepherd','Carter','Fisher','Mason','Baker','Woodward','Reeve','Croft','Fairweather','Ridley','Stone','Ashdown','Merriman'];
 function townName(){return pickA(['Ash','Oak','Bram','Thorn','Wil','Elder','Stan','Mer','Holl','Ral','Wend','Fen','Briar','Kings','Red','Cold','Hart','Lark'])+pickA(['ford','mere','by','ton','wick','stead','holm','dale','bury','well','brook','field']);}
-function resetG(){for(const k in G)delete G[k];Object.assign(G,{dev:devNew(),t:7,speed:1,paused:false,faith:160,food:70,wood:45,stone:0,era:0,hap:62,hapT:62,hapF:{},
+function resetG(){for(const k in G)delete G[k];Object.assign(G,{dev:devNew(),tf:tfNew(),t:7,speed:1,paused:false,faith:160,food:70,wood:45,stone:0,era:0,hap:62,hapT:62,hapF:{},
   vill:[],bandits:[],markers:[],prayers:[],chron:[],center:null,rain:0,rainI:1,drought:false,snowmelt:0,harvest:0,festival:0,festCool:0,raid:null,raidCool:40,
   sad:0,grief:0,joy:0,nextV:1,town:townName(),phase:'pick',wantHouse:[],lastDay:-1,lastHour:-1,pid:1,flooded:0,floodMap:new Uint8Array(NN),siteFail:null,noTrees:false,
   follow:null,pathBudget:0,prod:{food:0,wood:0,stone:0},prodY:{food:0,wood:0,stone:0},failCool:{},sk:{wood:0,work:0,stone:0,farm:0,fish:0,hunt:0},unl:{},fish:1,boatsBuilt:0,boatWork:0,sun:0,snow:0,rainbow:0,storm:0,env:null,lastRain:-99,noGame:false,cons:0,firstHut:false,raids:0,births:0,deaths:0,arrivals:0,prayerCool:{},plagueCool:0,lastFest:-9,storm:0});}
@@ -210,7 +210,7 @@ function fishTask(v){const c=bById(v.work);if(!c||c.build)return forageTask(v);
 function findShore(x,z,R){let best=null,bd=1e9;for(let dz=-R;dz<=R;dz++)for(let dx=-R;dx<=R;dx++){const d=Math.hypot(dx,dz);if(d>=bd)continue;if(wAt(x+dx,z+dz)<.05&&(wAt(x+dx+1,z+dz)>.3||wAt(x+dx-1,z+dz)>.3||wAt(x+dx,z+dz+1)>.3||wAt(x+dx,z+dz-1)>.3)){bd=d;best=[x+dx,z+dz];}}return best;}
 function quarryTask(v){const q=bById(v.work);if(!q||q.build)return forageTask(v);
   if(v.carry==='stone'){goTo(v,...toW2(q,-2.8,2.4),vv=>{G.stone+=vv.amt;G.prod.stone+=vv.amt;vv.carry=null;wait(vv,.2);});return;}
-  setThought(v,'Cutting stone blocks.');goTo(v,...toW2(q,(rnd()-.5)*3,(rnd()-.5)*2.5),vv=>wait(vv,1.6,'work',false,ww=>{ww.carry='stone';ww.amt=Math.round(4*workMul()*(masonStaffed()?1.25:1)*(1+(skLvl('stone')-1)*.05));gainXP('stone',1);}),q.id);}
+  setThought(v,'Cutting stone blocks.');goTo(v,...toW2(q,(rnd()-.5)*3,(rnd()-.5)*2.5),vv=>wait(vv,1.6,'work',false,ww=>{tfMine(q);ww.carry='stone';ww.amt=Math.round(4*workMul()*(masonStaffed()?1.25:1)*(1+(skLvl('stone')-1)*.05));gainXP('stone',1);}),q.id);}
 function forageTask(v){const c=G.center;if(!c)return wait(v,1);
   let tx=c.x+(rnd()-.5)*30,tz=c.z+(rnd()-.5)*30;const near=trees.filter(t=>t.t!==4&&Math.abs(t.x-c.x)<26&&Math.abs(t.z-c.z)<26);if(near.length){const t=pickA(near);tx=t.x+1;tz=t.z+1;}
   setThought(v,seasonN()===3?'Scraping for roots in the snow…':pickA(['Gathering berries and mushrooms.','Collecting kindling and nuts.']));
