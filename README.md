@@ -60,3 +60,7 @@ node tools/nbtest.js 60        # two peoples (JUDGE=1, SAVELOAD=1, TRADE=1 add c
 node tools/opentest.js         # rain opening and the free first Sunshine
 node tools/showcase.js out.png "house:4,house:5,factory" 0.5 70 0.4 7   # stage buildings and screenshot
 ```
+
+## Sandbox
+
+Choose **Sandbox** on the title screen to build a whole city with no rules. Press **TAB** to open the Buildings page: every building of every age, with a small picture of each, grouped by age (Stone Age holds only Stone Age buildings, and so on). Click a plate to choose it, then click the land (R rotates, V varies). Dirt roads, paved streets, railways and highways are on the plates too, and in the Roads group of the toolbox. When the city is ready, press **Populate city** (you need a Town Hall of any age): the folk move in, the age of the city is taken from its newest building, and the god game carries on from there. `node tools/sbtest.js` exercises all of this headlessly.
