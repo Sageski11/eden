@@ -93,19 +93,23 @@ fs.mkdirSync(OUT, { recursive: true });
       const t = await page.evaluate(() => { const t = document.getElementById('ovTip'); return t.classList.contains('hidden') ? '' : t.innerText; });
       console.log(m, 'tip:', t.replace(/\n+/g, ' | ').slice(0, 220));
     }
-    await page.evaluate(() => { ovSetOverlay('svc'); });
-    for (const sub of ['water', 'food', 'safety', 'worship', 'health', 'learning', 'leisure']) {
-      await page.evaluate((s) => { ovState.sub = s; ovState.force = true; ovState.job = null; }, sub);
-      await page.waitForTimeout(900); await frames(3);
-      if (['water', 'worship', 'health'].includes(sub)) await shot(`s${STAGE}-svc-${sub}`);
+    if (process.env.SUBS !== '0') {
+      await page.evaluate(() => { ovSetOverlay('svc'); });
+      for (const sub of (process.env.SUBS || 'water,health').split(',')) {
+        const d0 = await page.evaluate(() => ovState.done || 0);
+        await page.evaluate((s) => { ovState.sub = s; ovState.force = true; ovState.job = null; }, sub);
+        for (let i = 0; i < 80; i++) { if ((await page.evaluate(() => ovState.done || 0)) > d0) break; await page.waitForTimeout(400); }
+        await shot(`s${STAGE}-svc-${sub}`);
+      }
     }
     await page.evaluate(() => { ovSetOverlay(null); });
-    // the diagnostics panel and the edicts panel
-    await page.evaluate(() => { ovTool('o:why'); }); await page.waitForTimeout(1600); await shot(`s${STAGE}-why`);
-    await page.evaluate(() => { ovTool('o:law'); }); await page.waitForTimeout(900); await shot(`s${STAGE}-law`);
-    await page.evaluate(() => { ovTool('o:law'); });
-    // zoomed out: names
-    await camTo(c.x, c.z, 150, .8, .5); await frames(4); await shot(`s${STAGE}-names`);
+    if (process.env.PANELS !== '0') {
+      // the diagnostics panel, the edicts panel and the district names
+      await page.evaluate(() => { ovTool('o:why'); }); await page.waitForTimeout(1600); await shot(`s${STAGE}-why`);
+      await page.evaluate(() => { ovTool('o:law'); }); await page.waitForTimeout(900); await shot(`s${STAGE}-law`);
+      await page.evaluate(() => { ovTool('o:law'); });
+      await camTo(c.x, c.z, 150, .8, .5); await frames(4); await shot(`s${STAGE}-names`);
+    }
     console.log(errs.length ? errs.join('\n') : 'NO ERRORS'); await browser.close(); return;
   }
 

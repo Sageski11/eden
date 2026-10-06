@@ -66,28 +66,31 @@ function gather(){
   if(!buildings.length){x0=z0=-10;x1=z1=10;}
   const m=40;D.roi=[cellI(x0-m),cellI(z0-m),cellI(x1+m),cellI(z1+m)];
 }
-function calcWd(){// distance (world units) to the nearest water, by two chamfer passes; refreshed every few seconds at most
+function* calcWd(){// distance (world units) to the nearest water, by two chamfer passes; refreshed every few seconds at most
   if(OV.wd&&now()-OV.wdT<9)return;OV.wdT=now();const A=OV.wd||(OV.wd=new Float32Array(NN)),BIG=999;
   for(let j=0;j<GN;j++)for(let i=0;i<GN;i++){const k=j*GN+i;A[k]=W[(j*GC+1)*S+i*GC+1]>.2?0:BIG;}
+  yield;
   for(let j=0;j<GN;j++)for(let i=0;i<GN;i++){const k=j*GN+i;let v=A[k];if(i>0)v=Math.min(v,A[k-1]+GC);if(j>0)v=Math.min(v,A[k-GN]+GC);if(i>0&&j>0)v=Math.min(v,A[k-GN-1]+GC*1.41);if(i<GN-1&&j>0)v=Math.min(v,A[k-GN+1]+GC*1.41);A[k]=v;}
+  yield;
   for(let j=GN-1;j>=0;j--)for(let i=GN-1;i>=0;i--){const k=j*GN+i;let v=A[k];if(i<GN-1)v=Math.min(v,A[k+1]+GC);if(j<GN-1)v=Math.min(v,A[k+GN]+GC);if(i<GN-1&&j<GN-1)v=Math.min(v,A[k+GN+1]+GC*1.41);if(i>0&&j<GN-1)v=Math.min(v,A[k+GN-1]+GC*1.41);A[k]=v;}
 }
-function calcCov(){
-  for(const k of S7)COV[k].fill(0);
-  for(const s of D.sv)stamp(COV[s.cat],s.b.x,s.b.z,s.r*(1+(G.era>=5?.1:0)),s.w);
-  calcWd();const wd=OV.wd;for(let k=0;k<NN;k++)if(wd[k]<10)COV.water[k]=Math.max(COV.water[k],1-wd[k]/16);
-  D.foot.fill(0);for(const h of D.homes){const r=h.type==='hall'?7:8.5,i0=cellI(h.x-r),i1=cellI(h.x+r),j0=cellI(h.z-r),j1=cellI(h.z+r);
-    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++)if(Math.hypot(cellX(i)-h.x,cellX(j)-h.z)<r)D.foot[j*GN+i]=1;}
+function* calcCov(){
+  for(const k of S7)COV[k].fill(0);yield;
+  let n=0;for(const s of D.sv){stamp(COV[s.cat],s.b.x,s.b.z,s.r*(1+(G.era>=5?.1:0)),s.w);if(++n%7===0)yield;}
+  yield* calcWd();yield;const wd=OV.wd;for(let k=0;k<NN;k++)if(wd[k]<10)COV.water[k]=Math.max(COV.water[k],1-wd[k]/16);
+  yield;D.foot.fill(0);n=0;for(const h of D.homes){const r=h.type==='hall'?7:8.5,i0=cellI(h.x-r),i1=cellI(h.x+r),j0=cellI(h.z-r),j1=cellI(h.z+r);
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++)if(Math.hypot(cellX(i)-h.x,cellX(j)-h.z)<r)D.foot[j*GN+i]=1;if(++n%12===0)yield;}
 }
-function calcPoll(){
+function* calcPoll(){
   const A=D.poll;A.fill(0);const e=G.era||0,k0=e>=5?.35+clamp((G.poll||0)/50,0,1)*.9:.45;
-  const wa=G.plan&&G.plan.wind!=null?G.plan.wind:.6,wx=Math.cos(wa),wz=Math.sin(wa);
+  const wa=G.plan&&G.plan.wind!=null?G.plan.wind:.6,wx=Math.cos(wa),wz=Math.sin(wa);let n=0;
   for(const s of D.polS){const st=s.s*k0;const R=46,x=s.b.x,z=s.b.z,i0=cellI(x-R),i1=cellI(x+R),j0=cellI(z-R),j1=cellI(z+R);
-    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const dx=cellX(i)-x,dz=cellX(j)-z,al=dx*wx+dz*wz,cr=-dx*wz+dz*wx;const q=(al-9)*(al-9)/(2*(al>9?26*26:15*15))+cr*cr/(2*12*12);if(q>6)continue;A[j*GN+i]+=st*Math.exp(-q);}}
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const dx=cellX(i)-x,dz=cellX(j)-z,al=dx*wx+dz*wz,cr=-dx*wz+dz*wx;const q=(al-9)*(al-9)/(2*(al>9?26*26:15*15))+cr*cr/(2*12*12);if(q>6)continue;A[j*GN+i]+=st*Math.exp(-q);}
+    if(++n%3===0)yield;}
   // forests clean the air: tree density near each cell (counted once, blurred)
-  const T=D.tree;T.fill(0);for(const t of trees){if(t.t===4||t.t===5)continue;T[cellI(t.z)*GN+cellI(t.x)]+=1;}
-  for(let pass=0;pass<2;pass++){const o=D.dens;for(let j=1;j<GN-1;j++)for(let i=1;i<GN-1;i++){const k=j*GN+i;o[k]=(T[k]*2+T[k-1]+T[k+1]+T[k-GN]+T[k+GN])/6;}T.set(o);}
-  for(let k=0;k<NN;k++){if(A[k]>0)A[k]=A[k]*(1-Math.min(.4,T[k]*.18));}
+  const T=D.tree;T.fill(0);n=0;for(const t of trees){if(t.t===4||t.t===5)continue;T[cellI(t.z)*GN+cellI(t.x)]+=1;if(++n%2500===0)yield;}
+  for(let pass=0;pass<2;pass++){yield;const o=D.dens;for(let j=1;j<GN-1;j++)for(let i=1;i<GN-1;i++){const k=j*GN+i;o[k]=(T[k]*2+T[k-1]+T[k+1]+T[k-GN]+T[k+GN])/6;}T.set(o);}
+  yield;for(let k=0;k<NN;k++){if(A[k]>0)A[k]=A[k]*(1-Math.min(.4,T[k]*.18));}
 }
 // ---------------------------------------------------------------- zones: the plan's districts on the grid (a generator: it yields while running)
 function zoneOfPoint(x,z){const P=G.plan;
@@ -113,23 +116,23 @@ function homeValue(h,sv){// mood of the quarter around one home and what is behi
 // ---------------------------------------------------------------- the jobs (one per overlay): fill `buf` and finish
 function* jobFor(mode){
   buf.fill(0);const [i0,j0,i1,j1]=D.roi;gather();
-  if(mode==='svc'){calcCov();yield;const rel=relCats(),sub=OV.sub;
+  if(mode==='svc'){yield* calcCov();yield;const rel=relCats(),sub=OV.sub;
     for(let j=j0;j<=j1;j++){for(let i=i0;i<=i1;i++){const k=j*GN+i,foot=D.foot[k];
       if(sub==='all'){let c=0;for(const q of rel)if(COV[q][k]>=.2)c++;const t=rel.length?c/rel.length:1;
         if(foot)putL(k,LUT.rg,t,.74);else if(c)putL(k,LUT.rg,t,.18+.14*t);}
       else{const v=COV[sub][k];if(foot){if(v>=.04)putL(k,LUT.teal,v,.32+.32*v);else putL(k,LUT.rg,0,.58);}else if(v>.02)putL(k,LUT.teal,v,.14+.24*v);}}
       if((j&7)===0)yield;}}
-  else if(mode==='hap'){calcCov();calcPoll();yield;D.hap.fill(0);D.hapW.fill(0);
-    for(const h of D.homes){const sv=svcAt(h.x,h.z),hv=homeValue(h,sv);h._ovH=hv;const R=11,x=h.x,z=h.z;
+  else if(mode==='hap'){yield* calcCov();yield* calcPoll();yield;D.hap.fill(0);D.hapW.fill(0);let hn=0;
+    for(const h of D.homes){if(++hn%6===0)yield;const sv=svcAt(h.x,h.z),hv=homeValue(h,sv);h._ovH=hv;const R=11,x=h.x,z=h.z;
       for(let j=cellI(z-R);j<=cellI(z+R);j++)for(let i=cellI(x-R);i<=cellI(x+R);i++){const d2=((cellX(i)-x)**2+(cellX(j)-z)**2)/(R*R);if(d2>1)continue;const w=Math.exp(-d2*2.6),k=j*GN+i;D.hap[k]+=w*hv.v;D.hapW[k]+=w;}}
     yield;for(let k=0;k<NN;k++){const w=D.hapW[k];if(w>.05)putL(k,LUT.rg,((D.hap[k]/w)-25)/60,clamp(w*.62,0,.76));}}
-  else if(mode==='poll'){calcPoll();yield;for(let k=0;k<NN;k++){const t=D.poll[k];if(t>.04)putL(k,LUT.smog,t/1.1,clamp(.16+t*.6,0,.78));}}
+  else if(mode==='poll'){yield* calcPoll();yield;for(let k=0;k<NN;k++){const t=D.poll[k];if(t>.04)putL(k,LUT.smog,t/1.1,clamp(.16+t*.6,0,.78));}}
   else if(mode==='traf'){
     for(let j=1;j<GN-1;j++)for(let i=1;i<GN-1;i++){const k=j*GN+i;TRs[k]=(TR[k]*4+TR[k-1]+TR[k+1]+TR[k-GN]+TR[k+GN])/8;}
     yield;for(let k=0;k<NN;k++){const t=TRs[k];if(t>.15){const u=1-Math.exp(-t/14);putL(k,LUT.heat,u,clamp(.28+u*.46,0,.7));}}}
   else if(mode==='land'||mode==='dist'||mode==='plan'){
-    calcWd();if(now()-D.zoneT>8||D.zoneKey!==(G.plan?(G.plan.tpl||'')+':'+(G.plan.streets?G.plan.streets.length:0):'')||mode==='dist'){yield* calcZones();}
-    if(mode==='land'){calcCov();calcPoll();yield;const rel=relCats(),Zb=[0,.92,.72,.52,.28,.14,.62],dn=D.dens;
+    yield* calcWd();if(now()-D.zoneT>8||D.zoneKey!==(G.plan?(G.plan.tpl||'')+':'+(G.plan.streets?G.plan.streets.length:0):'')||mode==='dist'){yield* calcZones();}
+    if(mode==='land'){yield* calcCov();yield* calcPoll();yield;const rel=relCats(),Zb=[0,.92,.72,.52,.28,.14,.62],dn=D.dens;
       // neighbours: how many buildings stand around each cell
       dn.fill(0);for(const b of buildings){const i=cellI(b.x),j=cellI(b.z);dn[j*GN+i]+=b.type==='house'?1:1.6;}
       for(let pass=0;pass<3;pass++){const o=D.tree;for(let j=1;j<GN-1;j++)for(let i=1;i<GN-1;i++){const k=j*GN+i;o[k]=(dn[k]*2+dn[k-1]+dn[k+1]+dn[k-GN]+dn[k+GN])/6;}dn.set(o);}
@@ -143,7 +146,9 @@ function* jobFor(mode){
 }
 // ---------------------------------------------------------------- the plan, drawn in the world: streets, plots, plaza (a canvas laid over the terrain)
 const PLN=1024,planCv=document.createElement('canvas');planCv.width=planCv.height=PLN;const pg=planCv.getContext('2d');
-function paintPlan(){const P=G.plan,sc=PLN/N,X=x=>(x+HALF)*sc;pg.clearRect(0,0,PLN,PLN);if(!P||!P.streets)return;pg.lineCap='round';pg.lineJoin='round';
+function paintPlan(){const P=G.plan,sc=PLN/N,X=x=>(x+HALF)*sc;
+  const sig=P&&P.streets?G.town+':'+P.streets.length+':'+P.streets.reduce((a,s)=>a+(s.painted||0),0)+':'+P.plots.length+':'+buildings.reduce((a,b)=>a+(b.type==='house'?1:0),0):'none';if(OV.planSig===sig)return;OV.planSig=sig;
+  pg.clearRect(0,0,PLN,PLN);if(!P||!P.streets){OV.planTex.needsUpdate=true;return;}pg.lineCap='round';pg.lineJoin='round';
   const stroke=(pts,w,col)=>{pg.strokeStyle=col;pg.lineWidth=w;pg.beginPath();pts.forEach((p,i)=>i?pg.lineTo(X(p[0]),X(p[1])):pg.moveTo(X(p[0]),X(p[1])));pg.stroke();};
   for(const s of P.streets)stroke(s.pts,(s.hw*2+.9)*sc,'rgba(40,28,16,.55)');
   for(const s of P.streets)stroke(s.pts,s.hw*2*sc,s.kind==='main'?'#f6e6b4':s.kind==='ring'?'#ecdca8':'#e2d4a8');
@@ -180,7 +185,7 @@ function clearTex(){buf.fill(0);upload();}
 .ovlab{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink2);font-style:italic}
 #ovNote{font-size:13.5px;color:var(--ink);margin-top:5px;line-height:1.25}
 .ovsw{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:13px;margin-top:2px}.ovsw i{display:inline-block;width:11px;height:11px;border-radius:2px;border:1px solid rgba(0,0,0,.35);margin-right:4px;vertical-align:-1px}
-#ovTip{position:fixed;z-index:6;pointer-events:none;width:252px;padding:7px 10px 8px;font-size:13.5px;line-height:1.28}
+#ovTip{position:fixed;left:0;top:0;z-index:6;will-change:transform;pointer-events:none;width:252px;padding:7px 10px 8px;font-size:13.5px;line-height:1.28}
 #ovTip h4{margin:0 0 3px;font-family:Cinzel,serif;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--wood2)}
 #ovTip .r{display:flex;gap:6px;align-items:baseline}#ovTip .r b{min-width:14px;text-align:center}
 #ovTip .ok b{color:#3f7a3a}#ovTip .no b{color:var(--red)}#ovTip .dim{color:#8c7a5c}
@@ -209,7 +214,7 @@ function drawLegend(){
     for(const b of legend.querySelectorAll('button[data-s]'))b.onclick=()=>{OV.sub=b.dataset.s;OV.force=true;OV.job=null;drawLegend();};}
 }
 const ovZoneLabel=z=>({civic:'Civic core',mix:'Trade & mixed',res:'Homes',ind:'Works',farm:'Fields',harbour:'Harbour'}[z]);
-function setOverlay(m){if(m===OV.mode)return;OV.mode=m;OV.job=null;OV.force=true;OV.a=Math.min(OV.a,.2);clearTex();ovU.uLines.value=m==='plan'?1:0;legend._h='';legend._sg='';drawLegend();tip.classList.add('hidden');
+function setOverlay(m){if(m===OV.mode)return;OV.mode=m;OV.job=null;OV.force=true;OV.a=Math.min(OV.a,.2);clearTex();ovU.uLines.value=m==='plan'?1:0;legend._h='';legend._sg='';drawLegend();tipHide();
   if(m&&!G.plan&&(m==='plan'))toast('The folk have not drawn up a plan yet');}
 window.ovSetOverlay=setOverlay;OV.testFill=(r,g,b,a)=>{for(let k=0;k<NN;k++)put(k,[r,g,b],a);upload();OV.lastDone=now()+1e6;OV.job=null;OV.force=false;};OV.sample=(x,z)=>{const k=cellI(z)*GN+cellI(x);return {rgba:[buf[k*4],buf[k*4+1],buf[k*4+2],buf[k*4+3]],foot:D.foot[k],cov:S7.map(c=>+COV[c][k].toFixed(2)),zone:D.zone[k]};};OV.runSync=m=>{const g=jobFor(m);let r,n=0;do{r=g.next();n++;}while(!r.done);return {yields:n,...OV.dbg()};};OV.dbg=()=>{let n=0,mx=0;for(let k=3;k<buf.length;k+=4)if(buf[k]){n++;mx=Math.max(mx,buf[k]);}return {n,mx,roi:D.roi,homes:D.homes.length,mode:OV.mode,job:!!OV.job,last:OV.lastDone,a:OV.a,now:now()};};
 function cycleOverlay(dir){const i=OV.mode?MORDER.indexOf(OV.mode):-1;let n=i+dir;if(n>=MORDER.length)n=-1;if(n<-1)n=MORDER.length-1;setOverlay(n<0?null:MORDER[n]);syncBtns();if(OV.mode)toast('Sight: '+MODES[OV.mode].n);}
@@ -260,14 +265,24 @@ function tipHTML(m,x,z){
   else if(m==='dist'||m==='plan'){const z0=D.zone[k];h=`<h4>${m==='dist'?'District':'The plan'}</h4>`;if(!z0)h+='<em>Open country.</em>';else h+=`<div class="r"><span><b style="min-width:0">${esc2(ovDistrictAt(x,z))}</b> — ${ovZoneLabel(ZN[z0]).toLowerCase()}</span></div>`;
     if(m==='plan'&&G.plan&&G.plan.streets){let bs=null,bd=3;for(const s of G.plan.streets)for(let i=0;i<s.pts.length;i+=2){const d=Math.hypot(s.pts[i][0]-x,s.pts[i][1]-z)-s.hw;if(d<bd){bd=d;bs=s;}}if(bs)h+=`<div class="r"><span>${bs.kind==='main'?'A main street':bs.kind==='ring'?'A ring road':'A lane'}${bs.painted?' — laid':' — planned'}</span></div>`;}}
   return h;}
+function tipHide(){if(tip._on){tip._on=false;tip.classList.add('hidden');}}
 function updateTip(){
-  const m=OV.mode;if(!m||OV.a<.4||!hover||OV.lastDone<0||UIBLOCK){tip.classList.add('hidden');return;}
-  const t=now();if(t-OV.tipT<.12&&!tip.classList.contains('hidden')){}else{OV.tipT=t;const h=tipHTML(m,hover.x,hover.z);if(!h){tip.classList.add('hidden');return;}if(tip._h!==h){tip._h=h;tip.innerHTML=h;}}
-  tip.classList.remove('hidden');const px=(mouse.nx+1)/2*innerWidth,py=(1-mouse.ny)/2*innerHeight,r=tip.getBoundingClientRect();
-  tip.style.left=Math.max(8,px-r.width-22)+'px';tip.style.top=Math.max(8,Math.min(innerHeight-r.height-10,py-8))+'px';}
+  const m=OV.mode;if(!m||OV.a<.4||!hover||OV.lastDone<0||UIBLOCK){tipHide();return;}
+  const t=now();if(t-OV.tipT>.12||!tip._on){OV.tipT=t;const h=tipHTML(m,hover.x,hover.z);if(!h){tipHide();return;}
+    if(tip._h!==h){tip._h=h;tip.innerHTML=h;tip._w=0;}if(!tip._on){tip._on=true;tip.classList.remove('hidden');tip._w=0;}
+    if(!tip._w){const r=tip.getBoundingClientRect();tip._w=r.width||252;tip._ht=r.height||80;}}
+  if(!tip._on||!tip._w)return;
+  const px=(mouse.nx+1)/2*innerWidth,py=(1-mouse.ny)/2*innerHeight;
+  tip.style.transform=`translate(${Math.max(8,px-tip._w-22)|0}px,${Math.max(8,Math.min(innerHeight-tip._ht-10,py-8))|0}px)`;}
 // ---------------------------------------------------------------- recompute scheduling
+// what the slower-changing pictures depend on (a cheap signature: the picture is only recomputed when it changes, and at least every 20 s)
+function jobSig(m){let w=0;for(const v of G.vill)if(v.work)w++;let s=TOWNS.cur+'|'+BVER+'|'+buildings.length+'|'+(G.era|0)+'|'+w+'|'+(m==='svc'?OV.sub:'');
+  if(m==='poll'||m==='land')s+='|'+Math.round(G.poll||0)+'|'+(trees.length>>4);if(m==='plan'||m==='dist'||m==='land')s+='|'+(G.plan&&G.plan.streets?G.plan.streets.length+':'+G.plan.plots.length+':'+G.plan.streets.reduce((a,q)=>a+(q.painted||0),0):0);return s;}
 function schedule(t){
-  if(!OV.mode)return;if(!OV.job&&(OV.force||t-OV.lastDone>OV.every)){OV.job=jobFor(OV.mode);OV.force=false;OV.jobMode=OV.mode;}
+  if(!OV.mode)return;
+  if(!OV.job&&(OV.force||t-OV.lastDone>OV.every)){const m=OV.mode,st=m==='svc'||m==='poll'||m==='land'||m==='dist'||m==='plan',sg=st?jobSig(m):null;
+    if(st&&!OV.force&&sg===OV.sig&&t-OV.lastFull<20)OV.lastDone=t;// nothing that this picture depends on has changed: keep it
+    else{OV.job=jobFor(m);OV.force=false;OV.jobMode=m;OV.sig=sg;OV.lastFull=t;}}
   if(OV.job){const t0=performance.now();let r;try{do{r=OV.job.next();}while(!r.done&&performance.now()-t0<2);}catch(err){console.error('overlay',err);OV.job=null;OV.lastDone=t;return;}
     if(r.done){OV.job=null;OV.lastDone=t;OV.done=(OV.done||0)+1;upload();}}}
 // ---------------------------------------------------------------- 'Why is nothing happening?' diagnostics
@@ -490,7 +505,7 @@ function toggleLaw(){OV.lawOpen=!OV.lawOpen;if(OV.lawOpen&&OV.whyOpen)toggleWhy(
 // store along real paths; caravans trail the merchants of trade missions; markets get stalls, merchants and goods that follow G.goods;
 // docks show crates and porters while a boat is in. ovHaul(from,to,kind) lets other systems (the railway) put a wagon on the road.
 const ecoGrp=new THREE.Group();scene.add(ecoGrp);
-const ECO={on:true,dkList:[],dkClean:false,drn:null,near:[],lastG:0,spawnT:0,mkT:0,wkT:-9,wk:new Map(),runs:[],hauls:new Map(),cars:new Map(),geo:new Map(),pool:new Map(),pathBudget:0,mk:new Map(),dk:new Map(),ids:0};
+const ECO={on:true,dkList:[],dkClean:false,drn:null,near:[],lastG:0,spawnT:-9,mkT:-9,wkT:-9,wk:new Map(),runs:[],hauls:new Map(),cars:new Map(),geo:new Map(),pool:new Map(),pathBudget:0,mk:new Map(),dk:new Map(),ids:0};
 window.ovState=OV;window.ovEco=ECO;
 const K={wood:0x8a6a44,woodD:0x5e4429,woodL:0xa88658,iron:0x4b4c52,rope:0xb8a070,canvas:0xe8dfc4,canvasD:0xcdbf98,ox:0x6e4c36,oxL:0xa38468,horse:0x7a5232,horseD:0x4a3020,stone:0xa39c8e,stoneD:0x8a8478,sack:0xc9b48a,fishB:0x9a7a48,fish:0xaebcc4,red:0xa8402f,blue:0x3a5f8a,green:0x5a7e3a,white:0xeef0ee,cyan:0x6fe3ff,glass:0xbfe9ff};
 const fr=(v,a,b)=>Math.min(b,Math.max(a,v));
@@ -714,14 +729,14 @@ function ecoTick(dt){
   ecoGrp.visible=true;ECO.pathBudget=Math.min(2,ECO.pathBudget+dt*3);
   const dG=ECO.lastG?Math.max(0,Math.min(.2,G.t-ECO.lastG)):0;ECO.lastG=G.t;
   updHauls(dt);updCaravans(dt);updRuns(dG,dt);
-  ECO.spawnT-=dt;if(ECO.spawnT<=0){ECO.spawnT=1.2;spawnRuns();}
-  ECO.mkT-=dt;if(ECO.mkT<=0){ECO.mkT=1.5;ECO.dkList=buildings.filter(b=>b.type==='dock');ECO.dkClean=true;ECO.drn=null;updMarkets();}
+  const tw=now();if(tw-ECO.spawnT>=1.2){ECO.spawnT=tw;spawnRuns();}
+  if(tw-ECO.mkT>=1.5){ECO.mkT=tw;ECO.dkList=buildings.filter(b=>b.type==='dock');ECO.dkClean=true;ECO.drn=null;updMarkets();}
   animMarkets();updDrones(dt);updDocks(dG);}
 // ---------------------------------------------------------------- footfall: every ~2 units a walker covers marks the grid (the wrapper costs one add per step)
 {const _w=wear;wear=function(v,d){_w(v,d);if(v.kind==='bandit')return;const q=(v._ovd||0)+d;if(q<1.8){v._ovd=q;return;}v._ovd=0;const i=((v.x+HALF)/GC)|0,j=((v.z+HALF)/GC)|0;if(i>=0&&j>=0&&i<GN&&j<GN)TR[j*GN+i]+=Math.min(5,(q/1.8)|0||1);};}
 // ---------------------------------------------------------------- the frame (own animation loop: nothing in the shared main loop is touched)
 const brush=()=>document.getElementById('brushbar');
-function hideAll(){ovMesh.visible=false;legend.classList.add('hidden');tip.classList.add('hidden');why.classList.add('hidden');law.classList.add('hidden');ecoGrp.visible=false;for(const s of SG.spr.values())s.visible=false;}
+function hideAll(){ovMesh.visible=false;legend.classList.add('hidden');tipHide();why.classList.add('hidden');law.classList.add('hidden');ecoGrp.visible=false;for(const s of SG.spr.values())s.visible=false;}
 const ERRS={};function sf(n,f){try{f();}catch(err){if(!ERRS[n]){ERRS[n]=1;console.error('overlays: '+n,err);}}}
 function ovFrame(dt){
   const god=MODE==='god'&&G.phase==='play'&&!G.menu&&G.center;
@@ -731,9 +746,9 @@ function ovFrame(dt){
   if(OV.cur!==TOWNS.cur){OV.cur=TOWNS.cur;OV.force=true;OV.job=null;SG.info=null;OV.wd=null;if(OV.mode)clearTex();ECO.runs.length=0;}
   const dn=dayN();if(dn!==OV.day){if(OV.day>=0){for(let k=0;k<NN;k++)TR[k]*=.78;}OV.day=dn;}
   sf('tint',()=>{OV.a+=((OV.mode?1:0)-OV.a)*Math.min(1,dt*7);ovU.uA.value=OV.a*.96;ovU.uT.value=TT;ovMesh.visible=OV.a>.01;
-    if(OV.mode){schedule(t);drawLegend();updateTip();legend.style.bottom=(brush()&&!brush().classList.contains('hidden')?76:14)+'px';
+    if(OV.mode){schedule(t);drawLegend();updateTip();{const bb=brush()&&!brush().classList.contains('hidden')?76:14;if(OV.lgB!==bb){OV.lgB=bb;legend.style.bottom=bb+'px';}}
       const rb=selected||hoverB;let rr=0;if(OV.mode==='svc'&&rb&&buildings.includes(rb)&&!rb.build&&SVT[rb.type]){const d=SVT[rb.type].find(q=>q[0]===OV.sub)||SVT[rb.type][0];rr=d[1]*(1+(G.era>=5?.1:0));ovU.uRing.value.set(rb.x,rb.z,rr,1);}if(!rr)ovU.uRing.value.w=0;}
-    else{tip.classList.add('hidden');legend.classList.add('hidden');ovU.uRing.value.w=0;}});
+    else{tipHide();if(!legend.classList.contains('hidden'))legend.classList.add('hidden');ovU.uRing.value.w=0;}});
   sf('panels',()=>{if(OV.whyOpen&&t-(OV.whyT||0)>1.2){OV.whyT=t;drawWhy();}
     else if(!OV.whyOpen&&t-(OV.badgeT||-9)>7){OV.badgeT=t;OV.whyN=ovWhy().filter(x=>x.sev>=60).length;syncBtns();}
     if(OV.lawOpen&&t-(OV.lawT||0)>.8){OV.lawT=t;drawLaw(false);}

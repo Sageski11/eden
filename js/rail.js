@@ -14,7 +14,7 @@
 // Exported: railBuildLine railPetition railExecute railPaint railDaily railFrame railReload railReset railLinked railTravel railCap railMission
 //           railDepotPut railHit railHoldStation railTick railNetwork railMigrate.
 {
-const RC={TZ:8,STL:28,HLT:16,DPL:26,SIDE:3.8,WID:2.3,LOOPH:13,LOOPMIN:120};
+const RC={TZ:8,STL:28,HLT:16,DPL:26,SIDE:3.8,WID:2.3,LOOPH:13,LOOPMIN:120,MAXG:.07};
 const RN={gr:null,trains:[],grp:new THREE.Group(),mesh:null,glow:null,dirty:true,tD:0,era:5,lastT:null,sig:'',nextMesh:0,hash:null,uid:1,quiet:false};
 scene.add(RN.grp);
 const rS=()=>{const n=netEnsure();if(!n.rs)n.rs={n:0,cd:0,pax:0,frt:0,runs:0,fail:0,own:0};return n.rs;};
@@ -92,10 +92,10 @@ const CS=3,GW=Math.ceil(N/CS)+1,DI=[1,1,0,-1,-1,-1,0,1],DJ=[0,1,1,1,0,-1,-1,-1];
 const cxz=(i,j)=>[i*CS-HALF,j*CS-HALF],cellOf2=(x,z)=>[clamp(Math.round((x+HALF)/CS),0,GW-1),clamp(Math.round((z+HALF)/CS),0,GW-1)];
 const dirIdx=(hx,hz)=>((Math.round(Math.atan2(hz,hx)/(PI/4))%8)+8)%8;
 // the cost of laying track through each cell: the town is dear, open land is cheap, water is bridged only where it is narrow
-function railCosts(o){o=o||{};if(!o.blocks)o.blocks=RN.blocks||[];const C=new Float32Array(GW*GW).fill(1),track=new Uint8Array(GW*GW);
+function railCosts(o){o=o||{};const SBX=MODE==='sandbox';if(!o.blocks)o.blocks=RN.blocks||[];const C=new Float32Array(GW*GW).fill(1),track=new Uint8Array(GW*GW);
   const mark=(x,z,R,add,block)=>{const [ci,cj]=cellOf2(x,z),r=Math.ceil(R/CS)+1;for(let j=cj-r;j<=cj+r;j++)for(let i=ci-r;i<=ci+r;i++){if(i<0||j<0||i>=GW||j>=GW)continue;const [px,pz]=cxz(i,j);if(Math.hypot(px-x,pz-z)>R)continue;const k=j*GW+i;if(block)C[k]=Infinity;else C[k]+=add;}};
   for(let j=0;j<GW;j++)for(let i=0;i<GW;i++){const [x,z]=cxz(i,j),k=j*GW+i;if(Math.abs(x)>HALF-7||Math.abs(z)>HALF-7){C[k]=Infinity;continue;}
-    const w=wAt(x,z);if(w>.12)C[k]+=9+Math.min(8,w*4);else if(w>.03)C[k]+=3;}
+    const w=wAt(x,z);if(w>.12)C[k]+=(SBX?3.2:9)+Math.min(8,w*4)*(SBX?.4:1);else if(w>.03)C[k]+=SBX?1:3;}
   for(const t of trees){if(t.t===4)continue;const [i,j]=cellOf2(t.x,t.z);C[j*GW+i]+=.09;}
   for(const b of allB()){const r=(b.r||3);if(b.type==='farm')mark(b.x,b.z,r+1.5,40);else mark(b.x,b.z,r+RC.WID+1.6,0,true);}
   for(const t of netsAll()){const P=t.plan;if(!P)continue;
@@ -114,7 +114,7 @@ function railCosts(o){o=o||{};if(!o.blocks)o.blocks=RN.blocks||[];const C=new Fl
 // binary heap of [f,state]
 function hpush(h,f,s){let i=h.length;h.push([f,s]);while(i>0){const p=(i-1)>>1;if(h[p][0]<=f)break;h[i]=h[p];i=p;}h[i]=[f,s];}
 function hpop(h){const top=h[0],last=h.pop();if(h.length){let i=0;const n=h.length;for(;;){let c=2*i+1;if(c>=n)break;if(c+1<n&&h[c+1][0]<h[c][0])c++;if(h[c][0]>=last[0])break;h[i]=h[c];i=c;}h[i]=last;}return top;}
-function railAStar(CG,sx,sz,sdir,gx,gz,joinMask){const C=CG.C,GWW=GW,NS=GWW*GWW*8,g=new Float32Array(NS).fill(Infinity),from=new Int32Array(NS).fill(-1);
+function railAStar(CG,sx,sz,sdir,gx,gz,joinMask){const SBS=MODE==='sandbox'?.4:1;const C=CG.C,GWW=GW,NS=GWW*GWW*8,g=new Float32Array(NS).fill(Infinity),from=new Int32Array(NS).fill(-1);
   const hc=new Float32Array(GWW*GWW);for(let j=0;j<GWW;j++)for(let i=0;i<GWW;i++){const [x,z]=cxz(i,j);hc[j*GWW+i]=hAt(x,z);}
   const [si,sj]=cellOf2(sx,sz),[ti,tj]=cellOf2(gx,gz),s0=(sj*GWW+si)*8+sdir;g[s0]=0;const open=[];hpush(open,0,s0);let pops=0,goal=-1;
   const hw=joinMask?.35:1;
@@ -122,7 +122,7 @@ function railAStar(CG,sx,sz,sdir,gx,gz,joinMask){const C=CG.C,GWW=GW,NS=GWW*GWW*
     const cell=st>>3,d=st&7,ci=cell%GWW,cj=(cell/GWW)|0;
     if((ci===ti&&cj===tj)||(joinMask&&joinMask[cell]&&gc>12)||(Math.hypot(ci-ti,cj-tj)<1.2&&!joinMask)){goal=st;break;}
     for(const dd of [0,1,-1,2,-2]){const d2=(d+dd+8)%8,ni=ci+DI[d2],nj=cj+DJ[d2];if(ni<0||nj<0||ni>=GWW||nj>=GWW)continue;const nc=nj*GWW+ni;if(C[nc]===Infinity)continue;
-      const L=(DI[d2]&&DJ[d2])?CS*1.414:CS,m=(C[cell]+C[nc])*.5,dh=Math.abs(hc[nc]-hc[cell]),gr=dh/L,sc=gr*12+(gr>.045?(gr-.045)*90:0)+(gr>.26?300:0);
+      const L=(DI[d2]&&DJ[d2])?CS*1.414:CS,m=(C[cell]+C[nc])*.5,dh=Math.abs(hc[nc]-hc[cell]),gr=dh/L,sc=(gr*10+(gr>.045?(gr-.045)*55:0))*SBS+(gr>.32?150:0);
       const tc=dd===0?0:Math.abs(dd)===1?4:18;const ng=gc+L*(m+sc)+tc,ns=nc*8+d2;
       if(ng<g[ns]){g[ns]=ng;from[ns]=st;hpush(open,ng+Math.hypot(ni-ti,nj-tj)*CS*hw,ns);}}}
   if(goal<0)return null;const path=[];let st=goal;while(st>=0){const cell=st>>3;path.push(cxz(cell%GWW,(cell/GWW)|0));st=from[st];}path.reverse();return {path,cost:g[goal],end:goal>>3};}
@@ -161,6 +161,8 @@ function railProfile(pts,y0,y1){const n=pts.length,ds=2,g=[],surf=[],wet=[];
   for(let it=0;it<6;it++){for(let i=0;i<n;i++){const q=need(i);if(q>y[i])y[i]=q;}
     for(let i=1;i<n;i++)y[i]=clamp(y[i],y[i-1]-ms,y[i-1]+ms);for(let i=n-2;i>=0;i--)y[i]=clamp(y[i],y[i+1]-ms,y[i+1]+ms);
     y[0]=y0;for(let i=1;i<n;i++)y[i]=clamp(y[i],y[i-1]-ms,y[i-1]+ms);if(y1!=null){const e=y[n-1]-y1;if(Math.abs(e)<.05)break;}}
+  // a fixed far end (a station platform or an existing track) is met by easing the last stretch there
+  if(y1!=null){const e=y[n-1]-y1;if(Math.abs(e)>.08){const m=Math.min(n-1,16);for(let k=0;k<m;k++){y[n-1-k]-=e*(1-k/m);}}}
   // classify
   const br=[],tn=[],kind=new Array(n).fill(0);// 0 ground 1 bridge/viaduct 2 tunnel
   for(let i=0;i<n;i++){const d=g[i]-y[i];if(wd[i]&&wet[i])kind[i]=1;else if(d>3.3&&i>10&&i<n-10)kind[i]=2;else if(d<-4.4&&i>4&&i<n-4)kind[i]=3;}

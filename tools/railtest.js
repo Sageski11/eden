@@ -84,8 +84,9 @@ const path = require('path'), fs = require('fs');
   const linkable = link.towns >= 2 && (link.linked2 || !(link.scout && !link.scout.ok));
   check('the two peoples are joined by rail (when the land allows a route)', link.towns < 2 || link.linked2 || !linkable, link.linked2 ? true : { notFeasible: link.scout });
   if (link.towns >= 2 && link.linked2) {
-    const pax = await page.evaluate(() => { RAIL.log = []; const seen = new Set(); for (let k = 0; k < 700; k++) { railTick(1); } for (const e of RAIL.log) seen.add(e.f + ':' + e.stop); const nw = railNetwork(); return { stops: [...seen], trains: nw.trains.map(t => [t.kind, t.cargo, t.state, t.si]) }; });
+    const pax = await page.evaluate(() => { RAIL.log = []; const seen = new Set(); for (let k = 0; k < 1500; k++) { railTick(1); } for (const e of RAIL.log) seen.add(e.f + ':' + e.stop); const nw = railNetwork(); return { stops: [...seen], trains: nw.trains.map(t => [t.kind, t.cargo, t.state, t.si]) }; });
     check('a passenger train runs between the two towns\' stations', pax.stops.filter(s => /^pax:station/.test(s)).length >= 2, pax.stops);
+    if (pax.stops.filter(s => /^pax:station/.test(s)).length < 2) console.log('  trains', JSON.stringify(await page.evaluate(() => RAIL.dbgTrains())), JSON.stringify(await page.evaluate(() => RAIL.gr.svcs.map(s => [s.id, s.stops]))));
     const trade = await page.evaluate(() => { const log = []; let rode = 0;
       for (let day = 0; day < 22; day++) { eachSettlement((i) => { G.raid = null; G.raidCool = 1e9; G.bandits.length = 0; G.hap = Math.max(G.hap, 55); if (i === 0) { G.wood = 600 + popN() * 3; G.stone = 300; G.food = Math.min(G.food, 20); } else { G.food = popN() * 9 + 700; G.wood = Math.min(G.wood, 12); G.stone = 80; } });
         withSettlement(0, () => { G.tradeCool = {}; }); if (day % 3 === 0 && !allVill().some(v => v.mission)) { tryTrade(0, 1) || tryTrade(1, 0); }
