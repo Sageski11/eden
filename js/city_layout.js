@@ -146,7 +146,7 @@ function lyRelink(P){for(const s of P.streets)Object.defineProperty(s,'parent',{
 // ---------------------------------------------------------------- plots (house lots along the streets)
 function lyPlotOK(P,pl,chkB){const R=fpRect(pl.x,pl.z,pl.rot,fpOf('house',pl.w));if(Math.abs(pl.x)>HALF-8||Math.abs(pl.z)>HALF-8)return false;
   for(const o of P.plots){if(Math.abs(o.x-pl.x)>9||Math.abs(o.z-pl.z)>9)continue;const row=Math.abs(angDiff(o.rot,pl.rot))<.02;if(rectsHit(R,fpRect(o.x,o.z,o.rot,fpOf('house',o.w)),row?-.08:.6))return false;}
-  if(streetHit(R))return false;if(P.hallR&&rectsHit(R,P.hallR,.8))return false;
+  if(streetHit(R)||(typeof railHit==='function'&&railHit(pl.x,pl.z,3.4)))return false;if(P.hallR&&rectsHit(R,P.hallR,.8))return false;
   let mn=1e9,mx=-1e9;for(const lx of [R.f[0],0,R.f[1]])for(const lz of [R.f[2],0,R.f[3]]){const wx=pl.x+lx*R.cs+lz*R.sn,wz=pl.z-lx*R.sn+lz*R.cs;if(wAt(wx,wz)>.08)return false;const h=hAt(wx,wz);mn=Math.min(mn,h);mx=Math.max(mx,h);}
   if(mx-mn>=(P.tpl==='terrace'?4.2:2.8))return false;
   if(chkB&&blockedAt('house',pl.x,pl.z,pl.rot,pl.w,null))return false;

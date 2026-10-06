@@ -104,7 +104,7 @@ const SKIN=[0xe8c8a8,0xd8b090,0xc89878,0xe0bc98,0xb88a68,0x9a6a48,0x7a5038];
 const selRing=new THREE.Mesh(new THREE.RingGeometry(.45,.6,24),new THREE.MeshBasicMaterial({color:0xffe080,transparent:true,opacity:.9,depthTest:false,side:THREE.DoubleSide}));selRing.rotation.x=-PI/2;selRing.renderOrder=9;selRing.visible=false;scene.add(selRing);
 function renderAgents(){
   drawPeople(allVill().concat(allBandits()),TT);
-  const f=G.follow;if(f&&!f.hidden){selRing.visible=true;selRing.position.set(f.x,hAt(f.x,f.z)+.06,f.z);}else selRing.visible=false;
+  const f=G.follow;if(f&&!f.hidden&&!cam.walk){selRing.visible=true;selRing.position.set(f.x,hAt(f.x,f.z)+.06,f.z);}else selRing.visible=false;
 }
 // ---------------------------------------------------------------- villagers
 function newVillager(o={}){const female=o.female!=null?o.female:rnd()<.5;
@@ -117,7 +117,7 @@ function griefAdd(x){G.grief=Math.min(30,G.grief+x*clamp(28/Math.max(28,popN()),
 function removeVillager(v,why){v._gone=true;releaseRes(v);if(typeof lifeOnRemove==='function')lifeOnRemove(v,why);const i=G.vill.indexOf(v);if(i>=0)G.vill.splice(i,1);
   for(const o of G.vill)if(o.spouse===v.id)o.spouse=0;if(G.follow===v)G.follow=null;
   if(why==='died'){G.deaths++;griefAdd(3);}}
-function setThought(v,t){v.thought=t;}
+function setThought(v,t){v.thought=(typeof lifeFlavour==='function'&&lifeFlavour(v,t))||t;}// lives.js may colour the line with the person's traits, mood and memories
 function goTo(v,x,z,cb,tb){
   x=clamp(x,-HALF+.5,HALF-.5);z=clamp(z,-HALF+.5,HALF-.5);
   const d=Math.hypot(x-v.x,z-v.z);let p=null;
@@ -272,6 +272,7 @@ function fishTask(v){const c=bById(v.work);if(!c||c.build)return forageTask(v);
   goTo(v,c._spot[0]+(rnd()-.5)*2,c._spot[1]+(rnd()-.5)*2,vv=>{vv.rot=Math.atan2(c._spot[0]-c.x,c._spot[1]-c.z);wait(vv,1.8,'work',false,null,(w,dt)=>{const r=.42*fishMul()*fishAt(c.x,c.z)*workMul()*dt;G.food+=r;G.prod.food+=r;G.fish=Math.max(.05,(G.fish||1)-r/Math.max(60,(G.env?G.env.deepCells:400)*.25));gainXP('fish',r*.15);});});}
 function findShore(x,z,R){let best=null,bd=1e9;for(let dz=-R;dz<=R;dz++)for(let dx=-R;dx<=R;dx++){const d=Math.hypot(dx,dz);if(d>=bd)continue;if(wAt(x+dx,z+dz)<.05&&(wAt(x+dx+1,z+dz)>.3||wAt(x+dx-1,z+dz)>.3||wAt(x+dx,z+dz+1)>.3||wAt(x+dx,z+dz-1)>.3)){bd=d;best=[x+dx,z+dz];}}return best;}
 function quarryTask(v){const q=bById(v.work);if(!q||q.build)return forageTask(v);
+  if(v.carry==='stone'&&q.rdep&&typeof railDepotPut==='function'&&railDepotPut(q,v.amt)){v.carry=null;v.amt=0;wait(v,.2);return;}// a quarry with a railway depot beside it: the stone waits there for the train
   if(v.carry==='stone'){goTo(v,...toW2(q,-2.8,2.4),vv=>{G.stone+=vv.amt;G.prod.stone+=vv.amt;vv.carry=null;wait(vv,.2);});return;}
   setThought(v,'Cutting stone blocks.');goTo(v,...toW2(q,(rnd()-.5)*3,(rnd()-.5)*2.5),vv=>wait(vv,1.6,'work',false,ww=>{tfMine(q);ww.carry='stone';ww.amt=Math.round(4*workMul()*(masonStaffed()?1.25:1)*(1+(skLvl('stone')-1)*.05));gainXP('stone',1);}),q.id);}
 function forageTask(v){const c=G.center;if(!c)return wait(v,1);
@@ -287,7 +288,7 @@ function guardPatrol(v){const b=bById(v.work)||G.center;if(!b)return wait(v,1);c
   goTo(v,b.x+Math.cos(a)*r,b.z+Math.sin(a)*r,vv=>wait(vv,1,'idle',false));}
 function guardFight(v){let bt=null,bd=1e9;for(const b of G.bandits){if(b.flee)continue;const d=Math.hypot(b.x-v.x,b.z-v.z);if(d<bd){bd=d;bt=b;}}
   if(!bt)return guardPatrol(v);setThought(v,'For the town!');
-  if(bd<1.3){v.rot=Math.atan2(bt.x-v.x,bt.z-v.z);wait(v,.35,'fight',false,vv=>{if(rnd()<.6)hitBandit(bt,1);if(rnd()<.3){vv.hp-=1;if(vv.hp<=0){chron(`${fullName(vv)} fell defending the town.`,true);removeVillager(vv,'died');}}});return;}
+  if(bd<1.3){v.rot=Math.atan2(bt.x-v.x,bt.z-v.z);wait(v,.35,'fight',false,vv=>{if(rnd()<.6){hitBandit(bt,1);vv._cuHit=(vv._cuHit||0)+1;}if(rnd()<.3){vv.hp-=1;if(vv.hp<=0){chron(`${fullName(vv)} fell defending the town.`,true);removeVillager(vv,'died');}}});return;}
   goTo(v,bt.x,bt.z,null);if(v.path&&v.path.length>3)v.path.length=3;}
 
 function sawStaffed(){return buildings.some(b=>b.type==='sawmill'&&!b.build&&G.vill.some(v=>v.work===b.id));}

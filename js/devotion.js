@@ -62,7 +62,7 @@ function devSpawnProphet(key){const cand=G.vill.filter(v=>v.age>=22&&!v.arriving
 function devEndCult(why){const c=G.dev.cult;if(!c)return;const v=G.vill.find(o=>o.id===c.pid);if(v){v.prophet=false;v.cult=false;}for(const o of G.vill)o.cult=false;
   chron(why,true);G.dev.log.push({d:dateStr(),t:`${c.name} and ${DOCTRINES[c.key].name} ended`});G.dev.cult=null;G.dev.cultCool=18;devRefreshShrine();}
 function devFollowers(){const c=G.dev.cult;if(!c)return 0;return G.vill.filter(v=>v.cult).length;}
-function devSyncFollowers(){const c=G.dev.cult;if(!c)return;const ad=G.vill.filter(v=>v.age>=14&&!v.arriving&&!v.leaving&&!v.prophet).sort((a,b)=>a.id-b.id);const n=Math.round(c.strength*ad.length);
+function devSyncFollowers(){const c=G.dev.cult;if(!c)return;const ad=G.vill.filter(v=>v.age>=14&&!v.arriving&&!v.leaving&&!v.prophet).sort((a,b)=>(typeof lifeDoubt==='function'?lifeDoubt(b)-lifeDoubt(a):0)||a.id-b.id);const n=Math.round(c.strength*ad.length);
   const pv=G.vill.find(o=>o.id===c.pid);if(!pv){G.dev.cult.pid=0;devEndCult(`${c.name} was lost, and with them the cult's voice.`);return;}
   ad.forEach((v,i)=>{v.cult=i<n;if(v.cult&&rnd()<.15)setThought(v,pickA(['“The prophet speaks the truth.”','“They ignored us. He did not.”','“We must do what is needed.”','“The Spirit has forgotten us.”']));});pv.cult=true;}
 function devDaily(){const d=devEnsure();if(G.phase!=='play'||G.menu)return;const p=popN();d.peak=Math.max(d.peak,p);

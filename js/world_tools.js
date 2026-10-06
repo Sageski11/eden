@@ -38,12 +38,12 @@ function updateCamera(dt){
   const k=keys,sp=cam.dist*.9*dt;let mx=0,mz=0;
   if(k.KeyW||k.ArrowUp)mz-=1;if(k.KeyS||k.ArrowDown)mz+=1;if(k.KeyA||k.ArrowLeft)mx-=1;if(k.KeyD||k.ArrowRight)mx+=1;
   if(k.KeyQ)cam.yaw+=dt*1.4;if(k.KeyE)cam.yaw-=dt*1.4;
-  if(mx||mz){const cs=Math.cos(cam.yaw),sn=Math.sin(cam.yaw);cam.tx+=(mx*cs+mz*sn)*sp;cam.tz+=(-mx*sn+mz*cs)*sp;}
-  cam.tx=clamp(cam.tx,-HALF,HALF);cam.tz=clamp(cam.tz,-HALF,HALF);cam.pitch=clamp(cam.pitch,.12,1.45);cam.dist=clamp(cam.dist,10,300);
+  {const cs=Math.cos(cam.yaw),sn=Math.sin(cam.yaw),nm=mx&&mz?.7071:1,ac=Math.min(1,dt*((mx||mz)?10:7));cam.vx+=((mx*cs+mz*sn)*nm-cam.vx)*ac;cam.vz+=((-mx*sn+mz*cs)*nm-cam.vz)*ac;if(Math.abs(cam.vx)<.002)cam.vx=0;if(Math.abs(cam.vz)<.002)cam.vz=0;cam.tx+=cam.vx*sp;cam.tz+=cam.vz*sp;}
+  cam.tx=clamp(cam.tx,-HALF,HALF);cam.tz=clamp(cam.tz,-HALF,HALF);cam.pitch=clamp(cam.pitch,cam.walk?.04:.12,1.45);cam.dist=clamp(cam.dist,cam.walk?2.2:10,300);
   cam.ty+=(hAt(cam.tx,cam.tz)-cam.ty)*Math.min(1,dt*3);
-  const cp=Math.cos(cam.pitch);let px=cam.tx+cam.dist*cp*Math.sin(cam.yaw),py=cam.ty+cam.dist*Math.sin(cam.pitch),pz=cam.tz+cam.dist*cp*Math.cos(cam.yaw);
-  const gh=hAt(px,pz)+wAt(px,pz)+1.5;if(py<gh)py=gh;
-  camera.position.set(px,py,pz);camera.lookAt(cam.tx,cam.ty,cam.tz);sky.position.copy(camera.position);
+  const cp=Math.cos(cam.pitch);let px=cam.tx+cam.dist*cp*Math.sin(cam.yaw),py=cam.ty+(cam.eye||0)+cam.dist*Math.sin(cam.pitch),pz=cam.tz+cam.dist*cp*Math.cos(cam.yaw);
+  const gh=hAt(px,pz)+wAt(px,pz)+(cam.walk?.7:1.5);if(py<gh)py=gh;
+  camera.position.set(px,py,pz);camera.lookAt(cam.tx,cam.ty+(cam.eye||0),cam.tz);sky.position.copy(camera.position);
 }
 
 // ================================================================ time of day
@@ -72,7 +72,7 @@ function setTime(h){hour=h;
 const undoStack=[];
 function snapshot(){return {H:H.slice(),W:W.slice(),R:ROAD.slice(),trees:trees.map(t=>({...t})),springs:springs.map(s=>({...s})),
   bl:buildings.map(b=>({type:b.type,x:b.x,z:b.z,rot:b.rot,manual:b.manual,seed:b.seed,w:b.w,d:b.d,lv:b.level,vr:b.variant})),
-  net:MODE==='sandbox'&&G.net?G.net.lines.map(l=>({kind:l.kind,pts:l.pts.map(p=>[p[0],p[1]])})):null,pv:MODE==='sandbox'&&typeof SB!=='undefined'?SB.paved.slice():null};}
+  net:MODE==='sandbox'&&G.net?G.net.lines.map(l=>JSON.parse(JSON.stringify(l))):null,pv:MODE==='sandbox'&&typeof SB!=='undefined'?SB.paved.slice():null};}
 function pushUndo(){undoStack.push(snapshot());if(undoStack.length>30)undoStack.shift();}
 function restore(s){
   H.set(s.H);W.set(s.W);ROAD.set(s.R);F.fill(0);
@@ -80,7 +80,7 @@ function restore(s){
   springs.length=0;for(const p of s.springs)springs.push({...p});refreshSprings();
   for(const b of buildings.slice())removeBuilding(b);
   for(const r of s.bl){const b=newRecord(r.type,r.x,r.z,r.rot,r.seed);Object.assign(b,{manual:r.manual,w:r.w,d:r.d,level:r.lv==null?null:r.lv,variant:r.vr||null});addBuilding(b);}
-  if(s.pv&&typeof SB!=='undefined'){SB.paved.set(s.pv);G.net={lines:(s.net||[]).map(l=>({kind:l.kind,pts:l.pts.map(p=>[p[0],p[1]])})),paved:false};netReload();}
+  if(s.pv&&typeof SB!=='undefined'){SB.paved.set(s.pv);G.net={lines:(s.net||[]).map(l=>JSON.parse(JSON.stringify(l))),paved:false};netReload();}
   refreshCivic();for(const b of buildings)realize(b);
   refreshTerrain();updateSkirt();selected=null;ghostKey='';
 }
@@ -162,7 +162,7 @@ canvas.addEventListener('pointerdown',e=>{if(UIBLOCK)return;canvas.setPointerCap
 });
 canvas.addEventListener('pointermove',e=>{mouse.nx=e.clientX/innerWidth*2-1;mouse.ny=-(e.clientY/innerHeight)*2+1;mouse.in=true;shift=e.shiftKey;
   if(dragCam){const dx=e.clientX-dragCam.x,dy=e.clientY-dragCam.y;dragCam.x=e.clientX;dragCam.y=e.clientY;
-    if(dragCam.b===2&&!e.shiftKey){cam.yaw-=dx*.006;cam.pitch+=dy*.005;}
+    if(dragCam.b===2&&!e.shiftKey){const cs2=SETS.camSens||1;cam.yaw-=dx*.006*cs2*(SETS.invX?-1:1);cam.pitch+=dy*.005*cs2*(SETS.invY?-1:1);}
     else{const s=cam.dist*.0016,cs=Math.cos(cam.yaw),sn=Math.sin(cam.yaw);cam.tx+=(-dx*cs-dy*sn)*s;cam.tz+=(dx*sn-dy*cs)*s;}}});
 canvas.addEventListener('pointerup',e=>{if(dragCam){dragCam=null;return;}if(painting){painting=false;endStroke();}});
 canvas.addEventListener('pointerleave',()=>{mouse.in=false;});

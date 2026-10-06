@@ -345,7 +345,7 @@ function newDay(){if(G.menu)return;
     if(v.sick){if(rnd()<.18){v.sick=0;}else if(rnd()<(v.age<10||v.age>55?.09:.04)){chron(`${fullName(v)} died of the sickness.`,true);removeVillager(v,'died');continue;}}}
   // marriages
   const single=G.vill.filter(v=>v.age>=18&&v.age<46&&!v.spouse&&!v.arriving&&!v.leaving&&!v.sick);
-  const men=single.filter(v=>!v.female),wom=single.filter(v=>v.female);
+  const men=single.filter(v=>!v.female),wom=single.filter(v=>v.female);if(typeof lifeSortSingles==='function')lifeSortSingles(men,wom);// lives.js: courting couples first, never kin or rivals
   for(let i=0;i<Math.min(men.length,wom.length,1+Math.floor(p/25));i++){if(rnd()>.22)continue;const m=men[i],w=wom[i];if(m.fam===w.fam&&rnd()<.8)continue;
     m.spouse=w.id;w.spouse=m.id;w.fam=m.fam;chron(`${m.name} and ${w.name} were wed. Now the ${m.fam}s.`);G.joy=Math.min(20,G.joy+2);
     const mh=bById(m.home),wh=bById(w.home);
@@ -467,7 +467,7 @@ function startFestival(h,why){G.festival=Math.max(G.festival,h);G.lastFest=G.t;G
   for(const v of G.vill)if(!v.hidden&&!v.path){v.timer=0;}sfx('bell');buildBunting();}
 function endFestival(){if(festObj){scene.remove(festObj);disposeObj(festObj);festObj=null;}}
 function buildBunting(){endFestival();const [cx,cz]=festSpot();const B=new Builder(rnd,0);const near=buildings.filter(b=>!b.build&&Math.hypot(b.x-cx,b.z-cz)<22).slice(0,7);
-  const cols=[0xc0392b,0xd4a73c,0x2f6b9a,0x3f8a3a,0xe8e2d2,0x8e3a8e];
+  const cols=(typeof cuBuntingCols==='function'&&cuBuntingCols())||[0xc0392b,0xd4a73c,0x2f6b9a,0x3f8a3a,0xe8e2d2,0x8e3a8e];
   const pole=(x,z)=>{const g=hAt(x,z);B.box(x,g,z,.12,4.2,.12,COL.wood);return [x,g+4.1,z];};
   const top=pole(cx,cz);
   for(const b of near){const a=Math.atan2(b.z-cz,b.x-cx);const p2=pole(b.x-Math.cos(a)*(b.r+.4),b.z-Math.sin(a)*(b.r+.4));

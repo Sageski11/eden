@@ -10,7 +10,7 @@ function tState(i){const st=i===TOWNS.cur?G:TOWNS.list[i].st;const pop=st.vill.f
 function tryTrade(a,b){const A=tState(a),B=tState(b);if(A.pop<12||B.pop<12)return false;
   let x=null,bx=8;for(const r of TRES){const q=Math.min(A.sur[r],B.def[r])*TVAL[r];if(q>bx){bx=q;x=r;}}if(!x)return false;
   let y=null,by=0;for(const r of TRES){if(r===x)continue;const q=Math.min(B.sur[r],Math.max(A.def[r],0))*TVAL[r]+B.sur[r]*.2;if(B.sur[r]>8&&q>by){by=q;y=r;}}if(!y)return false;
-  const ax=Math.floor(Math.min(A.sur[x],B.def[x],70)),ay=Math.floor(Math.min(B.sur[y],ax*TVAL[x]/TVAL[y]));if(ax<8||ay<5)return false;
+  const ax=Math.floor(Math.min(A.sur[x],B.def[x],typeof railCap==='function'?railCap(a,b,70):70)),ay=Math.floor(Math.min(B.sur[y],ax*TVAL[x]/TVAL[y]));if(ax<8||ay<5)return false;
   return withSettlement(a,()=>{if(!G.center||G.center.build)return false;const m=G.vill.find(v=>!v.mission&&!v.leaving&&!v.arriving&&!v.sick&&v.age>=18&&v.age<55&&v.job!=='guard'&&v.job!=='builder');if(!m)return false;
     const dst=sGet(b,'center');if(!dst||dst.build)return false;G[x]-=ax;m.mission={to:b,from:a,cx:x,ax,cy:y,ay,phase:'out',t0:G.t,got:0};m.job=null;m.work=0;m.timer=0;m.path=null;
     chron(`A caravan set out from ${G.town} for ${sName(b)}, laden with ${ax} measures of ${TNAME[x]}.`);return true;});}
@@ -21,6 +21,7 @@ function tradeDaily(){if(!SHARED||G.phase!=='play'||G.menu)return;const alive=TO
 function missionStep(v){const m=v.mission;if(!G.center){v.mission=null;return;}
   if(G.t-m.t0>110){// lost on the road
     chron(`The caravan to ${sName(m.to)} never came back.`);v.mission=null;v.carry=null;return;}
+  if(typeof railMission==='function'&&railMission(v,m))return;// by train when the towns are joined by rail
   if(m.phase==='out'){const dst=sGet(m.to,'center');if(!dst||TOWNS.list[m.to].dead){m.phase='back';return missionStep(v);}
     const [x,z]=doorOf(dst);v.carry=m.cx==='food'?'loot':m.cx;v.amt=m.ax;setThought(v,`Off to trade with ${sName(m.to)}.`);
     goTo(v,x+(rnd()-.5)*3,z+(rnd()-.5)*3,vv=>tradeArrive(vv));return;}

@@ -26,7 +26,7 @@ pickNeed=function(sites){
   if(e>=5){
     want('factory',p>=140&&cnt('factory')<Math.min(3,1+Math.floor(p/200))&&stoneOk(40));
     want('school',p>=150&&!cnt('school')&&stoneOk(36));
-    want('station',p>=190&&cnt('factory')>0&&!cnt('station')&&stoneOk(30));}
+    want('station',p>=190&&cnt('factory')>0&&!cnt('station')&&stoneOk(30)&&!(typeof railHoldStation==='function'&&railHoldStation()));}
   if(e>=6)want('powerplant',p>=300&&!cnt('powerplant')&&stoneOk(60));
   if(e>=7)want('fusion',p>=480&&!cnt('fusion')&&stoneOk(90));
   if(e>=6&&cnt('school')<2)want('school',p>=300&&stoneOk(36));
@@ -39,7 +39,7 @@ function eraMul(){const key=G.center?G.center.id:0,h=Math.floor(G.t),c=EMC.get(k
 function eraMul0(){let m=1;m+=Math.min(3,eraBuilt('factory'))*.08;if(eraBuilt('powerplant'))m+=.1;if(eraBuilt('fusion'))m+=.15;if(eraBuilt('school'))m+=.04;if(G.net)m+=Math.min(2,G.net.lines.length)*.05;return m;}
 function eraPollution(){return G.poll||0;}
 function eraHapF(f){const e=G.era||0;if(e<5)return;const pl=G.poll||0;if(pl>10)f.Smog=-Math.min(14,Math.round(pl/6));
-  if(eraBuilt('powerplant')||eraBuilt('fusion'))f.Power=3;if(eraBuilt('school'))f.Learning=2;if(hasBuilt('station'))f.Travel=2;if(G.net&&G.net.lines.some(l=>l.kind==='highway'))f.Highway=2;}
+  if(eraBuilt('powerplant')||eraBuilt('fusion'))f.Power=3;if(eraBuilt('school'))f.Learning=2;if(hasBuilt('station'))f.Travel=2+(typeof railTravel==='function'?railTravel():0);if(G.net&&G.net.lines.some(l=>l.kind==='highway'))f.Highway=2;}
 function eraDaily(){if(G.phase!=='play'||G.menu)return;const e=G.era||0;if(e<5){G.poll=0;return;}
   const fac=eraBuilt('factory'),coal=eraBuilt('powerplant'),clean=eraBuilt('fusion');
   const relief=clamp((G.env?G.env.forest:0)/9000,0,.07); // forests near the town clean the air

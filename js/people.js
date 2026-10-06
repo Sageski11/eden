@@ -70,6 +70,7 @@ function local(px,py,pz,rx,ry,rz,s=1){_E.set(rx,ry,rz,'YXZ');_Q.setFromEuler(_E)
 const JOBTOOL={builder:'tHammer',wood:'tAxe',farmer:'tHoe',quarry:'tPick',fisher:'tRod',hunter:'tSpear',guard:'tSpear',priest:'tStaff',forager:'tBasket',mason:'tHammer',sawyer:'tAxe',shipwright:'tHammer'};
 const JOBHAT={farmer:'hatStraw',guard:'hatHelm',priest:'hatCoif',hunter:'hatHood',fisher:'hatFeltCone',miller:'hatCoif',smith:null,quarry:'hatCap',bandit:'hatHood'};
 function drawPeople(list,T){
+  if(typeof rtDrawPeople==='function')return rtDrawPeople(list,T);// routines.js: era clothes, poses, props, bubbles (the body below is the fallback)
   for(const k in pcnt)pcnt[k]=0;
   camera.updateMatrixWorld();camera.matrixWorldInverse.copy(camera.matrixWorld).invert();_pfm.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);_pfr.setFromProjectionMatrix(_pfm);
   for(const v of list){if(v.hidden)continue;

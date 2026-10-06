@@ -14,6 +14,7 @@ function sameRow(a,type,x,z,rot,w){if(a.type!=='house'||type!=='house')return fa
   const cs=Math.cos(a.rot),sn=Math.sin(a.rot),dx=x-a.x,dz=z-a.z;const lx=dx*cs-dz*sn,lz=dx*sn+dz*cs;return Math.abs(lz)<.4&&Math.abs(Math.abs(lx)-(a.w+w)/2)<.4;}
 // true if a building of this type/footprint collides with any building or planned street
 function blockedAt(type,x,z,rot,w,ignore){const R=fpRect(x,z,rot,fpOf(type,w));const rr=Math.hypot(R.f[0],R.f[2])+Math.hypot(R.f[1],R.f[3]);
+  if(typeof railHit==='function'&&railHit(x,z,rr*.75))return true;
   for(const o of buildings){if(o===ignore)continue;const or=o.type==='house'?6:Math.max(o.r||3,(FPR[o.type]?Math.hypot(FPR[o.type][1],FPR[o.type][3]):4))+2;if(Math.hypot(o.x-x,o.z-z)>rr+or)continue;
     const row=sameRow(o,type,x,z,rot,w);if(rectsHit(R,bRect(o),row?-.08:.9))return true;}
   if(G.plan&&!['dock','shipyard'].includes(type)&&streetHit(R,type==='well'||type==='market',G.plan.v<3&&!['house','church','market','tavern','smith','well','fishmkt','hall'].includes(type)))return true;

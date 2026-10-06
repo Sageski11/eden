@@ -69,10 +69,8 @@ GEN.station=(b,c,K)=>{
   B.box(0,base,-1.2,2.4,5.6,2.6,brick);B.cone(0,base+5.6,-1.2,1.9,1.6,0x4f5866,4,PI/4);G.box(0,base+4.2,.12,.8,.8,.04,0xf2ecd8);
   for(let i=0;i<4;i++){const x=-hw*.6+i*hw*.4;if(Math.abs(x)<1.4)continue;B.box(x,base+1.0,.1,.8,1.5,.04,0x2a2622);G.box(x,base+1.1,.12,.62,1.3,.04,GLASS);}
   B.box(0,base,1.9,w,.35,2.2,0x9a948a);for(let i=0;i<5;i++)B.box(-hw+1+i*(w-2)/4,base+.35,1.9,.14,2.8,.14,0x2f3236);B.box(0,base+3.15,1.9,w,.14,2.4,0x3d4f5e);
-  for(const z of [3.4,4.4])B.box(0,base-.05,z,w+4,.1,.12,0x3a3d42);for(let i=0;i<14;i++)B.box(-hw-1.8+i*(w+3.6)/13,base-.1,3.9,.22,.07,1.5,0x4a3a2a);
-  // a waiting engine
-  const lx=-hw*.4;B.box(lx,base+.3,3.9,3.2,1.3,1.0,0x1f2124);B.cyl(lx-.5,base+.9,3.9,.5,2.2,0x2a2d31,8);B.hcyl&&B.hcyl(lx+1.2,base+1.05,3.9,.42,-2.6,0x2a2d31,'x');B.cyl(lx-1.1,base+1.5,3.9,.2,1.0,0x1f2124,6);K.smoke(lx-1.1,base+2.6,3.9,1.6,1);B.box(lx+2.6,base+.35,3.9,2.6,1.0,1,0x7a2f22);
-  T.push('Brick station hall with a clock tower','Platform canopy and a steam engine waiting','The railway brings strangers and trade');return {name:'Railway Station',r:7.5};
+  // the tracks and the trains are drawn by the railway itself (js/rail.js): the station only has its hall, canopy and platform
+  T.push('Brick station hall with a clock tower','Platform canopy beside the railway','The railway brings strangers and trade');return {name:'Railway Station',r:7.5};
 };
 GEN.powerplant=(b,c,K)=>{
   const {B,G,F,rng}=K,T=K.traits;const [gMin,gMax]=K.rect(6,5);const base=gMax+.15;

@@ -158,7 +158,7 @@ function godInspector(){
 function showBanner(t,s){const b=$('banner');b.innerHTML=`<big>${esc(t)}</big><span>${esc(s)}</span>`;b.classList.add('show');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),3800);}
 function toggleChron(){const c=$('chron');c.classList.toggle('hidden');if(!c.classList.contains('hidden')){$('chronTitle').textContent=`The Chronicle of ${G.town}`;
   $('chronSub').textContent=`${ERAS[G.era].name} of ${popN()} souls · ${dateStr()} · born ${G.births}, arrived ${G.arrivals}, died ${G.deaths}`;
-  $('chronList').innerHTML=G.chron.map(e=>`<p class="e"><b>${esc(e.d)}</b><span>${esc(e.t)}</span></p>`).join('')||'<p class="e">Nothing yet has been written.</p>';}}
+  $('chronList').innerHTML=G.chron.map(e=>`<p class="e"><b>${esc(e.d)}</b><span>${esc(e.t)}</span></p>`).join('')||'<p class="e">Nothing yet has been written.</p>';if(typeof cuChronRender==='function')cuChronRender();}}
 function togglePhoto(){const on=!document.body.classList.contains('photo');document.body.classList.toggle('photo',on);$('photo').classList.toggle('hidden',!on);
   if(on){$('phTown').textContent=MODE==='god'?`${G.town.toUpperCase()}`:'HEARTHMERE';const last=MODE==='god'&&G.chron[0];$('phLine').textContent=MODE==='god'?`${ERAS[G.era].name} · ${dateStr()}${last?' — '+last.t:''}`:'';}}
 // ---------------- start / save / load
@@ -188,7 +188,7 @@ const SAVE_SHARED=['t','speed','faith','phase','realm','seed','world','sun','sno
 const SAVE_PER=['food','wood','stone','era','hap','markers','prayers','town','raids','births','deaths','arrivals','raidCool','plagueCool','harvest','firstHut','wantHouse','prayerCool','lastFest','plan','sk','unl','fish','boatsBuilt','boatWork','dev','tf','net','poll','waterDist'];
 const _pickK=(o,ks)=>{const r={};for(const k of ks)r[k]=o[k];return r;};
 function serializeTown(){return {bl:buildings.map(b=>_pickK(b,['id','type','x','z','rot','manual','seed','w','d','level','variant','build','upg','forFam','stock','blessedUp','blessUntil','flooded','cw','cs'])),
-  vill:G.vill.filter(v=>!v.leaving).map(v=>_pickK(v,['id','name','fam','female','age','job','home','work','x','z','spouse','parents','sick','skin','site','hp','arriving','look','cult','prophet','seer'])),
+  vill:G.vill.filter(v=>!v.leaving).map(v=>_pickK(v,['id','name','fam','female','age','job','home','work','x','z','spouse','parents','sick','skin','site','hp','arriving','look','cult','prophet','seer','born','traits','rel','mem','grf','lost','court','appr','watch','hero'])),
   G:_pickK(G,SAVE_PER),center:G.center?G.center.id:0};}
 function serializeGod(){const s=snapshot();
   const towns=TOWNS.list.map((t,i)=>Object.assign(withSettlement(i,serializeTown),{dead:!!t.dead}));
@@ -229,7 +229,7 @@ function startGod(seed){enterGodUI();resetG();G.seed=seed||((rnd()*1e6)|0);newWo
   hintEl.textContent='Click the land to show the settlers where to make camp.';updateUI(true);showBanner('A new valley','Choose where your people will settle');}
 function showTitle(){showMenuUI();}
 $('tNew').onclick=()=>{audioInit();showSetup();};$('tSand').onclick=()=>{audioInit();startSandbox();};
-$('gChron').onclick=toggleChron;$('gHelpB').onclick=()=>$('ghelp').classList.toggle('hidden');$('ghelpClose').onclick=()=>$('ghelp').classList.add('hidden');$('chronClose').onclick=toggleChron;$('gPhoto').onclick=togglePhoto;
+$('gChron').onclick=toggleChron;$('gHelpB').onclick=()=>$('ghelp').classList.toggle('hidden');$('ghelpClose').onclick=()=>$('ghelp').classList.add('hidden');$('chronClose').onclick=toggleChron;$('gPhoto').onclick=()=>togglePhoto();
 $('gSound').onclick=()=>{audioInit();setSound(!SND.on);$('gSound').textContent=SND.on?'Sound on':'Sound off';};
 for(const b of document.querySelectorAll('#gtop .speed button'))b.onclick=()=>setSpeed(+b.dataset.sp);
 // ---------------- main loop
@@ -275,7 +275,7 @@ function frame(now){
   if(PAUSED)frame.pr=(frame.pr||0)+1;else frame.pr=0;
   const dt=HM.fixDt||Math.min(.05,(now-last)/1000);last=now;TT+=dt;if(HM.fixT!=null)TT=HM.fixT;// (test hook: pins time so screenshots are reproducible)
   if(MODE==='god'&&G.menu)menuCam(dt);
-  else if(MODE==='god'&&G.follow){const v=G.follow;if(!G.vill.includes(v))G.follow=null;else{cam.tx+=(v.x-cam.tx)*Math.min(1,dt*4);cam.tz+=(v.z-cam.tz)*Math.min(1,dt*4);}}
+  else if(MODE==='god'&&G.follow){const v=G.follow;if(!G.vill.includes(v))G.follow=null;else if(typeof cuCamFollow==='function')cuCamFollow(dt);else{cam.tx+=(v.x-cam.tx)*Math.min(1,dt*4);cam.tz+=(v.z-cam.tz)*Math.min(1,dt*4);}}
   updateCamera(dt);
   hover=mouse.in&&MODE!=='title'&&!UIBLOCK?pick(mouse.nx,mouse.ny,['pour','drain','spring'].includes(tool)):null;
   const prevHB=hoverB;hoverB=null;hoverV=null;
@@ -302,7 +302,7 @@ function frame(now){
     rainbow.visible=G.rainbow>0;if(rainbow.visible){rainbow.userData.t=Math.min(1,(rainbow.userData.t||0)+dt*.3);const c=G.center||{x:cam.tx,z:cam.tz};const sd=skyU.sunDir.value;rainbow.position.set(c.x-sd.x*200,hAt(c.x,c.z)-10,c.z-sd.z*200);rainbow.rotation.y=Math.atan2(-sd.x,-sd.z);}else rainbow.userData.t=0;
     if(G.sun>0){sun.intensity*=1.12;}if(G.storm>0&&rnd()<dt*.6){flash=.6;sfx('thunder');}
     uiT+=dt;if(uiT>.25&&!G.menu){uiT=0;updateUI();godInspector();}
-    saveT+=dt;if(saveT>90&&!G.menu&&(G.phase==='play'||G.phase==='shape')){saveT=0;autoSave();}
+    saveT+=dt;if(saveT>(SETS.autosave===0?1e12:SETS.autosave||90)&&!G.menu&&(G.phase==='play'||G.phase==='shape')){saveT=0;autoSave();}
     if(G.phase==='pick'&&startAuto>60)autoChooseStart();
     audioUpdate(dt);
     if(festObj&&nightF>.5&&rnd()<dt*1.4){const [fx,fz]=festSpot();const y=hAt(fx,fz)+14+rnd()*6,x=fx+(rnd()-.5)*14,z=fz+(rnd()-.5)*14;const c=pickA([[1,.4,.3],[1,.85,.3],[.5,.8,1],[.7,1,.5],[1,.6,.9]]);
@@ -343,7 +343,7 @@ function applyUI(){const ui=clamp(Math.min(innerWidth/1500,innerHeight/900),.55,
   const tr=toolsEl.getBoundingClientRect();hintEl.style.left=(tr.right+14)+'px';hintEl.style.bottom=(64*ui)+'px';hintEl.style.display=innerWidth<1000?'none':'';}
 addEventListener('resize',layout);
 newWorld(1337);setTime(15.5);cam.dist=175;cam.pitch=.7;
-applyUI();setTimeout(()=>{enterMenu(true);},30);
+applyUI();addEventListener('load',()=>setTimeout(()=>{enterMenu(true);},30));// (after every script has run: on a slow machine the 30ms timer alone could fire before menu.js was loaded)
 $('prayers').addEventListener('click',e=>{if(e.target.tagName==='H3'){$('prayers').classList.toggle('collapsed');applyUI();}});
 requestAnimationFrame(frame);
 // fast-forward for balancing (headless)
