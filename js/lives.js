@@ -472,7 +472,6 @@ function lifeSummary(v){if(!v)return null;idm();const l=L(),kin=kinOf(v);
 // ---------------------------------------------------------------- exports (a block keeps locals private; globals are life*)
 SAVE_PER.push('life');if(typeof PERKEYS!=='undefined')PERKEYS.push('life');
 wrapMiracles();
-if(typeof STORY!=='undefined')STORY.on(e=>{});// (the bus is ours to read: nothing to do per event)
 const _hourly=lifeHourly;
 Object.assign(globalThis,{LIFE_TRAITS:LT,lifeOnNew,lifeOnRemove,lifeThink,lifeDaily,lifeHourly:function(){_hourly();graveCheck();},lifeRebuildGraves:rebuildGraves,lifeFlavour,lifeMatchOK,lifeSortSingles,lifeDoubt,lifeSummary,lifeMood,lifeAddMemory,lifeRel,lifeConflict,lifeKindness,lifeComfort,lifeMiracle,lifeKin,lifeHas});
 }
