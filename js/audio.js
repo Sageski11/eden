@@ -226,5 +226,5 @@ function menuSwell(t){if(!SND.ctx)return;const c=SND.ctx;const roots=[[73.42,110
   for(const f of ch){for(const det of [-3,3]){const o=c.createOscillator(),g=c.createGain(),fl=c.createBiquadFilter();o.type='sawtooth';o.frequency.value=f;o.detune.value=det;fl.type='lowpass';fl.frequency.value=f*2.2;fl.Q.value=.4;
     o.connect(fl);fl.connect(g);g.connect(SND.mus);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.022,t+2.4);g.gain.linearRampToValueAtTime(.016,t+5.5);g.gain.linearRampToValueAtTime(0,t+8.4);o.start(t);o.stop(t+8.6);}}}
 // ---------------------------------------------------------------- bells for the folk's days (listen to the story bus)
-if(typeof STORY!=='undefined')STORY.on(e=>{if(!SND.on||!SND.ctx||MODE!=='god')return;const near=AUD.church>.05||AUD.folk>.2;const v=near?.7:.3;
-  if(e.k==='wedding'&&(G.era||0)>=1)sfx((G.era||0)>=6?'chime':'peal',v);else if((e.k==='funeral'||e.k==='death'&&e.big)&&(G.era||0)>=1)sfx((G.era||0)>=6?'chime':'toll',v*.8);});
+addEventListener('load',()=>{if(typeof STORY!=='undefined')STORY.on(e=>{if(!SND.on||!SND.ctx||MODE!=='god')return;const near=AUD.church>.05||AUD.folk>.2;const v=near?.7:.3;
+  if(e.k==='wedding'&&(G.era||0)>=1)sfx((G.era||0)>=6?'chime':'peal',v);else if((e.k==='funeral'||e.k==='death'&&e.big)&&(G.era||0)>=1)sfx((G.era||0)>=6?'chime':'toll',v*.8);});});
