@@ -98,6 +98,7 @@ function assignJobs(){
   slots.forEach((s,i)=>{const v=fill[i];if(!v)return;if(v.job!==s.job){v.site=0;}v.job=s.job;v.work=s.b?s.b.id:0;});
   for(const v of pool){v.work=0;v.job=(sites&&G.food>p*4)?'builder':'forager';}
   for(const v of G.vill)if(v.age<14||v.age>64){v.job=null;v.work=0;}
+  for(const v of G.vill)if(v.site&&v.job!=='builder')v.site=0;// only builders belong to a building site
 }
 function capOf(b){if(b.build)return 0;if(b.type==='house')return b._cap||3;if(b.type==='hall')return b.level?2:6;return 0;}
 function assignHomes(){
@@ -132,7 +133,7 @@ function pickNeed(sites){
   if(farms<farmT&&G.food<p*6&&farmSites<1+Math.floor(p/45))L.push({type:'farm'});
   if((homeless>0||beds<2+Math.floor(p/8)||G.wantHouse.length)&&sites.filter(s=>s.type==='house'&&s.build).length<Math.max(1,Math.floor(p/14)))L.push({type:'house',fam:G.wantHouse[0]});
   if(farms<farmT&&farmSites<1+Math.floor(p/45))L.push({type:'farm'});
-  if(p>=7&&!q)L.push({type:'quarry'});
+  if((p>=7||G.era>=1||(G.center&&G.center.upg&&G.center.upg.need.stone>0))&&!q)L.push({type:'quarry'});
   if((cnt('house')>=3||p>=9)&&!cnt('well')&&stoneOk(10))L.push({type:'well'});
   if(p>=14&&!cnt('smith')&&stoneOk(10))L.push({type:'smith'});
   if(p>=16&&!cnt('church')&&stoneOk(34))L.push({type:'church'});

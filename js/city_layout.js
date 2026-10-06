@@ -23,20 +23,21 @@ function lyAnalyze(hx,hz){
   const R=72,st=6,A={flat:0,dry:0,ms:0,msN:0,gx:0,gz:0,wn:0,wc:[],dmin:99,nx:0,nz:0,cover:0,elong:1,wa:0,cx:hx,cz:hz};
   for(let j=-R;j<=R;j+=st)for(let i=-R;i<=R;i+=st){const x=hx+i,z=hz+j,d=Math.hypot(i,j);if(d>R||Math.abs(x)>HALF-4||Math.abs(z)>HALF-4)continue;
     if(wAt(x,z)>.08){A.wn++;A.wc.push([x,z,d]);if(d<A.dmin){A.dmin=d;A.nx=x;A.nz=z;}continue;}
-    A.dry++;const dx=(hAt(x+2,z)-hAt(x-2,z))/4,dz=(hAt(x,z+2)-hAt(x,z-2))/4,sl=Math.hypot(dx,dz);if(sl<.2)A.flat++;
+    A.dry++;const dx=(hAt(x+6,z)-hAt(x-6,z))/12,dz=(hAt(x,z+6)-hAt(x,z-6))/12,sl=Math.hypot(dx,dz);if(sl<.1)A.flat++;
     if(d<48){A.ms+=sl;A.msN++;A.gx+=dx;A.gz+=dz;}}
   const near=A.wc.filter(c=>c[2]<68);
   if(near.length>=6){let mx=0,mz=0;for(const c of near){mx+=c[0];mz+=c[1];}mx/=near.length;mz/=near.length;let cxx=0,cxz=0,czz=0;for(const c of near){const a=c[0]-mx,b=c[1]-mz;cxx+=a*a;cxz+=a*b;czz+=b*b;}
     const tr=cxx+czz,det=cxx*czz-cxz*cxz,disc=Math.sqrt(Math.max(0,tr*tr/4-det)),l1=tr/2+disc,l2=Math.max(1,tr/2-disc);A.elong=Math.sqrt(l1/l2);A.wa=.5*Math.atan2(2*cxz,cxx-czz);A.cx=mx;A.cz=mz;}
   const bins=new Array(12).fill(0);for(const c of A.wc)if(c[2]>14&&c[2]<62)bins[Math.floor(((Math.atan2(c[1]-hz,c[0]-hx)/TAU+1)%1)*12)]++;A.cover=bins.filter(n=>n>=2).length;
   A.fl=A.dry?A.flat/A.dry:0;A.slope=A.msN?A.ms/A.msN:0;return A;}
-function lyPickTemplate(A,rr){
-  if(typeof LY_FORCE==='string'&&LY_FORCE)return LY_FORCE;
-  const S={radial:.8*A.fl+rr()*.9,grid:.8*A.fl+rr()*.9,ribbon:-1,terrace:-1,crescent:-1};
-  if(A.slope>.12)S.terrace=.5+(A.slope-.1)*11;
-  if(A.wn>=10&&A.dmin<48&&A.elong>2.3)S.ribbon=1.7+(48-A.dmin)/70+rr()*.3;
-  if(A.wn>=10&&A.dmin<54&&A.cover>=5&&A.elong<3.2)S.crescent=1.5+A.cover*.1+rr()*.3;
-  let best='grid',bs=-9;for(const k in S)if(S[k]>bs){bs=S[k];best=k;}return best;}
+function lyPickTemplate(A,rr){// a weighted draw (without replacement) among the plans the land allows, so two towns on similar land still differ
+  if(typeof LY_FORCE==='string'&&LY_FORCE)return [LY_FORCE];
+  const hill=A.slope>.3,W={radial:(.5+A.fl)*(hill?.25:1),grid:(.5+A.fl)*(hill?.25:1)};
+  if(hill)W.terrace=3;
+  if(A.wn>=10&&A.dmin<48&&A.elong>2.3)W.ribbon=2.4;
+  if(A.wn>=40&&A.dmin<54&&A.cover>=6&&A.elong<2.1)W.crescent=2;
+  const out=[];while(Object.keys(W).length){let tot=0;for(const k in W)tot+=W[k];let x=rr()*tot,pick=null;for(const k in W){x-=W[k];if(x<=0){pick=k;break;}}if(!pick)pick=Object.keys(W)[0];out.push(pick);delete W[pick];}
+  return out;}
 // ---------------------------------------------------------------- the frame of a plan (front direction f, plaza, template parameters)
 function lyFrame(P,hall,A,rr,fixed){
   const tpl=P.tpl,hx=hall.x,hz=hall.z;let fx,fz;
@@ -70,9 +71,13 @@ const lyRlen=P=>Math.min(HALF*1.2,lyRmax(P)/(P.el?Math.min(P.el[2],1):1)+8);// l
 function lyLine(x0,z0,x1,z1){const L=Math.hypot(x1-x0,z1-z0),n=Math.max(1,Math.round(L/2)),o=[];for(let i=0;i<=n;i++)o.push([x0+(x1-x0)*i/n,z0+(z1-z0)*i/n]);return o;}
 function lyArc(fx,fz,r,a0,a1,wob,sd){const o=[],n=Math.max(2,Math.round(Math.abs(a1-a0)*r/2));for(let i=0;i<=n;i++){const a=a0+(a1-a0)*i/n,rr=r+(wob?(fbm(Math.cos(a)*3+r*.1,Math.sin(a)*3,sd,2)-.5)*wob:0);o.push([fx+Math.cos(a)*rr,fz+Math.sin(a)*rr]);}return o;}
 function lyOffsetPts(pts,off){const o=[];for(let i=0;i<pts.length;i++){const a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)];const [tx,tz]=lyUnit(b[0]-a[0],b[1]-a[1]);o.push([pts[i][0]+tz*off,pts[i][1]-tx*off]);}return o;}
+function lyShoreN(x,z,R){// smoothed outward normal to the water around (x,z) and distance to the nearest water
+  let sx=0,sz=0,n=0,dm=99;for(let j=-R;j<=R;j+=3)for(let i=-R;i<=R;i+=3){const d=Math.hypot(i,j);if(d>R||d<1)continue;if(wAt(x+i,z+j)>.1){const w=1/(d*d);sx+=i*w;sz+=j*w;n++;if(d<dm)dm=d;}}
+  if(!n)return null;const l=Math.hypot(sx,sz);if(l<1e-9)return null;return {d:dm,nx:sx/l,nz:sz/l};}
+function lySmooth(pts,k,passes){let a=pts;for(let p=0;p<passes;p++){a=a.map((q,i)=>{let sx=0,sz=0,c=0;for(let j=Math.max(0,i-k);j<=Math.min(a.length-1,i+k);j++){sx+=a[j][0];sz+=a[j][1];c++;}return [sx/c,sz/c];});}return a;}
 function lyShoreWalk(x,z,dx,dz,len,target){const pts=[[x,z]];let hx=dx,hz=dz;
-  for(let L=0;L<len;L+=2){const wv=lyWaterVec(x,z,target+24);
-    if(wv){let tx=-wv.nz,tz=wv.nx;if(tx*hx+tz*hz<0){tx=-tx;tz=-tz;}const e=clamp((wv.d-target)*.4,-1.3,1.3);hx=tx;hz=tz;x+=tx*2+wv.nx*e;z+=tz*2+wv.nz*e;}
+  for(let L=0;L<len;L+=2){const wn=lyShoreN(x,z,target+22);
+    if(wn){let tx=-wn.nz,tz=wn.nx;if(tx*hx+tz*hz<0){tx=-tx;tz=-tz;}const e=clamp((wn.d-target)*.3,-1,1);hx=hx*.6+tx*.4;hz=hz*.6+tz*.4;const hl=Math.hypot(hx,hz);hx/=hl;hz/=hl;x+=hx*2+wn.nx*e;z+=hz*2+wn.nz*e;}
     else{x+=hx*2;z+=hz*2;}pts.push([x,z]);}
   return pts;}
 function lyGrad(x,z){return [(hAt(x+2,z)-hAt(x-2,z))/4,(hAt(x,z+2)-hAt(x,z-2))/4];}
@@ -96,17 +101,17 @@ function lyDefs(P,R){const D=[],C=P.C,f=P.f,r=P.r,rr=mulberry(P.seed^0x51ed270b)
     for(let i=1;i*Sx<R;i++)for(const sg of [1,-1])add(lyLine(...at(-R,sg*i*Sx),...at(R,sg*i*Sx)),1.7,'lane');
     for(let j=1;j*Sz<R;j++)for(const sg of [1,-1])add(lyLine(...at(sg*j*Sz,-R),...at(sg*j*Sz,R)),1.7,'lane');}
   else if(tpl==='ribbon'){const a=[-f[1],f[0]],tgt=P.shoreD||15;
-    const w1=lyShoreWalk(C[0],C[1],a[0],a[1],R,tgt),w2=lyShoreWalk(C[0],C[1],-a[0],-a[1],R,tgt),main=w2.slice(1).reverse().concat(w1);
+    const w1=lyShoreWalk(C[0],C[1],a[0],a[1],R,tgt),w2=lyShoreWalk(C[0],C[1],-a[0],-a[1],R,tgt),main=lySmooth(w2.slice(1).reverse().concat(w1),3,2);
     add(main,2.2,'main',.5);if(tgt-7.5>2.5)add(lyOffsetPts(main,tgt-7.5),1.6,'lane',.5,{quay:1});
     for(let k=1;k<=3;k++)add(lyOffsetPts(main,-27*k),k===1?1.9:1.7,'lane',.5);
     for(let i=4;i<main.length-4;i+=13){const p=main[i],q=main[i+1],[ux,uz]=lyUnit(q[0]-p[0],q[1]-p[1]),nx=uz,nz=-ux;add(lyLine(p[0]+nx*(tgt-7),p[1]+nz*(tgt-7),p[0]-nx*R*.8,p[1]-nz*R*.8),1.7,'lane',.5);}}
   else if(tpl==='terrace'){const hC=hAt(C[0],C[1]),sl=Math.max(.06,P.slope||.15),dl=clamp(sl*28,1.4,6);
-    for(let k=-2;k<=2;k++){const L=hC+k*dl,a=lyContour(C[0],C[1],L,1,R),b=lyContour(C[0],C[1],L,-1,R);if(a.length+b.length<8)continue;add(b.slice(1).reverse().concat(a),k===0?2.1:1.8,k===0?'main':'lane',.5);}
+    for(let k=-2;k<=2;k++){const L=hC+k*dl,a=lyContour(C[0],C[1],L,1,R),b=lyContour(C[0],C[1],L,-1,R);if(a.length+b.length<8)continue;add(lySmooth(b.slice(1).reverse().concat(a),3,2),k===0?2.1:1.8,k===0?'main':'lane',.5);}
     const m0=lyContour(C[0],C[1],hC,1,R*.9),m1=lyContour(C[0],C[1],hC,-1,R*.9),mid=m1.slice(1).reverse().concat(m0);
     for(let i=6;i<mid.length-3;i+=17){const [x,z]=mid[i];for(const s2 of [1,-1]){const pts=[[x,z]];let px=x,pz=z;for(let L=0;L<46;L+=2){const [gx,gz]=lyGrad(px,pz),g=Math.hypot(gx,gz)||1;px-=gx/g*2*s2;pz-=gz/g*2*s2;pts.push([px,pz]);}add(pts,1.5,'lane',.75,{stair:1});}}}
   else if(tpl==='crescent'){const F=P.F,r0=Math.hypot(F[0]-C[0],F[1]-C[1]),beta=Math.atan2(C[1]-F[1],C[0]-F[0]),sw=1.85;
     for(let k=0;;k++){const rad=r0+(k-.2)*24;if(rad>R+r0)break;if(rad<6)continue;add(lyArc(F[0],F[1],rad,beta-sw,beta+sw,2.4,P.seed+k),k<=1?2:1.7,k===1?'main':'lane');}
-    for(let j=-7;j<=7;j++){const a=beta+j*.27,rin=Math.max(r0-10,4);add(lyLine(F[0]+Math.cos(a)*rin,F[1]+Math.sin(a)*rin,F[0]+Math.cos(a)*(r0+R),F[1]+Math.sin(a)*(r0+R)),j===0?2.1:1.7,j===0?'main':'lane');}}
+    for(let j=-7;j<=7;j++){const a=beta+j*.27,rin=j%4===0?Math.max(r0-10,4):j%2===0?r0+14:r0+48;add(lyLine(F[0]+Math.cos(a)*rin,F[1]+Math.sin(a)*rin,F[0]+Math.cos(a)*(r0+R),F[1]+Math.sin(a)*(r0+R)),j===0?2.1:1.7,j===0?'main':'lane');}}
   return D;}
 // ---------------------------------------------------------------- laying the lines onto the land
 function lyHashPts(P){const M=new Map();for(const s of P.streets)for(const p of s.pts){const k=Math.floor(p[0]/4)*4096+Math.floor(p[1]/4);let a=M.get(k);if(!a)M.set(k,a=[]);a.push(p);}return M;}
@@ -139,7 +144,7 @@ function lyPlotOK(P,pl,chkB){const R=fpRect(pl.x,pl.z,pl.rot,fpOf('house',pl.w))
   for(const o of P.plots){if(Math.abs(o.x-pl.x)>9||Math.abs(o.z-pl.z)>9)continue;const row=Math.abs(angDiff(o.rot,pl.rot))<.02;if(rectsHit(R,fpRect(o.x,o.z,o.rot,fpOf('house',o.w)),row?-.08:.6))return false;}
   if(streetHit(R))return false;if(P.hallR&&rectsHit(R,P.hallR,.8))return false;
   let mn=1e9,mx=-1e9;for(const lx of [R.f[0],0,R.f[1]])for(const lz of [R.f[2],0,R.f[3]]){const wx=pl.x+lx*R.cs+lz*R.sn,wz=pl.z-lx*R.sn+lz*R.cs;if(wAt(wx,wz)>.08)return false;const h=hAt(wx,wz);mn=Math.min(mn,h);mx=Math.max(mx,h);}
-  if(mx-mn>=2.8)return false;
+  if(mx-mn>=(P.tpl==='terrace'?4.2:2.8))return false;
   if(chkB&&blockedAt('house',pl.x,pl.z,pl.rot,pl.w,null))return false;
   return true;}
 function lyPlots(P,s,box,chkB){const pts=s.pts,si=P.streets.indexOf(s);let n=0;if(s.stair)return 0;
@@ -157,19 +162,22 @@ function lyPlots(P,s,box,chkB){const pts=s.pts,si=P.streets.indexOf(s);let n=0;i
       carry=t-tl;}}
   return n;}
 // ---------------------------------------------------------------- making a plan
-makePlan=function(hall){
-  const seed=lySeedOf(hall.x,hall.z),rr=mulberry(seed),A=lyAnalyze(hall.x,hall.z),founding=!!(hall.build&&!G.firstHut);
-  const P={v:3,seed,tpl:lyPickTemplate(A,rr),streets:[],plots:[],gen:0,sc:1,z:{civic:12,mix:40,res:60},slope:+A.slope.toFixed(3),eraSeen:G.era||0,seenV:0};G.plan=P;
+function lyBuild(hall,tpl,seed,A,founding){
+  const rr=mulberry(seed^0x2545f491),P={v:3,seed,tpl,streets:[],plots:[],gen:0,sc:1,z:{civic:12,mix:40,res:60},slope:+A.slope.toFixed(3),eraSeen:G.era||0,seenV:0};G.plan=P;
   lyFrame(P,hall,A,rr,!founding);
-  if(P.tpl==='ribbon'){P.shoreD=15;P.el=[-P.f[1],P.f[0],.62,1.35];}
-  if(P.tpl==='terrace')P.el=[-P.f[1],P.f[0],.7,1.25];
-  if(P.tpl==='crescent')P.F=[A.cx,A.cz];
-  if(founding){hall.rot=P.psi;realize(hall);}// the hall turns to face its plaza while it is still being founded
-  P.hallR=fpRect(hall.x,hall.z,hall.rot,[-6.3,5.2,-5.2,5.2]);
-  lyPickIndustry(P,rr);
-  lyLay(P,lyDefs(P,lyRlen(P)));
+  if(tpl==='ribbon'){P.shoreD=15;P.el=[-P.f[1],P.f[0],.62,1.35];}
+  if(tpl==='terrace')P.el=[-P.f[1],P.f[0],.7,1.25];
+  if(tpl==='crescent')P.F=[A.cx,A.cz];
+  P.hallR=fpRect(hall.x,hall.z,founding?P.psi:hall.rot,[-6.3,5.2,-5.2,5.2]);
+  lyPickIndustry(P,rr);lyLay(P,lyDefs(P,lyRlen(P)));
   for(const s of P.streets)lyPlots(P,s);
-  for(const s of P.streets)if(s.kind==='main'&&(!s.parent||s.par<0))paintStreetTo(s,Math.min(8,s.pts.length-1));
+  return P;}
+makePlan=function(hall){
+  const seed=lySeedOf(hall.x,hall.z),rr=mulberry(seed),A=lyAnalyze(hall.x,hall.z),founding=!!(hall.build&&!G.firstHut),order=lyPickTemplate(A,rr);
+  let best=null;for(const t of order.slice(0,3)){const P=lyBuild(hall,t,seed,A,founding);P.q=P.plots.length+Math.min(30,P.streets.length);if(!best||P.q>best.q)best=P;if(P.plots.length>=70)break;}
+  const P=G.plan=best;
+  if(founding){hall.rot=P.psi;realize(hall);}// the hall turns to face its plaza while it is still being founded
+  for(const s of P.streets)if(s.kind==='main'&&s.par<0)paintStreetTo(s,Math.min(8,s.pts.length-1));
   if(MODE==='god')chron(`The elders walked the ground and laid out ${G.town||'the town'} as a ${LY_NAME[P.tpl]}.`);
   return P;};
 // ---------------------------------------------------------------- finding places
@@ -247,11 +255,17 @@ function lyGradeSeg(s,a,b,cap){// level a bench along street points a..b: the st
   const m=pts[n>>1];tfDust(m[0],m[1],26);tfDust(pts[0][0],pts[0][1],10);return moved;}
 function lyRough(s,a,b){const n=Math.min(b,s.pts.length-1);let lo=1e9,hi=-1e9,steep=0;for(let i=a;i<=n;i++){const [x,z]=s.pts[i];for(const o of [-6,0,6]){const h=hAt(x+o,z+o*.5);lo=Math.min(lo,h);hi=Math.max(hi,h);}
   if(i>a)steep=Math.max(steep,Math.abs(hAt(x,z)-hAt(s.pts[i-1][0],s.pts[i-1][1]))/2);}return Math.max(steep*6,(hi-lo)*.45);}
+function lyUsablePlots(P){const M=lyBuildHash(),lim=2.6+tfExtra();let n=0;
+  for(const p of P.plots){if(lyOccupied(M,p.x,p.z,3.2))continue;let mn=1e9,mx=-1e9;for(const [lx,lz] of [[-1.8,-4.8],[1.8,-4.8],[0,-1],[-1.8,2.6],[1.8,2.6]]){const cs=Math.cos(p.rot),sn=Math.sin(p.rot),h=hAt(p.x+lx*cs+lz*sn,p.z-lx*sn+lz*cs);mn=Math.min(mn,h);mx=Math.max(mx,h);}if(mx-mn<lim)n++;}
+  return n;}
 function lyGradeTick(){const P=G.plan;if(MODE!=='god'||!P||P.v<3||(G.era||0)<1||!G.tf||!G.center||G.center.build)return;if(G.t<(P.gT||0))return;P.gT=G.t+3;
+  // the folk level ground when the town has too few good plots, nearest the square first
+  if(lyUsablePlots(P)>=6+Math.floor(popN()/22)){lyReclaim(P);return;}
   const cap=tfCap()*.55,d0=s=>Math.hypot(s.pts[0][0]-P.C[0],s.pts[0][1]-P.C[1]);
-  const ordered=P.streets.filter(s=>!s.stair&&s.painted>=3).sort((a,b)=>d0(a)-d0(b));
-  for(const s of ordered){let gi=s.gi||0;const lim=Math.min(s.painted+6,s.pts.length-1);
-    while(gi<lim){const e=Math.min(gi+9,s.pts.length-1),m=s.pts[(gi+e)>>1];
+  const ordered=P.streets.filter(s=>!s.stair).sort((a,b)=>d0(a)-d0(b));
+  for(const s of ordered){let gi=s.gi||0;
+    while(gi<s.pts.length-1){const e=Math.min(gi+9,s.pts.length-1),m=s.pts[(gi+e)>>1];
+      if(lyD(P,m[0],m[1])>P.z.res*P.sc+8){gi=s.pts.length;break;}
       if(!lyFallow(m[0],m[1],10)){gi=e;continue;}
       const rough=lyRough(s,gi,e);if(rough<.5){gi=e;s.gp=0;continue;}
       if(rough>1.4){if(P.tfAllow===false||(G.era||0)<2){gi=e;continue;}
