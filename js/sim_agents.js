@@ -47,8 +47,21 @@ function rebuildGrid(){
   gOcc.fill(0);
   for(const b of allB()){if(b.type==='farm')continue;const r=b.r*.7;const i0=Math.floor((b.x-r+HALF)/GC),i1=Math.floor((b.x+r+HALF)/GC),j0=Math.floor((b.z-r+HALF)/GC),j1=Math.floor((b.z+r+HALF)/GC);
     for(let j=Math.max(0,j0);j<=Math.min(GN-1,j1);j++)for(let i=Math.max(0,i0);i<=Math.min(GN-1,i1);i++){const x=i*GC+1-HALF,z=j*GC+1-HALF;if(Math.hypot(x-b.x,z-b.z)<r)gOcc[j*GN+i]=b.id;}}
-  gridDirty=false;GVER++;PCACHE.clear();
+  gridDirty=false;GVER++;PCACHE.clear();labelComps();
 }
+// connected regions of walkable ground: a villager whose goal lies in another region can never walk there, so they are not
+// left searching forever (and a failed search never floods a whole region); they are carried to the nearest ground that connects.
+const gComp=new Int32Array(NN);
+function labelComps(){gComp.fill(0);let c=0;const st=[];for(let k=0;k<NN;k++){if(gComp[k]||gCost[k]===Infinity)continue;c++;gComp[k]=c;st.push(k);
+  while(st.length){const q=st.pop(),qi=q%GN,qj=(q/GN)|0;
+    if(qi>0){const n=q-1;if(!gComp[n]&&gCost[n]!==Infinity){gComp[n]=c;st.push(n);}}if(qi<GN-1){const n=q+1;if(!gComp[n]&&gCost[n]!==Infinity){gComp[n]=c;st.push(n);}}
+    if(qj>0){const n=q-GN;if(!gComp[n]&&gCost[n]!==Infinity){gComp[n]=c;st.push(n);}}if(qj<GN-1){const n=q+GN;if(!gComp[n]&&gCost[n]!==Infinity){gComp[n]=c;st.push(n);}}}}}
+function compAt(i,j){const k=j*GN+i;if(gComp[k])return gComp[k];for(let d=0;d<8;d++){const ni=i+DI[d],nj=j+DJ[d];if(ni<0||nj<0||ni>=GN||nj>=GN)continue;const c=gComp[nj*GN+ni];if(c)return c;}return 0;}
+function compOfPt(x,z){if(gridDirty)rebuildGrid();const [i,j]=cellOf(x,z);return compAt(i,j);}
+function nearestInComp(x,z,comp){if(gridDirty)rebuildGrid();const [ci,cj]=cellOf(x,z);for(let r=0;r<=90;r++){for(let dj=-r;dj<=r;dj++)for(let di=-r;di<=r;di++){if(Math.max(Math.abs(di),Math.abs(dj))!==r)continue;const i=ci+di,j=cj+dj;if(i<1||j<1||i>=GN-1||j>=GN-1)continue;
+    if(gComp[j*GN+i]===comp)return [i*GC+1-HALF,j*GC+1-HALF];}}return null;}
+// a place for newcomers to appear that really connects to the town
+function reachableSpawn(ex,ez,tx,tz){const c=compOfPt(tx,tz);if(!c||compOfPt(ex,ez)===c)return [ex,ez];const p=nearestInComp(ex,ez,c);return p||[ex,ez];}
 const gS=new Float32Array(NN),gSt=new Int32Array(NN),gCl=new Int32Array(NN),gFrom=new Int32Array(NN);let gStamp=0;
 const hpK=new Int32Array(NN*4),hpF=new Float32Array(NN*4);let hpN=0;
 // binary min-heap on typed arrays (hole-based sifting: no swaps, no allocation)
@@ -60,6 +73,7 @@ function findPath(x0,z0,x1,z1,tb,sb){
   if(gridDirty)rebuildGrid();
   const [si,sj]=cellOf(x0,z0),[ti,tj]=cellOf(x1,z1),s=sj*GN+si,t=tj*GN+ti;
   if(s===t)return [[x1,z1]];
+  {const cs=compAt(si,sj),ct=compAt(ti,tj);if(cs&&ct&&cs!==ct)return null;}
   const ck=s+':'+t+':'+(tb||0)+':'+(sb||0),hit=PCACHE.get(ck);
   if(hit!==undefined){PCST.hit++;if(hit===null)return null;const out=[];for(let i=0;i<hit.length;i++)out.push([hit[i][0]+(rnd()-.5)*.8,hit[i][1]+(rnd()-.5)*.8]);out.push([x1,z1]);return out;}
   PCST.miss++;
@@ -108,8 +122,9 @@ function goTo(v,x,z,cb,tb){
   const d=Math.hypot(x-v.x,z-v.z);let p=null;
   if(d<2.5)p=[[x,z]];
   else{if(G.pathBudget<=0){v.timer=.04;return false;}G.pathBudget--;p=findPath(v.x,v.z,x,z,tb,v._sb||0);}
-  if(!p){if(d<12)p=[[x,z]];else{v.timer=.6+rnd();setThought(v,"I can't find a way there…");return false;}}
-  v.path=p;v.pi=0;v.onArrive=cb||null;v.hidden=false;v.anim='walk';return true;
+  if(!p){if(d<12)p=[[x,z]];else{v._pf=(v._pf||0)+1;if(v._pf>=3){v._pf=0;const c=compOfPt(x,z);if(c){const q=nearestInComp(v.x,v.z,c);if(q){v.x=q[0];v.z=q[1];setThought(v,'Found a way across at last.');v.timer=.1;return false;}}}
+    v.timer=.6+rnd();setThought(v,"I can't find a way there…");return false;}}
+  v._pf=0;v.path=p;v.pi=0;v.onArrive=cb||null;v.hidden=false;v.anim='walk';return true;
 }
 function wait(v,h,anim,hidden,onDone,tick){v.timer=h;v.anim=anim||'idle';v.hidden=!!hidden;v.onDone=onDone||null;v.tick=tick||null;}
 function moveAlong(v,dtH){

@@ -18,7 +18,7 @@ function sPickSite(){const cs=[];TOWNS.list.forEach((s,i)=>{const c=sGet(i,'cent
   return best;}
 // found the settlement in whatever context is active (no UI): the hall, the street plan and five settlers from the edge
 function foundHere(x,z){const b=startSite('hall',x,z,Math.round(rnd()*4)*(PI/2),{level:0});G.center=b;makePlan(b);onPlannedBuild(b);paintPlaza();b.stock={wood:G.wood,stone:G.stone,food:G.food};
-  let [ex,ez]=edgePoint(Math.atan2(z,x)+(rnd()-.5)*.6);{const dx=ex-x,dz=ez-z,d=Math.hypot(dx,dz);if(d>45){for(let r2=45;r2<d;r2+=5){const tx=x+dx/d*r2,tz=z+dz/d*r2;if(wAt(tx,tz)<.05){ex=tx;ez=tz;break;}}}}
+  let [ex,ez]=edgePoint(Math.atan2(z,x)+(rnd()-.5)*.6);{const dx=ex-x,dz=ez-z,d=Math.hypot(dx,dz);if(d>45){for(let r2=45;r2<d;r2+=5){const tx=x+dx/d*r2,tz=z+dz/d*r2;if(wAt(tx,tz)<.05){ex=tx;ez=tz;break;}}}}[ex,ez]=reachableSpawn(ex,ez,x,z);
   const fam=pickA(FAM),fam2=pickA(FAM.filter(f=>f!==fam));
   const spec=[{female:false,fam},{female:true,fam},{female:false,fam:fam2},{female:true,fam:fam2},{female:rnd()<.5,fam:pickA(FAM),age:19}];
   spec.forEach((s,i)=>{const v=newVillager(Object.assign({x:ex+(rnd()-.5)*3,z:ez+(rnd()-.5)*3,arriving:true},s));v.timer=i*.12;});

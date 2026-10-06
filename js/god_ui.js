@@ -167,7 +167,7 @@ function chooseStart(x,z){
   if(mx-mn>2.6){toast('Too steep — choose flatter ground (or flatten it first)');return;}
   if(Math.abs(x)>HALF-14||Math.abs(z)>HALF-14){toast('Too close to the edge of the world');return;}
   G.phase='play';devApplyMeta();openingStart();const b=startSite('hall',x,z,Math.round(cam.yaw/(PI/2))*(PI/2),{level:0});G.center=b;makePlan(b);onPlannedBuild(b);paintPlaza();b.stock={wood:G.wood,stone:G.stone,food:G.food};
-  let [ex,ez]=edgePoint(Math.atan2(z,x)+(rnd()-.5)*.6);{const dx=ex-x,dz=ez-z,d=Math.hypot(dx,dz);if(d>45){for(let r2=45;r2<d;r2+=5){const tx=x+dx/d*r2,tz=z+dz/d*r2;if(wAt(tx,tz)<.05){ex=tx;ez=tz;break;}}}}
+  let [ex,ez]=edgePoint(Math.atan2(z,x)+(rnd()-.5)*.6);{const dx=ex-x,dz=ez-z,d=Math.hypot(dx,dz);if(d>45){for(let r2=45;r2<d;r2+=5){const tx=x+dx/d*r2,tz=z+dz/d*r2;if(wAt(tx,tz)<.05){ex=tx;ez=tz;break;}}}}[ex,ez]=reachableSpawn(ex,ez,x,z);
   const fam=pickA(FAM),fam2=pickA(FAM.filter(f=>f!==fam));
   const spec=[{female:false,fam},{female:true,fam},{female:false,fam:fam2},{female:true,fam:fam2},{female:rnd()<.5,fam:pickA(FAM),age:19}];
   spec.forEach((s,i)=>{const v=newVillager(Object.assign({x:ex+(rnd()-.5)*3,z:ez+(rnd()-.5)*3,arriving:true},s));v.timer=i*.12;});

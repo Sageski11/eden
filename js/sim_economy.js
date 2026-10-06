@@ -378,7 +378,7 @@ function newDay(){if(G.menu)return;
 }
 function edgePoint(a){const x=Math.cos(a),z=Math.sin(a),m=Math.max(Math.abs(x),Math.abs(z));let px=x/m*(HALF-1.5),pz=z/m*(HALF-1.5);
   for(let i=0;i<24&&wAt(px,pz)>.3;i++){a+=.15;const x2=Math.cos(a),z2=Math.sin(a),m2=Math.max(Math.abs(x2),Math.abs(z2));px=x2/m2*(HALF-1.5);pz=z2/m2*(HALF-1.5);}return [px,pz];}
-function arriveFamily(n){const c=G.center;const a=Math.atan2(c.z,c.x)+(rnd()-.5)*1.6;let [ex,ez]=edgePoint(a+(Math.abs(c.x)+Math.abs(c.z)<20?rnd()*TAU:0));{const dx=ex-c.x,dz=ez-c.z,d=Math.hypot(dx,dz);if(d>55){const tx=c.x+dx/d*55,tz=c.z+dz/d*55;if(wAt(tx,tz)<.1){ex=tx;ez=tz;}}}const fam=pickA(FAM);
+function arriveFamily(n){const c=G.center;const a=Math.atan2(c.z,c.x)+(rnd()-.5)*1.6;let [ex,ez]=edgePoint(a+(Math.abs(c.x)+Math.abs(c.z)<20?rnd()*TAU:0));{const dx=ex-c.x,dz=ez-c.z,d=Math.hypot(dx,dz);if(d>55){const tx=c.x+dx/d*55,tz=c.z+dz/d*55;if(wAt(tx,tz)<.1){ex=tx;ez=tz;}}}[ex,ez]=reachableSpawn(ex,ez,c.x,c.z);const fam=pickA(FAM);
   for(let i=0;i<n;i++){const v=newVillager({fam,x:ex+(rnd()-.5)*2,z:ez+(rnd()-.5)*2,arriving:true,age:i>=2?3+Math.floor(rnd()*10):18+Math.floor(rnd()*20),female:i===1?true:i===0?false:undefined});
     if(i===1)v.spouse=G.vill[G.vill.length-2].id,G.vill[G.vill.length-2].spouse=v.id;
     if(i>=2)v.parents=[G.vill[G.vill.length-1-i+0].id];
