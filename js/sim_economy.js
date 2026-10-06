@@ -247,10 +247,12 @@ function planTick(){
   if(need.type==='house'){if(need.fam){o.forFam=need.fam;G.wantHouse.shift();}o.level=G.era>=7?6:G.era>=6?5:G.era>=5?4:G.era>=2?1:0;}
   startSite(need.type,spot.x,spot.z,rot,o);
 }
-function stuckCheck(){for(const b of buildings.slice()){const P=b.build||b.upg;if(!P||b===G.center)continue;if(!b.build){if(P.inb.wood<0)P.inb.wood=0;if(P.inb.stone<0)P.inb.stone=0;const pr=P.done+P.have.wood+P.have.stone;if(P._last===pr)P._idle=(P._idle||0)+1;else{P._idle=0;P._last=pr;}if(P._idle===10){P.inb.wood=0;P.inb.stone=0;}continue;}
+function stuckCheck(){for(const b of buildings.slice()){const P=b.build||b.upg;if(!P)continue;
+  if(b===G.center){// the heart of the town is never given up on, but its reservations are kept honest
+    if(P.inb.wood<0)P.inb.wood=0;if(P.inb.stone<0)P.inb.stone=0;const pr=P.done+P.have.wood+P.have.stone;if(P._last===pr)P._idle=(P._idle||0)+1;else{P._idle=0;P._last=pr;}if(P._idle>=4){P.inb.wood=0;P.inb.stone=0;for(const v of G.vill)if(v._res&&v._res.site===b.id){v._res=null;if(v.carry==='wood'||v.carry==='stone'){v.carry=null;v.amt=0;}}}continue;}if(!b.build){if(P.inb.wood<0)P.inb.wood=0;if(P.inb.stone<0)P.inb.stone=0;const pr=P.done+P.have.wood+P.have.stone;if(P._last===pr)P._idle=(P._idle||0)+1;else{P._idle=0;P._last=pr;}if(P._idle===4){P.inb.wood=0;P.inb.stone=0;}continue;}
   const prog=P.done+P.have.wood+P.have.stone;if(P._last===prog){P._idle=(P._idle||0)+1;}else{P._idle=0;P._last=prog;}
   // materials 'in transit' leak when a hauler is reassigned or dies: forget stale reservations so the site gets restocked
-  if(P.inb.wood<0)P.inb.wood=0;if(P.inb.stone<0)P.inb.stone=0;if(P._idle===10){P.inb.wood=0;P.inb.stone=0;}
+  if(P.inb.wood<0)P.inb.wood=0;if(P.inb.stone<0)P.inb.stone=0;if(P._idle===4){P.inb.wood=0;P.inb.stone=0;for(const v of G.vill)if(v._res&&v._res.site===b.id){v._res=null;if(v.carry==='wood'||v.carry==='stone'){v.carry=null;v.amt=0;}}}
   if(P._idle>=(b.type==='castle'||b.type==='powerplant'||b.type==='fusion'?96:48)&&G.wood>=P.need.wood-P.have.wood-P.inb.wood&&G.stone>=P.need.stone-P.have.stone-P.inb.stone){G.wood+=P.have.wood+P.inb.wood;G.stone+=P.have.stone+P.inb.stone;
     G.failCool[b.type+(b.variant||'')]=G.t+48;chron(`The folk gave up on the ${siteName(b)} — they could not work there.`);for(const v of G.vill)if(v.site===b.id)v.site=0;removeBuilding(b);gridDirty=true;}}}
 function upgradeTick(){

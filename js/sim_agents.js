@@ -99,7 +99,7 @@ function newVillager(o={}){const female=o.female!=null?o.female:rnd()<.5;
 const fullName=v=>`${v.name} ${v.fam}`;
 // grief felt by the town is shared out as it grows, so a big city is not crushed by ordinary deaths and fires
 function griefAdd(x){G.grief=Math.min(30,G.grief+x*clamp(28/Math.max(28,popN()),.1,1));}
-function removeVillager(v,why){v._gone=true;const i=G.vill.indexOf(v);if(i>=0)G.vill.splice(i,1);
+function removeVillager(v,why){v._gone=true;releaseRes(v);const i=G.vill.indexOf(v);if(i>=0)G.vill.splice(i,1);
   for(const o of G.vill)if(o.spouse===v.id)o.spouse=0;if(G.follow===v)G.follow=null;
   if(why==='died'){G.deaths++;griefAdd(3);}}
 function setThought(v,t){v.thought=t;}
@@ -144,6 +144,7 @@ function goInside(v,b,hours,why,thought){
 }
 function sleepHours(){const h=hod();return ((h>=12?24-h:-h)+5.3+rnd()*.9);}
 function think(v){
+  if(v._res&&(v.job!=='builder'||!bById(v._res.site)||!siteProj(bById(v._res.site))))releaseRes(v);
   if(v.mission)return missionStep(v);
   const h=hod(),home=bById(v.home);v._sb=v.inside||0;v.inside=0;
   if(v.leaving){goTo(v,v.lx,v.lz,vv=>removeVillager(vv,'left'));return;}
@@ -195,18 +196,21 @@ function storeFor(m,x,z){let best=G.center,bd=G.center?Math.hypot(G.center.x-x,G
   for(const b of buildings){if(b.build)continue;const ok=(m==='wood'&&b.type==='camp'&&b.variant==='lumber')||(m==='stone'&&b.type==='quarry');if(!ok)continue;const d=Math.hypot(b.x-x,b.z-z);if(d<bd){bd=d;best=b;}}return best;}
 function siteProj(b){return b.build||b.upg;}
 function matFrac(P){let f=1;for(const m of ['wood','stone'])if(P.need[m]>0)f=Math.min(f,P.have[m]/P.need[m]);return f;}
+// a builder who is taken off a site (new job, death) gives back what he had set aside for it, so the site never waits for timber that nobody is bringing
+function releaseRes(v){const r=v._res;if(!r)return;v._res=null;const b=bById(r.site),P=b&&siteProj(b);if(P)P.inb[r.m]=Math.max(0,P.inb[r.m]-r.amt);G[r.m]+=r.amt;if(v.carry===r.m){v.carry=null;v.amt=0;}}
 function builderTask(v){
   let site=bById(v.site);if(!site||!siteProj(site)){site=chooseSite(v);v.site=site?site.id:0;}
   if(!site){if(v.carry){const st=G.center;if(st){const m=v.carry,a=v.amt;goTo(v,...doorOf(st),vv=>{G[m]+=a;vv.carry=null;},st.id);return;}}return forageTask(v);}
   const P=siteProj(site);
+  if(P.done>=P.work-.03&&matFrac(P)>=1-1e-6){P.done=P.work;completeSite(site);return;}// nothing left to do: never wait for another hammer blow
   if(v.carry){const [x,z]=doorOf(site);setThought(v,`Hauling ${v.carry} to the ${siteName(site)}.`);
-    goTo(v,x+(rnd()-.5)*2,z+(rnd()-.5)*2,vv=>{const p=siteProj(site);if(p){p.have[vv.carry]+=vv.amt;p.inb[vv.carry]-=vv.amt;}else G[vv.carry]+=vv.amt;vv.carry=null;vv.amt=0;wait(vv,.15,'work');},site.id);return;}
+    goTo(v,x+(rnd()-.5)*2,z+(rnd()-.5)*2,vv=>{const p=siteProj(site);if(p){p.have[vv.carry]+=vv.amt;p.inb[vv.carry]=Math.max(0,p.inb[vv.carry]-vv.amt);}else G[vv.carry]+=vv.amt;vv.carry=null;vv.amt=0;vv._res=null;wait(vv,.15,'work');},site.id);return;}
   const nw=P.need.wood-P.have.wood-P.inb.wood,ns=P.need.stone-P.have.stone-P.inb.stone;
   const canW=nw>0&&G.wood>=1,canS=ns>0&&G.stone>=1;
   const workable=P.done<P.work*matFrac(P)-.02;
-  if((canW||canS)&&!(workable&&rnd()<.4)){const m=canS&&(!canW||rnd()<.5)?'stone':'wood';const amt=Math.min(3,m==='wood'?nw:ns,Math.floor(G[m]));
-    G[m]-=amt;P.inb[m]+=amt;const st=storeFor(m,site.x,site.z);setThought(v,`Fetching ${m} for the ${siteName(site)}.`);
-    if(!goTo(v,...doorOf(st),vv=>{vv.carry=m;vv.amt=amt;wait(vv,.2,'work');},st.id)){G[m]+=amt;P.inb[m]-=amt;}return;}
+  if((canW||canS)&&!(workable&&rnd()<.4)){const m=canS&&(!canW||rnd()<.5)?'stone':'wood';const amt=Math.min(5,m==='wood'?nw:ns,Math.floor(G[m]));
+    G[m]-=amt;P.inb[m]+=amt;v._res={site:site.id,m,amt};const st=storeFor(m,site.x,site.z);setThought(v,`Fetching ${m} for the ${siteName(site)}.`);
+    if(!goTo(v,...doorOf(st),vv=>{vv.carry=m;vv.amt=amt;wait(vv,.2,'work');},st.id)){G[m]+=amt;P.inb[m]=Math.max(0,P.inb[m]-amt);v._res=null;}return;}
   if(workable){const a=rnd()*TAU,r=site.r*.9+.4;setThought(v,pickA([`Raising the ${siteName(site)}.`,'Hammer and nails…','Steady that beam!']));
     goTo(v,site.x+Math.cos(a)*r,site.z+Math.sin(a)*r,vv=>{vv.rot=Math.atan2(site.x-vv.x,site.z-vv.z);wait(vv,1.2,'work',false,null,(w,dt)=>{const p=siteProj(site);if(!p)return;
       const pd=p.done;p.done=Math.min(p.work*matFrac(p),p.done+dt*workMul()*(p.blessed?2.5:1));if(p.done>pd){gainXP('work',(p.done-pd)*.5*(p.need.wood>0?1:.3));if(p.need.stone>0)gainXP('stone',(p.done-pd)*.18);}G.hammer=(G.hammer||0)+dt;if(p.done>=p.work-1e-6&&matFrac(p)>=1)completeSite(site);});},site.id);return;}
@@ -214,7 +218,7 @@ function builderTask(v){
   const [x,z]=doorOf(site);goTo(v,x+(rnd()-.5)*3,z+(rnd()-.5)*3,vv=>wait(vv,.7,'idle'));
 }
 function chooseSite(v){const sites=buildings.filter(b=>siteProj(b));if(!sites.length)return null;
-  let best=null,bs=1e9;for(const s of sites){const n=G.vill.filter(o=>o.site===s.id&&o.job==='builder').length;const big=SITE_PRIORITY[s.type]||0,sc=Math.hypot(s.x-v.x,s.z-v.z)*.05+n*1.5-(s.type==='house'?1:0)-(siteProj(s).blessed?2:0)+(s.upg?2:0)-(!s.upg&&n<(s.type==='castle'?4:2)?big:0);if(sc<bs){bs=sc;best=s;}}return best;}
+  let best=null,bs=1e9;for(const s of sites){const n=G.vill.filter(o=>o.site===s.id&&o.job==='builder').length;const big=SITE_PRIORITY[s.type]||0,sc=Math.hypot(s.x-v.x,s.z-v.z)*.05+(G.center?Math.hypot(s.x-G.center.x,s.z-G.center.z)*.03:0)+n*1.5-(s.type==='house'?1:0)-(siteProj(s).blessed?2:0)+(s.upg?2:0)-(!s.upg&&n<(s.type==='castle'?4:2)?big:0);if(sc<bs){bs=sc;best=s;}}return best;}
 // large civic works must not be starved of builders by the many small jobs of a big town
 const SITE_PRIORITY={castle:8,church:5,market:4,tavern:3,mill:3,smith:3,school:4,factory:5,station:5,powerplant:6,fusion:6,tower:2,mason:3,sawmill:3,shipyard:3};
 function siteName(b){return b.type==='house'?(b.upg?'house':'new home'):b.type==='camp'?(b.variant==='lumber'?'lumber camp':b.variant==='fish'?'fishing camp':'camp'):(BT[b.type]||b.type).toLowerCase();}

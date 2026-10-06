@@ -16,8 +16,8 @@ const { chromium } = require('/opt/node-tools/node_modules/playwright'); const p
     o.push({ i, name: G.town, pop: G.vill.length, era: G.era, blds: buildings.length, food: Math.round(G.food), wood: Math.round(G.wood), stone: Math.round(G.stone), jobs: G.vill.reduce((a, v) => (a[v.job || '-'] = (a[v.job || '-'] || 0) + 1, a), {}), sites: sites.slice(0, 6) }); }); }); return o; });
   for (let d = 0; d < days; d++) {
     await page.evaluate(() => { PAUSED = false; for (let k = 0; k < 24; k++) { if (TOWNS.cur === 0 || true) { eachSettlement(() => {}); } } });
-    await page.evaluate((d) => { for (let i = 0; i < 240; i++) { if (i % 24 === 0) { const c = TOWNS.cur; withSettlement(0, () => window.__help()); } gameStep(0.1); } if (d === 25 && TOWNS.list.length < 2) { withSettlement(0, () => { G.era = Math.max(G.era, 1); }); sFound(); } }, d);
-    if (d % 8 === 7 || d === days - 1) console.log('day', d + 1, JSON.stringify(await rep()));
+    await page.evaluate((d) => { for (let i = 0; i < 240; i++) { if (i % 24 === 0) { const c = TOWNS.cur; withSettlement(0, () => window.__help()); } gameStep(0.1); } if (d === 2 && TOWNS.list.length < 2) { withSettlement(0, () => { G.era = Math.max(G.era, 1); }); sFound(); } }, d);
+    if (d % 4 === 3 || d === days - 1) console.log('day', d + 1, JSON.stringify(await rep()));
     if (errs.length) break;
   }
   console.log(errs.length ? errs.join('\n') : 'NO ERRORS'); await browser.close();
