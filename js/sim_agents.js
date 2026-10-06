@@ -69,7 +69,7 @@ function hPush(k,f){let i=hpN++;while(i>0){const p=(i-1)>>1;if(hpF[p]<=f)break;h
 function hPop(){const top=hpK[0];hpN--;if(hpN>0){const k=hpK[hpN],f=hpF[hpN];let i=0;for(;;){let c=i*2+1;if(c>=hpN)break;if(c+1<hpN&&hpF[c+1]<hpF[c])c++;if(hpF[c]>=f)break;hpK[i]=hpK[c];hpF[i]=hpF[c];i=c;}hpK[i]=k;hpF[i]=f;}return top;}
 const cellOf=(x,z)=>[clamp(Math.floor((x+HALF)/GC),0,GN-1),clamp(Math.floor((z+HALF)/GC),0,GN-1)];
 const DI=[1,-1,0,0,1,1,-1,-1],DJ=[0,0,1,-1,1,-1,1,-1],DCOST=[1,1,1,1,1.414,1.414,1.414,1.414];
-function findPath(x0,z0,x1,z1,tb,sb){
+function findPath(x0,z0,x1,z1,tb,sb,hw,cap){hw=hw||.62;cap=cap||30000;
   if(gridDirty)rebuildGrid();
   const [si,sj]=cellOf(x0,z0),[ti,tj]=cellOf(x1,z1),s=sj*GN+si,t=tj*GN+ti;
   if(s===t)return [[x1,z1]];
@@ -78,7 +78,7 @@ function findPath(x0,z0,x1,z1,tb,sb){
   if(hit!==undefined){PCST.hit++;if(hit===null)return null;const out=[];for(let i=0;i<hit.length;i++)out.push([hit[i][0]+(rnd()-.5)*.8,hit[i][1]+(rnd()-.5)*.8]);out.push([x1,z1]);return out;}
   PCST.miss++;
   gStamp++;hpN=0;gS[s]=0;gSt[s]=gStamp;gFrom[s]=-1;hPush(s,0);let it=0,found=false;
-  while(hpN&&it<30000){it++;const k=hPop();if(gCl[k]===gStamp)continue;gCl[k]=gStamp;if(k===t){found=true;break;}
+  while(hpN&&it<cap){it++;const k=hPop();if(gCl[k]===gStamp)continue;gCl[k]=gStamp;if(k===t){found=true;break;}
     const ki=k%GN,kj=(k/GN)|0;
     const gk=gS[k];
     for(let d=0;d<8;d++){const ni=ki+DI[d],nj=kj+DJ[d];if(ni<0||nj<0||ni>=GN||nj>=GN)continue;const n=nj*GN+ni;if(gCl[n]===gStamp)continue;
@@ -86,9 +86,10 @@ function findPath(x0,z0,x1,z1,tb,sb){
       if(dc>1&&(gCost[kj*GN+ni]===Infinity||gCost[nj*GN+ki]===Infinity))continue;
       const o=gOcc[n];if(o&&o!==tb&&o!==sb)c+=7;
       const g=gk+c*dc;if(gSt[n]===gStamp&&g>=gS[n])continue;gS[n]=g;gSt[n]=gStamp;gFrom[n]=k;
-      const hx=ni>ti?ni-ti:ti-ni,hz=nj>tj?nj-tj:tj-nj;hPush(n,g+((hx>hz?hx:hz)+.414*(hx>hz?hz:hx))*.62);}}
+      const hx=ni>ti?ni-ti:ti-ni,hz=nj>tj?nj-tj:tj-nj;hPush(n,g+((hx>hz?hx:hz)+.414*(hx>hz?hz:hx))*hw);}}
   if(PCACHE.size>2500)PCACHE.clear();
-  if(!found){PCACHE.set(ck,null);return null;}
+  if(!found){if(hw<1&&it>=cap)return findPath(x0,z0,x1,z1,tb,sb,1.6,90000);// a very long way round: look again, more eagerly
+    PCACHE.set(ck,null);return null;}
   const cells=[];for(let k=t;k!==-1&&k!==s;k=gFrom[k])cells.push(k);cells.reverse();
   const out=[],base=[];let pdx=9,pdz=9;
   for(let i=0;i<cells.length;i++){const k=cells[i],x=(k%GN)*GC+1-HALF,z=((k/GN)|0)*GC+1-HALF;
