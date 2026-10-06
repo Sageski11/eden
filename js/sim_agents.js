@@ -224,7 +224,7 @@ function builderTask(v){
   const nw=P.need.wood-P.have.wood-P.inb.wood,ns=P.need.stone-P.have.stone-P.inb.stone;
   const canW=nw>0&&G.wood>=1,canS=ns>0&&G.stone>=1;
   const workable=P.done<P.work*matFrac(P)-.02;
-  if((canW||canS)&&!(workable&&rnd()<.4)){const m=canS&&(!canW||rnd()<.5)?'stone':'wood';const amt=Math.min(5,m==='wood'?nw:ns,Math.floor(G[m]));
+  if((canW||canS)&&!(workable&&rnd()<.4)){const m=canS&&(!canW||rnd()<.5)?'stone':'wood';const far=G.center&&Math.hypot(site.x-G.center.x,site.z-G.center.z)>34,amt=Math.min(far?10:5,m==='wood'?nw:ns,Math.floor(G[m]));
     G[m]-=amt;P.inb[m]+=amt;v._res={site:site.id,m,amt};const st=storeFor(m,site.x,site.z);setThought(v,`Fetching ${m} for the ${siteName(site)}.`);
     if(!goTo(v,...doorOf(st),vv=>{vv.carry=m;vv.amt=amt;wait(vv,.2,'work');},st.id)){G[m]+=amt;P.inb[m]=Math.max(0,P.inb[m]-amt);v._res=null;}return;}
   if(workable){const a=rnd()*TAU,r=site.r*.9+.4;setThought(v,pickA([`Raising the ${siteName(site)}.`,'Hammer and nails…','Steady that beam!']));

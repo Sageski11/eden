@@ -20,7 +20,7 @@ const path = require('path');
   await page.evaluate((t) => { window.LY_FORCE = t; [...document.querySelectorAll('#prayers button')].find(x => /settlers/i.test(x.textContent)).click(); autoChooseStart(); }, process.env.TPL || '');
   await page.waitForTimeout(800);
   await page.evaluate(() => {
-    PAUSED = true;
+    PAUSED = true; checkEra = function () { }; // the test moves the ages itself
     window.__day = () => {
       G.food = Math.max(G.food, popN() * 6 + 40); G.faith = Math.max(G.faith, 200); G.hap = Math.max(G.hap, 58); G.hapT = Math.max(G.hapT, 58);
       G.wood = Math.max(G.wood, 260); G.stone = Math.max(G.stone, G.era >= 5 ? 700 : 200); G.raid = null; G.raidCool = 1e9; G.bandits.length = 0; G.sad = Math.min(G.sad, 3);

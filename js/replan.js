@@ -84,6 +84,9 @@ function rnNewPlan(P,e){if(e<3)return;P.gen=(P.gen||0)+1;
   if(e>=5&&!P.ringed&&P.tpl!=='ribbon'&&P.tpl!=='terrace'){P.ringed=1;const rad=Math.max(36,P.z.mix*P.sc*.95+8),C=P.C,defs=[{pts:lyArc(C[0],C[1],rad,0,TAU,2.4,P.seed+77),hw:2.6,kind:'ring',smax:.5}];
     const added=lyLay(P,defs,{avoidB:true});for(const s of added){s.gen=P.gen;paintStreetTo(s,s.pts.length-1);}}
   if(e>=5&&!P.ringed2&&(P.tpl==='ribbon'||P.tpl==='terrace')){P.ringed2=1;}
+  if(e>=6){// boulevards: the main streets are widened and re-laid
+    const w=e>=7?3.5:3.0;let n=0;for(const s of P.streets)if(s.kind==='main'&&s.hw<w){const was=s.painted;s.hw=w;n++;if(was>0){s.painted=0;paintStreetTo(s,was);}}
+    if(n){P.plots=P.plots.filter(p=>!streetHit(fpRect(p.x,p.z,p.rot,fpOf('house',p.w))));if(typeof netPaint==='function'&&G.net&&G.net.paved)netPaint();}}
   P.sc=Math.min(1.95,+(P.sc+.12).toFixed(2));lyLay(P,lyDefs(P,lyRlen(P)),{avoidB:true});
   const added=P.streets.slice(n0);let np=0;for(const s of added)np+=lyPlots(P,s,null,true);
   for(let i=0;i<n0;i++)np+=lyPlots(P,P.streets[i],null,true);

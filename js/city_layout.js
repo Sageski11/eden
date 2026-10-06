@@ -163,7 +163,7 @@ function lyPlots(P,s,box,chkB){const pts=s.pts,si=P.streets.indexOf(s);let n=0;i
   return n;}
 // ---------------------------------------------------------------- making a plan
 function lyBuild(hall,tpl,seed,A,founding){
-  const rr=mulberry(seed^0x2545f491),P={v:3,seed,tpl,streets:[],plots:[],gen:0,sc:1,z:{civic:12,mix:40,res:60},slope:+A.slope.toFixed(3),eraSeen:G.era||0,seenV:0};G.plan=P;
+  const rr=mulberry(seed^0x2545f491),P={v:3,seed,tpl,streets:[],plots:[],gen:0,sc:1,z:{civic:12,mix:34,res:60},slope:+A.slope.toFixed(3),eraSeen:G.era||0,seenV:0};G.plan=P;
   lyFrame(P,hall,A,rr,!founding);
   if(tpl==='ribbon'){P.shoreD=15;P.el=[-P.f[1],P.f[0],.62,1.35];}
   if(tpl==='terrace')P.el=[-P.f[1],P.f[0],.7,1.25];
@@ -200,7 +200,7 @@ function lyFillCands(need,cands){const P=G.plan,type=need.type,keep=cands.slice(
     ps.sort((a,b)=>a[1]-b[1]);let n=0;for(const [p] of ps){if(n>=36)break;if(blockedAt('house',p.x,p.z,p.rot,p.w,null))continue;cands.push([p.x,p.z,{rot:p.rot,w:p.w,d:+(3.2+rnd()*.5).toFixed(1),plot:p}]);n++;}
     return;}
   const zs=LY_ZONES[type],mixR=P.z.mix*P.sc+10,resR=P.z.res*P.sc+18;let fr=null;
-  if(type==='farm')fr=lyFront(P,type,zs,24,resR+40,{rows:[4.1-.6,15.4]});
+  if(type==='farm')fr=lyFront(P,type,zs,18,resR+40,{rows:[4.1-.6,15.4]});
   else if(['church','market','tavern','well','school'].includes(type))fr=lyFront(P,type,zs,0,mixR,{plaza:type!=='school'});
   else if(['smith','mill','mason','sawmill','station'].includes(type))fr=lyFront(P,type,zs,8,resR);
   else if(['factory','powerplant','fusion'].includes(type))fr=lyFront(P,type,zs,22,lyRmax(P)+12,{rows:[0,3]});
@@ -233,7 +233,7 @@ function lyRegen(P,box){// lay the lines of the template again: new runs appear 
   const b=box?[box.x0-14,box.z0-14,box.x1+14,box.z1+14]:null;for(let i=0;i<n0;i++)np+=lyPlots(P,P.streets[i],b,true);
   return {streets:added.length,plots:np};}
 function lyLandTick(){const P=G.plan;if(!P||P.v<3||!G.center)return;
-  P.zr=clamp(30+Math.sqrt(popN())*4.5,40,P.z.res);// the fields lie just beyond the houses: the belt moves outward as the town grows
+  P.zr=clamp(24+Math.sqrt(popN())*5,36,P.z.res);// the fields lie just beyond the houses: the belt moves outward as the town grows
   const p=lyChanged(P);
   if(p&&G.t>=(P.reT||0)){P.reT=G.t+3;P.seenV=LY.v;const box={x0:p.x0,z0:p.z0,x1:p.x1,z1:p.z1},cx=(box.x0+box.x1)/2,cz=(box.z0+box.z1)/2;
     let r={streets:0,plots:0};r=lyRegen(P,box);
