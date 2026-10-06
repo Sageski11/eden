@@ -75,3 +75,9 @@ Every age now has at least ten buildings (forty-three new ones were added, e.g. 
 - Villagers are simulated by distance from where you look: up to 30 units every frame, 30–100 once in four frames, beyond 100 once in sixteen, in longer steps (no hours of work are lost, so the economy does not depend on the camera). Hover the Folk count to see what everyone is doing.
 - Routes are remembered until the land or buildings change; chimneys out of sight spend no smoke particles.
 - Workshops are rows of data (`CHAINS` in `js/chains.js`: inputs, outputs, workers); the town as a whole is run once a day against household demand, not per person. Fires, harvests, fairs and fevers are rows of `EVENTS`, looked at once a day.
+
+### Prayers, blessings and wildlife (play-test fixes)
+- Prayers have an age window and change their wording with the age (no more harvest or herds in the Modern age; smog, parks, housing and power instead). They arrive one at a time with pauses, from a pool of ~25, instead of a standing full list. Bless a building they ask for with the Bless tool.
+- Blessings now wear off (fields: three days, other buildings: two days) and can be given again; blessing a farm answers the harvest prayer.
+- Herds are capped by how much forest there is and thin out when over it; the Herd prayer only comes when the hunters truly have no game within reach, and you cannot release more animals into a full land.
+- Builders: small crews per site, materials set aside for a site are given back when a builder is reassigned, sites that cannot be worked are left for another, long routes are always found, and newcomers appear on ground that actually connects to the town.

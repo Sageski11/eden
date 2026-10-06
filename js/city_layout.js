@@ -154,7 +154,7 @@ function lyPlots(P,s,box,chkB){const pts=s.pts,si=P.streets.indexOf(s);let n=0;i
         if(i===0&&t<4&&s.kind!=='ring'){t+=1;continue;}
         const off=s.hw+.55+2.6,cxp=x0+ux*(t+w/2)+nx*off,czp=z0+uz*(t+w/2)+nz*off,rot=Math.atan2(-nx,-nz);
         if(box&&(cxp<box[0]||cxp>box[2]||czp<box[1]||czp>box[3])){t+=w;prev=null;inRow=0;continue;}
-        const zn=lyZone(P,cxp,czp,true);if(!LY_HOUSEZ.includes(zn)||(zn==='mix'&&s.kind==='main'&&lyD(P,cxp,czp)<26*P.sc)){prev=null;inRow=0;t+=w;continue;}
+        const zn=lyZone(P,cxp,czp,true);if(!LY_HOUSEZ.includes(zn)||(zn==='mix'&&s.kind==='main'&&lyD(P,cxp,czp)<18*P.sc)){prev=null;inRow=0;t+=w;continue;}
         const pl={x:+cxp.toFixed(2),z:+czp.toFixed(2),rot:+rot.toFixed(4),w,st:si,i,d:Math.hypot(cxp-P.plaza.x,czp-P.plaza.z)};
         if(prev&&Math.abs(angDiff(prev.rot,pl.rot))<.02&&inRow<rowMax){const cs=Math.cos(prev.rot),sn=Math.sin(prev.rot),sx=(prev.w+w)/2*(-side);pl.x=+(prev.x+sx*cs).toFixed(3);pl.z=+(prev.z-sx*sn).toFixed(3);pl.rot=prev.rot;}
         if(lyPlotOK(P,pl,chkB)){P.plots.push(pl);n++;prev=pl;inRow++;if(inRow>=rowMax){t+=w+1.8;inRow=0;prev=null;rowMax=3+Math.floor(rnd()*3);continue;}}else{prev=null;inRow=0;}
@@ -174,7 +174,7 @@ function lyBuild(hall,tpl,seed,A,founding){
   return P;}
 makePlan=function(hall){
   const seed=lySeedOf(hall.x,hall.z),rr=mulberry(seed),A=lyAnalyze(hall.x,hall.z),founding=!!(hall.build&&!G.firstHut),order=lyPickTemplate(A,rr);
-  let best=null;for(const t of order.slice(0,3)){const P=lyBuild(hall,t,seed,A,founding);P.q=(P.plots.length+Math.min(30,P.streets.length))*({radial:1.25,crescent:1.35,ribbon:1.4,terrace:1.5}[t]||1);if(!best||P.q>best.q)best=P;if(P.plots.length>=(t==='grid'||t==='radial'?52:30))break;}
+  let best=null;for(const t of order.slice(0,3)){const P=lyBuild(hall,t,seed,A,founding);P.q=(P.plots.length+Math.min(30,P.streets.length))*({radial:1.25,crescent:1.35,ribbon:1.4,terrace:1.5}[t]||1);if(!best||P.q>best.q)best=P;if(P.plots.length>=(t==='grid'||t==='radial'?52:26))break;}
   const P=G.plan=best;
   if(founding){hall.rot=P.psi;realize(hall);}// the hall turns to face its plaza while it is still being founded
   for(const s of P.streets)if(s.kind==='main'&&s.par<0)paintStreetTo(s,Math.min(8,s.pts.length-1));
