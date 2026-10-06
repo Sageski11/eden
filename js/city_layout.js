@@ -102,9 +102,9 @@ function lyDefs(P,R){const D=[],C=P.C,f=P.f,r=P.r,rr=mulberry(P.seed^0x51ed270b)
     for(let j=1;j*Sz<R;j++)for(const sg of [1,-1])add(lyLine(...at(sg*j*Sz,-R),...at(sg*j*Sz,R)),1.7,'lane');}
   else if(tpl==='ribbon'){const a=[-f[1],f[0]],tgt=P.shoreD||15;
     const w1=lyShoreWalk(C[0],C[1],a[0],a[1],R,tgt),w2=lyShoreWalk(C[0],C[1],-a[0],-a[1],R,tgt),main=lySmooth(w2.slice(1).reverse().concat(w1),3,2);
-    add(main,2.2,'main',.5);if(tgt-7.5>2.5)add(lyOffsetPts(main,tgt-7.5),1.6,'lane',.5,{quay:1});
+    add(main,2.2,'main',.5);if(tgt-8>2.5)add(lyOffsetPts(main,tgt-8),1.6,'lane',.5,{quay:1});
     for(let k=1;k<=3;k++)add(lyOffsetPts(main,-27*k),k===1?1.9:1.7,'lane',.5);
-    for(let i=4;i<main.length-4;i+=13){const p=main[i],q=main[i+1],[ux,uz]=lyUnit(q[0]-p[0],q[1]-p[1]),nx=uz,nz=-ux;add(lyLine(p[0]+nx*(tgt-7),p[1]+nz*(tgt-7),p[0]-nx*R*.8,p[1]-nz*R*.8),1.7,'lane',.5);}}
+    for(let i=4;i<main.length-4;i+=13){const p=main[i],q=main[i+1],[ux,uz]=lyUnit(q[0]-p[0],q[1]-p[1]),nx=uz,nz=-ux;add(lyLine(p[0]+nx*(tgt-8),p[1]+nz*(tgt-8),p[0]-nx*R*.8,p[1]-nz*R*.8),1.7,'lane',.5);}}
   else if(tpl==='terrace'){const hC=hAt(C[0],C[1]),sl=Math.max(.06,P.slope||.15),dl=clamp(sl*28,1.4,6);
     for(let k=-2;k<=2;k++){const L=hC+k*dl,a=lyContour(C[0],C[1],L,1,R),b=lyContour(C[0],C[1],L,-1,R);if(a.length+b.length<8)continue;add(lySmooth(b.slice(1).reverse().concat(a),3,2),k===0?2.1:1.8,k===0?'main':'lane',.5);}
     const m0=lyContour(C[0],C[1],hC,1,R*.9),m1=lyContour(C[0],C[1],hC,-1,R*.9),mid=m1.slice(1).reverse().concat(m0);
@@ -114,8 +114,10 @@ function lyDefs(P,R){const D=[],C=P.C,f=P.f,r=P.r,rr=mulberry(P.seed^0x51ed270b)
     for(let j=-7;j<=7;j++){const a=beta+j*.27,rin=j%4===0?Math.max(r0-10,4):j%2===0?r0+14:r0+48;add(lyLine(F[0]+Math.cos(a)*rin,F[1]+Math.sin(a)*rin,F[0]+Math.cos(a)*(r0+R),F[1]+Math.sin(a)*(r0+R)),j===0?2.1:1.7,j===0?'main':'lane');}}
   return D;}
 // ---------------------------------------------------------------- laying the lines onto the land
-function lyHashPts(P){const M=new Map();for(const s of P.streets)for(const p of s.pts){const k=Math.floor(p[0]/4)*4096+Math.floor(p[1]/4);let a=M.get(k);if(!a)M.set(k,a=[]);a.push(p);}return M;}
-function lyNearHash(M,x,z,r){const ci=Math.floor(x/4),cj=Math.floor(z/4);for(let i=ci-1;i<=ci+1;i++)for(let j=cj-1;j<=cj+1;j++){const a=M.get(i*4096+j);if(a)for(const p of a)if(Math.hypot(p[0]-x,p[1]-z)<r)return true;}return false;}
+function lyHashAdd(M,s){const n=s.pts.length;for(let i=0;i<n;i++){const p=s.pts[i],a=s.pts[Math.max(0,i-1)],b=s.pts[Math.min(n-1,i+1)],[tx,tz]=lyUnit(b[0]-a[0],b[1]-a[1]);const k=Math.floor(p[0]/4)*4096+Math.floor(p[1]/4);let l=M.get(k);if(!l)M.set(k,l=[]);l.push([p[0],p[1],tx,tz]);}}
+function lyHashPts(P){const M=new Map();for(const s of P.streets)lyHashAdd(M,s);return M;}
+function lyNearHash(M,x,z,r,tx,tz){// 1 = on an existing street; 2 = running alongside one too closely (parallel within 8.5); 0 = clear
+  const ci=Math.floor(x/4),cj=Math.floor(z/4);let res=0;for(let i=ci-2;i<=ci+2;i++)for(let j=cj-2;j<=cj+2;j++){const a=M.get(i*4096+j);if(a)for(const p of a){const d=Math.hypot(p[0]-x,p[1]-z);if(d<r)return 1;if(d<8.5&&tx!==undefined&&Math.abs(p[2]*tx+p[3]*tz)>.88)res=2;}}return res;}
 function lyBuildHash(){const M=new Map();for(const b of buildings){const k=Math.floor(b.x/8)*4096+Math.floor(b.z/8);let a=M.get(k);if(!a)M.set(k,a=[]);a.push(b);}return M;}
 function lyBuildingsNear(M,x,z,r){const o=[],ci=Math.floor(x/8),cj=Math.floor(z/8),n=Math.ceil((r+8)/8);for(let i=ci-n;i<=ci+n;i++)for(let j=cj-n;j<=cj+n;j++){const a=M.get(i*4096+j);if(a)for(const b of a)o.push(b);}return o;}
 function lyClip(P,d,exist,bh,rmax){
@@ -127,14 +129,15 @@ function lyClip(P,d,exist,bh,rmax){
     if(ok&&Math.hypot(x-pl.x,z-pl.z)<pl.r+.6)ok=false;
     if(ok&&prev&&Math.abs(hAt(x,z)-hAt(prev[0],prev[1]))/Math.max(.5,Math.hypot(x-prev[0],z-prev[1]))>d.smax)ok=false;
     if(ok&&bh){const q=fpRect(x,z,0,[-hw,hw,-hw,hw]);for(const b of lyBuildingsNear(bh,x,z,hw+2))if(rectsHit(q,bRect(b),.9)){ok=false;break;}}
-    const dup=ok&&exist&&lyNearHash(exist,x,z,3.4);
+    let dup=false;if(ok&&exist){const q=d.pts[Math.max(0,i-1)],q2=d.pts[Math.min(d.pts.length-1,i+1)],[tx,tz]=lyUnit(q2[0]-q[0],q2[1]-q[1]),nh=lyNearHash(exist,x,z,3.4,tx,tz);if(nh===1)dup=true;else if(nh===2)ok=false;}
     if(!ok){if(cur.length)flush();prev=null;dupPrev=null;continue;}
     if(dup){if(cur.length){cur.push([x,z]);flush();}dupPrev=[x,z];prev=[x,z];continue;}
     if(!cur.length&&dupPrev)cur.push(dupPrev);cur.push([x,z]);dupPrev=null;prev=[x,z];}
   flush();return runs;}
 function lyLay(P,defs,opt){opt=opt||{};const rmax=lyRmax(P),exist=P.streets.length?lyHashPts(P):null,bh=opt.avoidB?lyBuildHash():null,added=[];
-  for(const d of defs)for(const run of lyClip(P,d,exist,bh,rmax)){const s={pts:run.map(p=>[+p[0].toFixed(2),+p[1].toFixed(2)]),hw:d.hw,kind:d.kind,painted:0,gen:P.gen||0};if(d.stair)s.stair=1;if(d.quay)s.quay=1;
-    lyParent(P,s);P.streets.push(s);added.push(s);}
+  const hash=exist||new Map();
+  for(const d of defs)for(const run of lyClip(P,d,hash,bh,rmax)){const s={pts:run.map(p=>[+p[0].toFixed(2),+p[1].toFixed(2)]),hw:d.hw,kind:d.kind,painted:0,gen:P.gen||0};if(d.stair)s.stair=1;if(d.quay)s.quay=1;
+    lyParent(P,s);P.streets.push(s);added.push(s);lyHashAdd(hash,s);}
   return added;}
 function lyParent(P,s){let best=null,bd=7;for(const o of P.streets){if(o===s)continue;for(const e of [s.pts[0],s.pts[s.pts.length-1]])for(let i=0;i<o.pts.length;i++){const d=Math.hypot(o.pts[i][0]-e[0],o.pts[i][1]-e[1]);if(d<bd){bd=d;best=o;}}}
   s.par=best?P.streets.indexOf(best):-1;Object.defineProperty(s,'parent',{value:best,enumerable:false,writable:true,configurable:true});}
@@ -165,7 +168,7 @@ function lyPlots(P,s,box,chkB){const pts=s.pts,si=P.streets.indexOf(s);let n=0;i
 function lyBuild(hall,tpl,seed,A,founding){
   const rr=mulberry(seed^0x2545f491),P={v:3,seed,tpl,streets:[],plots:[],gen:0,sc:1,z:{civic:12,mix:34,res:60},slope:+A.slope.toFixed(3),eraSeen:G.era||0,seenV:0};G.plan=P;
   lyFrame(P,hall,A,rr,!founding);
-  if(tpl==='ribbon'){P.shoreD=15;P.el=[-P.f[1],P.f[0],.62,1.35];}
+  if(tpl==='ribbon'){P.shoreD=18;P.el=[-P.f[1],P.f[0],.62,1.35];}
   if(tpl==='terrace')P.el=[-P.f[1],P.f[0],.7,1.25];
   if(tpl==='crescent')P.F=[A.cx,A.cz];
   P.hallR=fpRect(hall.x,hall.z,founding?P.psi:hall.rot,[-6.3,5.2,-5.2,5.2]);
