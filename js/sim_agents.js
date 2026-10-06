@@ -217,7 +217,7 @@ function releaseRes(v){const r=v._res;if(!r)return;v._res=null;const b=bById(r.s
 function builderTask(v){
   let site=bById(v.site);if(!site||!siteProj(site)){site=chooseSite(v);v.site=site?site.id:0;}
   if(!site){if(v.carry){const st=G.center;if(st){const m=v.carry,a=v.amt;goTo(v,...doorOf(st),vv=>{G[m]+=a;vv.carry=null;},st.id);return;}}return forageTask(v);}
-  const P=siteProj(site);
+  const P=siteProj(site);const w0=v._wait||0;v._wait=0;
   if(P.done>=P.work-.03&&matFrac(P)>=1-1e-6){P.done=P.work;completeSite(site);return;}// nothing left to do: never wait for another hammer blow
   if(v.carry){const [x,z]=doorOf(site);setThought(v,`Hauling ${v.carry} to the ${siteName(site)}.`);
     goTo(v,x+(rnd()-.5)*2,z+(rnd()-.5)*2,vv=>{const p=siteProj(site);if(p){p.have[vv.carry]+=vv.amt;p.inb[vv.carry]=Math.max(0,p.inb[vv.carry]-vv.amt);}else G[vv.carry]+=vv.amt;vv.carry=null;vv.amt=0;vv._res=null;wait(vv,.15,'work');},site.id);return;}
@@ -231,13 +231,17 @@ function builderTask(v){
     goTo(v,site.x+Math.cos(a)*r,site.z+Math.sin(a)*r,vv=>{vv.rot=Math.atan2(site.x-vv.x,site.z-vv.z);wait(vv,1.2,'work',false,null,(w,dt)=>{const p=siteProj(site);if(!p)return;
       const pd=p.done;p.done=Math.min(p.work*matFrac(p),p.done+dt*workMul()*(p.blessed?2.5:1));if(p.done>pd){gainXP('work',(p.done-pd)*.5*(p.need.wood>0?1:.3));if(p.need.stone>0)gainXP('stone',(p.done-pd)*.18);}G.hammer=(G.hammer||0)+dt;if(p.done>=p.work-1e-6&&matFrac(p)>=1)completeSite(site);});},site.id);return;}
   setThought(v,G.wood<1&&nw>0?'Waiting for timber…':G.stone<1&&ns>0?'We need stone — is there a quarry?':'Waiting for materials…');
+  // a site that cannot be worked (no stone, no timber) must not hold every builder: after two idle turns try another one
+  if(w0>=1&&siteCount()>1){v._skip=site.id;v._skipT=G.t+8;v.site=0;v._wait=0;}else v._wait=w0+1;
   const [x,z]=doorOf(site);goTo(v,x+(rnd()-.5)*3,z+(rnd()-.5)*3,vv=>wait(vv,.7,'idle'));
 }
+function siteCount(){let n=0;for(const b of buildings)if(siteProj(b))n++;return n;}
 function chooseSite(v){const all=buildings.filter(b=>siteProj(b));if(!all.length)return null;
   const cnts=new Map();for(const o of G.vill)if(o.site&&o.job==='builder')cnts.set(o.site,(cnts.get(o.site)||0)+1);
   // a small job does not need a crowd: sites with room come first, so houses and fields are not left waiting while a camp has five hands
   const room=s=>{const P=siteProj(s);const cap=s.type==='castle'?6:Math.max(1,Math.min(8,Math.ceil(P.work/3)));return (cnts.get(s.id)||0)<cap;};
   let sites=all.filter(room);if(!sites.length)sites=all;
+  {const ok=sites.filter(s=>!(v._skip===s.id&&G.t<v._skipT));if(ok.length)sites=ok;}
   let best=null,bs=1e9;for(const s of sites){const n=cnts.get(s.id)||0;const big=SITE_PRIORITY[s.type]||0,sc=Math.hypot(s.x-v.x,s.z-v.z)*.05+(G.center?Math.hypot(s.x-G.center.x,s.z-G.center.z)*.03:0)+n*2-(s.type==='house'?1:0)-(siteProj(s).blessed?2:0)+(s.upg?2:0)-(!s.upg&&n<(s.type==='castle'?4:2)?big:0);if(sc<bs){bs=sc;best=s;}}return best;}
 // large civic works must not be starved of builders by the many small jobs of a big town
 const SITE_PRIORITY={castle:8,church:5,market:4,tavern:3,mill:3,smith:3,school:4,factory:5,station:5,powerplant:6,fusion:6,tower:2,mason:3,sawmill:3,shipyard:3};

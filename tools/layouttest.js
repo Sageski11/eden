@@ -33,10 +33,10 @@ const path = require('path');
       for (let i = 0; i < 240; i++) gameStep(0.1);
     };
     window.__ageCheck = () => {
-      const bad = {}, all = {}; let n = 0;
+      const bad = {}, all = {}, pend = {}; let n = 0;
       for (const b of buildings) { const a = bAge(b); const k = b.type + (b.level != null ? 'L' + b.level : ''); all[k] = (all[k] || 0) + 1; n++;
-        const min = minAgeFor(b, G.era); if (a < min) bad[k + '@' + a] = (bad[k + '@' + a] || 0) + 1; }
-      return { era: G.era, n, bad, all };
+        const min = minAgeFor(b, G.era); if (a < min) { if (b.upg) { pend[k] = (pend[k] || 0) + 1; } else bad[k + '@' + a] = (bad[k + '@' + a] || 0) + 1; } }
+      return { era: G.era, n, bad, all, pend };
     };
   });
   let failed = false;
@@ -51,7 +51,7 @@ const path = require('path');
       if (errs.length) break;
     }
     const c = await page.evaluate(() => { const o = __ageCheck(); o.plan = G.plan ? { tpl: G.plan.tpl, streets: G.plan.streets.length, plots: G.plan.plots.length } : null; o.pop = popN(); o.day = dayN(); o.poll = Math.round(G.poll || 0); o.sites = buildings.filter(b => b.build || b.upg).length; return o; });
-    console.log('STAGE', stage, JSON.stringify({ era: c.era, pop: c.pop, n: c.n, plan: c.plan, sites: c.sites }), '\n  types', JSON.stringify(c.all), '\n  OBSOLETE', JSON.stringify(c.bad));
+    console.log('STAGE', stage, JSON.stringify({ era: c.era, pop: c.pop, n: c.n, plan: c.plan, sites: c.sites }), '\n  types', JSON.stringify(c.all), '\n  OBSOLETE', JSON.stringify(c.bad), ' (rebuilding: ' + JSON.stringify(c.pend) + ')');
     if (Object.keys(c.bad).length) failed = true;
     if (SHOT) {
       { const url = await page.evaluate(() => __planmap(G.center.x, G.center.z, 110)); require('fs').writeFileSync(path.join(SHOT, `map-${WORLD}-${SEED}-era${stage}.png`), Buffer.from(url.split(',')[1], 'base64')); }
