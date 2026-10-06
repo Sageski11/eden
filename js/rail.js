@@ -11,8 +11,9 @@
 //                     platform/yard), len, y, t:townIdx, bid:station building id, nm, cargo:'stone'|'wood'|'food'|'goods', stock, rate, qid}
 //   graph nodes are the ports of facilities, loop ends and junctions; track segments are the edges. Trains run on the union of every
 //   settlement's lines (so a line that joins two peoples works whichever town is being viewed).
-// Exported: railBuildLine railPetition railExecute railPaint railDaily railFrame railReload railReset railLinked railTravel railCap railMission
-//           railDepotPut railHit railHoldStation railTick railNetwork railMigrate.
+// Exported (all guarded, so a bug here never stops the game): railBuildLine (sandbox/free line) railPetition railExecute (the petition system) railPaint railDaily railFrame
+//   railReload railReset (save/load/new game) railLinked railTravel railCap railMission railDepotPut railHit railHoldStation (hooks used by trade, eras, sim_agents, town_plan)
+//   railStations railTrains railNetwork (for the other systems and the tests) railTick railSyncAll railMigrate railChanged railRouteHW (highways take the same careful route) RAIL (internals).
 {
 const RC={TZ:8,STL:28,HLT:16,DPL:26,SIDE:3.8,WID:2.3,LOOPH:13,LOOPMIN:120,MAXG:.07};
 const RN={gr:null,trains:[],grp:new THREE.Group(),mesh:null,glow:null,dirty:true,tD:0,era:5,lastT:null,sig:'',nextMesh:0,hash:null,uid:1,quiet:false};

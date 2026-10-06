@@ -166,11 +166,11 @@ function lifeDaily(){if(G.phase!=='play'||G.menu)return;const l=L(),day=dayN();i
 function courtships(sf,sm){
   for(const w of sf){if(w.spouse)continue;
     // two admirers: a coolness between them
-    const adm=[];if(w.rel)for(const k in w.rel){if(w.rel[k]>=22){const m=idm().get(+k);if(m&&!m.female&&!m.spouse&&m.age>=18&&m.age<46)adm.push(m);}}
+    const adm=[];if(w.rel)for(const k in w.rel){if(w.rel[k]>=20){const m=idm().get(+k);if(m&&!m.female&&!m.spouse&&m.age>=18&&m.age<46)adm.push(m);}}
     if(adm.length>=2&&rnd()<.2){adm.sort((a,b)=>w.rel[b.id]-w.rel[a.id]);const a=adm[0],b=adm[1];if(((a.rel[b.id]||0)>-30)&&L().fl<6){setRel(a,b.id,-30);setRel(b,a.id,-30);
       rivalEvent(a,b,`${a.name} and ${b.name} both hope to win ${w.name}, and have not spoken a kind word since.`);}}
     if(w.court)continue;
-    let best=null,bs=24;for(const k in w.rel){const m=idm().get(+k);if(!m||m.female||m.spouse||m.court||m.age<18||m.age>=46||isKin(w,m)||m.sick)continue;if(Math.abs(m.age-w.age)>14)continue;const s=Math.min(w.rel[k],(m.rel&&m.rel[w.id])||0);if(s>=bs){bs=s;best=m;}}
+    let best=null,bs=20;for(const k in w.rel){const m=idm().get(+k);if(!m||m.female||m.spouse||m.court||m.age<18||m.age>=46||isKin(w,m)||m.sick)continue;if(Math.abs(m.age-w.age)>14)continue;const s=Math.min(w.rel[k],(m.rel&&m.rel[w.id])||0);if(s>=bs){bs=s;best=m;}}
     if(best){w.court=best.id;best.court=w.id;lifeAddMemory(w,'court',`Walking out with ${best.name}.`,4);lifeAddMemory(best,'court',`Walking out with ${w.name}.`,4);
       storyEvent('courtship',{who:[w.id,best.id],txt:`${best.name} and ${w.name} have been seen walking together at day's end. The neighbours are smiling.`});}
   }
@@ -415,7 +415,9 @@ function lifeMatchOK(m,w){if(!m||!w)return true;if(isKin(m,w))return false;if(((
   if(m.court&&m.court!==w.id)return false;if(w.court&&w.court!==m.id)return false;return true;}
 function lifeSortSingles(men,wom){const pm=[],pw=[],rm=men.slice(),rw=wom.slice();
   for(const m of men){if(!m.court)continue;const i=rw.findIndex(w=>w.id===m.court&&w.court===m.id);if(i>=0){pm.push(m);pw.push(rw[i]);rm.splice(rm.indexOf(m),1);rw.splice(i,1);}}
-  for(const m of rm.slice()){const i=rw.findIndex(w=>lifeMatchOK(m,w));if(i>=0){pm.push(m);pw.push(rw[i]);rw.splice(i,1);}}
+  const rest=[];for(const m of rm){for(const w of rw){if(!lifeMatchOK(m,w))continue;rest.push([m,w,Math.min((m.rel&&m.rel[w.id])||0,(w.rel&&w.rel[m.id])||0)+rnd()*3]);}}
+  rest.sort((a,b)=>b[2]-a[2]);const um=new Set(),uw=new Set();
+  for(const [m,w] of rest){if(um.has(m)||uw.has(w))continue;um.add(m);uw.add(w);pm.push(m);pw.push(w);}
   men.length=0;wom.length=0;men.push(...pm);wom.push(...pw);}
 // doubt makes a person likelier to follow a false prophet; faith, less so (devotion.js sorts followers by this)
 function lifeDoubt(v){return (hasT(v,'doubtful')?2:0)-(hasT(v,'devout')?2:0)+((v.grf||0)>40?1:0)+((v.mood!=null&&v.mood<40)?1:0)+(hasT(v,'cautious')?.5:0)-(hasT(v,'stubborn')?.4:0);}

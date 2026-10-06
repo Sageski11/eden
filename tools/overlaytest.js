@@ -5,7 +5,9 @@
 //   flock ... node tools/overlaytest.js why                                                  (starved vs healthy diagnostics, screenshots + JSON)
 //   flock ... node tools/overlaytest.js eco                                                  (stalls, carts, caravans, docks at close zoom)
 //   flock ... node tools/overlaytest.js perf                                                 (frame cost with overlay off / on)
-// env: OUT (default /tmp/overlays), SEED (5), STAGE (3), DAYS (per era while growing, default 12), WORLD.
+// env: OUT (default /tmp/overlays), SEED (5), STAGE (3), DAYS (per era while growing, default 12), WORLD, STAGES (make/eco: e.g. 3,6), W/H (viewport),
+//      shots: MODES (overlays to shoot, default all seven), SUBS (service sub-views, 0 = none), PANELS=0 (skip Why?/Edicts/names shots), MX/MY (pointer for the hover readout).
+// The software renderer is slow: on a busy machine split `shots` over several runs (e.g. MODES=svc,hap,poll,traf SUBS=0 PANELS=0, then the rest) so each stays under 580 s.
 const { chromium } = require('/opt/node-tools/node_modules/playwright');
 const path = require('path'), fs = require('fs');
 const OUT = process.env.OUT || '/tmp/overlays', SEED = +(process.env.SEED || 5), WORLD = process.env.WORLD || 'river', DAYS = +(process.env.DAYS || 12);

@@ -123,9 +123,9 @@ function* jobFor(mode){
       else{const v=COV[sub][k];if(foot){if(v>=.04)putL(k,LUT.teal,v,.32+.32*v);else putL(k,LUT.rg,0,.58);}else if(v>.02)putL(k,LUT.teal,v,.14+.24*v);}}
       if((j&7)===0)yield;}}
   else if(mode==='hap'){yield* calcCov();yield* calcPoll();yield;D.hap.fill(0);D.hapW.fill(0);let hn=0;
-    for(const h of D.homes){if(++hn%6===0)yield;const sv=svcAt(h.x,h.z),hv=homeValue(h,sv);h._ovH=hv;const R=11,x=h.x,z=h.z;
-      for(let j=cellI(z-R);j<=cellI(z+R);j++)for(let i=cellI(x-R);i<=cellI(x+R);i++){const d2=((cellX(i)-x)**2+(cellX(j)-z)**2)/(R*R);if(d2>1)continue;const w=Math.exp(-d2*2.6),k=j*GN+i;D.hap[k]+=w*hv.v;D.hapW[k]+=w;}}
-    yield;for(let k=0;k<NN;k++){const w=D.hapW[k];if(w>.05)putL(k,LUT.rg,((D.hap[k]/w)-25)/60,clamp(w*.62,0,.76));}}
+    for(const h of D.homes){if(++hn%6===0)yield;const sv=svcAt(h.x,h.z),hv=homeValue(h,sv);h._ovH=hv;const R=15,x=h.x,z=h.z;
+      for(let j=cellI(z-R);j<=cellI(z+R);j++)for(let i=cellI(x-R);i<=cellI(x+R);i++){const d2=((cellX(i)-x)**2+(cellX(j)-z)**2)/(R*R);if(d2>1)continue;const w=Math.exp(-d2*1.7),k=j*GN+i;D.hap[k]+=w*hv.v;D.hapW[k]+=w;}}
+    yield;for(let k=0;k<NN;k++){const w=D.hapW[k];if(w>.05)putL(k,LUT.rg,((D.hap[k]/w)-25)/60,clamp(w*.7,0,.74));}}
   else if(mode==='poll'){yield* calcPoll();yield;for(let k=0;k<NN;k++){const t=D.poll[k];if(t>.04)putL(k,LUT.smog,t/1.1,clamp(.16+t*.6,0,.78));}}
   else if(mode==='traf'){
     for(let j=1;j<GN-1;j++)for(let i=1;i<GN-1;i++){const k=j*GN+i;TRs[k]=(TR[k]*4+TR[k-1]+TR[k+1]+TR[k-GN]+TR[k+GN])/8;}
@@ -298,7 +298,7 @@ const HAPTXT={Food:['The stores are running low.','Farms, fishers and hunters fe
   Events:['Recent grief and fear weigh on the folk.','Festivals and good harvests restore cheer.'],Season:['The season is hard.','Winter passes; keep the stores full.'],Rations:['The folk resent the rations.','Lift the edict when the stores recover.'],
   Overwork:['The folk are tired of working the building sites.','Let the volunteer edict lapse.'],Curfew:['The curfew chafes.','Let the curfew lapse when the nights are quiet.']};
 function whyStats(){const p=popN(),bs=G.vill.filter(v=>v.job==='builder').length,sites=buildings.filter(siteProj).length;
-  return {p,cap:ERAS[G.era].cap,food:G.food,wood:G.wood,stone:G.stone,mk:(G.prodY.food||0)-(G.cons||0),bs,sites,beds:bedsFree(),open:openJobs()};}
+  return {p,cap:ERAS[G.era].cap,food:G.food,wood:G.wood,stone:G.stone,mk:(G.cons||G.prodY.food)?(G.prodY.food||0)-(G.cons||0):null,bs,sites,beds:bedsFree(),open:openJobs()};}
 function openJobs(){let want=0,got=0;const per={};for(const b of buildings){if(b.build)continue;const k=slotKey(b),sj=SLOTJ[k];if(!sj)continue;if(k==='hall'&&!b.level)continue;
     let n=sj[1];if(k==='farm'&&seasonN()===3)n=0;if(k==='tower'&&!(G.raids||popN()>=40))n=1;if(k==='lodge'&&G.era>=5)n=0;if(k==='lumber'&&G.wood>140)n=Math.min(n,1);
     const w=G.vill.filter(v=>v.work===b.id).length;want+=n;got+=Math.min(n,w);if(w<n)per[sj[0]]=(per[sj[0]]||0)+n-w;}
@@ -393,7 +393,7 @@ function whyHTML(){const L=ovWhy(),S=whyStats();OV.whyN=L.filter(x=>x.sev>=60).l
   for(const it of L.slice(0,9)){const c=it.sev>=70?'#c0392b':it.sev>=45?'#d99a2b':it.sev>=30?'#c8bd5a':'#9aa58a';
     h+=`<div class="wy"><i style="background:${c}"></i><div><div class="t">${esc2(it.title)}</div><div class="w">${esc2(it.why)}</div>${it.act?`<div class="a">${esc2(it.act)}</div>`:''}${it.loc?`<button data-x="${Math.round(it.loc.x)}" data-z="${Math.round(it.loc.z)}">Show me</button>`:''}</div></div>`;}
   if(L.length>9)h+=`<div class="sub" style="margin-top:6px">…and ${L.length-9} smaller matters.</div>`;
-  h+=`<div class="st"><span>Folk ${S.p}/${S.cap}</span><span>Food ${Math.floor(S.food)} (${S.mk>=0?'+':''}${Math.round(S.mk)}/day)</span><span>Wood ${Math.floor(S.wood)} (+${Math.round(G.prodY.wood||0)}/day)</span><span>Stone ${Math.floor(S.stone)} (+${Math.round(G.prodY.stone||0)}/day)</span><span>Builders ${S.bs}, sites ${S.sites}</span><span>Free beds ${S.beds}</span><span>Jobs ${S.open.got}/${S.open.want}</span></div>`;return h;}
+  h+=`<div class="st"><span>Folk ${S.p}/${S.cap}</span><span>Food ${Math.floor(S.food)}${S.mk==null?'':` (${S.mk>=0?'+':''}${Math.round(S.mk)}/day)`}</span><span>Wood ${Math.floor(S.wood)}${G.prodY.wood?` (+${Math.round(G.prodY.wood)}/day)`:''}</span><span>Stone ${Math.floor(S.stone)}${G.prodY.stone?` (+${Math.round(G.prodY.stone)}/day)`:''}</span><span>Builders ${S.bs}, sites ${S.sites}</span><span>Free beds ${S.beds}</span><span>Jobs ${S.open.got}/${S.open.want}</span></div>`;return h;}
 function drawWhy(){if(!OV.whyOpen){why.classList.add('hidden');return;}const h=whyHTML();why.classList.remove('hidden');if(why._h!==h){const sc=why.scrollTop;why._h=h;why.innerHTML=h;why.scrollTop=sc;
     for(const b of why.querySelectorAll('button[data-w]'))b.onclick=()=>toggleWhy();
     for(const b of why.querySelectorAll('button[data-x]'))b.onclick=()=>{G.follow=null;cam.tx=+b.dataset.x;cam.tz=+b.dataset.z;cam.dist=Math.min(cam.dist,90);};}}
@@ -493,7 +493,7 @@ window.ovProclaim=proclaim;
     if(E.ration>t&&G.food>=popN()*2)f.Rations=-3;if(E.volunteers>t)f.Overwork=-2;if(E.curfew>t)f.Curfew=-3;if(E.granary>t)f.Feast=6;};}
 {const _f=flam;flam=function(b){const v=_f(b);return G.edicts&&G.edicts.curfew>G.t?v*.5:v;};}
 const law=document.createElement('div');law.id='ovLaw';law.className='panel hidden';document.body.appendChild(law);
-function drawLaw(force){if(!OV.lawOpen){law.classList.add('hidden');return;}
+function drawLaw(force){if(!OV.lawOpen){law.classList.add('hidden');return;}law.classList.remove('hidden');
   let h=`<button class="mini x" data-w="close">×</button><h2>Counsel for ${esc2(G.town)}</h2><div class="sub">The folk heed the Spirit’s counsel for a time. Each costs Faith (you have ${Math.floor(G.faith)}), and each has a price of its own.</div>`;
   for(const D2 of EDICTS){const on=edOn(D2.k),left=on?Math.ceil((G.edicts[D2.k]-G.t)/24):0,hint=D2.hint();
     h+=`<div class="wy"><i style="background:${on?'#3f8a4a':hint?'#d99a2b':'#b8aa86'}"></i><div style="flex:1"><div class="t">${D2.n}${on?` <span style="font-weight:400;color:#3f5f2a">· in force, ${left} day${left===1?'':'s'} left</span>`:''}</div><div class="w">${esc2(D2.fx)}</div>${hint&&!on?`<div class="a" style="font-style:italic">${esc2(hint)}</div>`:''}

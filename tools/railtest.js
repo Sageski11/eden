@@ -110,6 +110,7 @@ const path = require('path'), fs = require('fs');
     railSyncAll(); RAIL.log = []; for (let k = 0; k < 900; k++) railTick(1); const nw = railNetwork(); o.junction = nw.lines.some(l => l.a === 'junction' || l.b === 'junction'); o.svcs = nw.svcs.length; const arr = {}; for (const e of RAIL.log) arr[e.stop] = (arr[e.stop] || 0) + 1; o.arr = arr; o.depots = nw.facs.filter(f => f.k === 'depot').length; return o; });
   console.log('  branch', JSON.stringify(br));
   check('a branch line joins the network at a junction and its freight train runs on it', !br.done || (br.junction && br.after > br.before && Object.keys(br.arr).filter(k => /depot:/.test(k)).length >= 2), br);
+  await page.evaluate(() => { window.__savedMain = serializeGod(); });
   // ---- 5. save / load round trip
   const sl = await page.evaluate(() => { const a = railNetwork(); const str = serializeGod(); loadGod(str); railSyncAll(); const b = railNetwork(); let ok = true; try { for (let k = 0; k < 120; k++) railTick(1); } catch (e) { ok = String(e); }
     const strip = (n) => JSON.stringify({ lines: n.lines, facs: n.facs.map(f => [f.k, f.t, f.x, f.z, f.cargo]), svcs: n.svcs, nt: n.trains.length });
@@ -120,7 +121,7 @@ const path = require('path'), fs = require('fs');
   check('an old-style rail line migrates and runs', legacy.migrated >= 1 && legacy.ok === true, legacy);
   // ---- 6. screenshots (the Industrial line, then the same line electrified and as a maglev guideway)
   if (!QUICK) {
-    await page.evaluate((s) => { loadGod(s); }, await page.evaluate(() => serializeGod()));
+    await page.evaluate(() => { loadGod(window.__savedMain); });
     const shoot = async (tag, views) => { for (const v of views) {
       await page.evaluate((v) => { document.getElementById('ghelp') && document.getElementById('ghelp').classList.add('hidden'); document.body.classList.add('photo'); cam.tx = v.x; cam.tz = v.z; cam.dist = v.d; cam.pitch = v.p; cam.yaw = v.y; PAUSED = false; G.paused = true; railTick(v.tick || 6); }, v);
       await page.waitForTimeout(7000); await page.screenshot({ path: path.join(out, tag + '_' + v.n + '.png'), timeout: 120000 }); console.log('  shot', tag + '_' + v.n); } };
