@@ -12,7 +12,7 @@ const LY={ign:0,rec:null,v:0,settle:1500};
 const LY_NAME={radial:'ring-and-spoke town',grid:'gridded town',ribbon:'ribbon town along the water',terrace:'terraced hill town',crescent:'crescent around the bay'};
 const LY_HOUSEZ=['mix','res'];
 const LY_ZONES={church:['civic','mix'],market:['civic','mix'],tavern:['civic','mix'],well:['civic','mix','res'],school:['civic','mix'],smith:['civic','mix','ind'],mill:['mix','ind','res'],
-  mason:['mix','ind'],sawmill:['mix','ind'],factory:['ind'],powerplant:['ind'],fusion:['ind','farm'],station:['mix','ind'],farm:['farm','res']};
+  mason:['mix','ind'],sawmill:['mix','ind'],factory:['ind'],powerplant:['ind'],fusion:['ind','farm'],station:['mix','ind'],farm:['farm']};
 const lyUnit=(x,z)=>{const l=Math.hypot(x,z)||1;return [x/l,z/l];};
 function lySeedOf(hx,hz){return (((G.seed|0)*7919+Math.round(hx*13)*31+Math.round(hz*29)*17)^0x9e3779b9)|0;}
 // ---------------------------------------------------------------- reading the land
@@ -62,9 +62,9 @@ function lyPickIndustry(P,rr){// the industrial wedge: dry, downwind of the town
   P.ind={a:best,hw:.62};P.wind=wind;}
 // ---------------------------------------------------------------- districts
 function lyD(P,x,z){const dx=x-P.C[0],dz=z-P.C[1],e=P.el;if(!e)return Math.hypot(dx,dz);const al=dx*e[0]+dz*e[1],ac=-dx*e[1]+dz*e[0];return Math.hypot(al*e[2],ac*e[3]);}
-function lyZone(P,x,z){const d=lyD(P,x,z),s=P.sc,Z=P.z;if(d<Z.civic*s)return 'civic';
+function lyZone(P,x,z,stat){const d=lyD(P,x,z),s=P.sc,Z=P.z;if(d<Z.civic*s)return 'civic';
   if(P.ind&&d>=26*s){const dx=x-P.C[0],dz=z-P.C[1];if(Math.abs(angDiff(Math.atan2(dz,dx),P.ind.a))<P.ind.hw)return 'ind';}
-  if(d<Z.mix*s)return 'mix';if(d<Z.res*s)return 'res';return 'farm';}
+  if(d<Z.mix*s)return 'mix';if(d<(stat||!P.zr?Z.res:Math.min(Z.res,P.zr))*s)return 'res';return 'farm';}
 const lyRmax=P=>Math.min(HALF-14,P.z.res*P.sc+16);// reach of the plan, in the plan's own metric
 const lyRlen=P=>Math.min(HALF*1.2,lyRmax(P)/(P.el?Math.min(P.el[2],1):1)+8);// length of the analytic lines
 // ---------------------------------------------------------------- street primitives (analytic polylines, 2 units apart)
@@ -154,7 +154,7 @@ function lyPlots(P,s,box,chkB){const pts=s.pts,si=P.streets.indexOf(s);let n=0;i
         if(i===0&&t<4&&s.kind!=='ring'){t+=1;continue;}
         const off=s.hw+.55+2.6,cxp=x0+ux*(t+w/2)+nx*off,czp=z0+uz*(t+w/2)+nz*off,rot=Math.atan2(-nx,-nz);
         if(box&&(cxp<box[0]||cxp>box[2]||czp<box[1]||czp>box[3])){t+=w;prev=null;inRow=0;continue;}
-        const zn=lyZone(P,cxp,czp);if(!LY_HOUSEZ.includes(zn)||(zn==='mix'&&s.kind==='main'&&lyD(P,cxp,czp)<26*P.sc)){prev=null;inRow=0;t+=w;continue;}
+        const zn=lyZone(P,cxp,czp,true);if(!LY_HOUSEZ.includes(zn)||(zn==='mix'&&s.kind==='main'&&lyD(P,cxp,czp)<26*P.sc)){prev=null;inRow=0;t+=w;continue;}
         const pl={x:+cxp.toFixed(2),z:+czp.toFixed(2),rot:+rot.toFixed(4),w,st:si,i,d:Math.hypot(cxp-P.plaza.x,czp-P.plaza.z)};
         if(prev&&Math.abs(angDiff(prev.rot,pl.rot))<.02&&inRow<rowMax){const cs=Math.cos(prev.rot),sn=Math.sin(prev.rot),sx=(prev.w+w)/2*(-side);pl.x=+(prev.x+sx*cs).toFixed(3);pl.z=+(prev.z-sx*sn).toFixed(3);pl.rot=prev.rot;}
         if(lyPlotOK(P,pl,chkB)){P.plots.push(pl);n++;prev=pl;inRow++;if(inRow>=rowMax){t+=w+1.8;inRow=0;prev=null;rowMax=3+Math.floor(rnd()*3);continue;}}else{prev=null;inRow=0;}
@@ -169,8 +169,8 @@ function lyBuild(hall,tpl,seed,A,founding){
   if(tpl==='terrace')P.el=[-P.f[1],P.f[0],.7,1.25];
   if(tpl==='crescent')P.F=[A.cx,A.cz];
   P.hallR=fpRect(hall.x,hall.z,founding?P.psi:hall.rot,[-6.3,5.2,-5.2,5.2]);
-  lyPickIndustry(P,rr);lyLay(P,lyDefs(P,lyRlen(P)));
-  for(const s of P.streets)lyPlots(P,s);
+  const pre=buildings.length>1;lyPickIndustry(P,rr);lyLay(P,lyDefs(P,lyRlen(P)),{avoidB:pre});
+  for(const s of P.streets)lyPlots(P,s,null,pre);
   return P;}
 makePlan=function(hall){
   const seed=lySeedOf(hall.x,hall.z),rr=mulberry(seed),A=lyAnalyze(hall.x,hall.z),founding=!!(hall.build&&!G.firstHut),order=lyPickTemplate(A,rr);
@@ -200,7 +200,7 @@ function lyFillCands(need,cands){const P=G.plan,type=need.type,keep=cands.slice(
     ps.sort((a,b)=>a[1]-b[1]);let n=0;for(const [p] of ps){if(n>=36)break;if(blockedAt('house',p.x,p.z,p.rot,p.w,null))continue;cands.push([p.x,p.z,{rot:p.rot,w:p.w,d:+(3.2+rnd()*.5).toFixed(1),plot:p}]);n++;}
     return;}
   const zs=LY_ZONES[type],mixR=P.z.mix*P.sc+10,resR=P.z.res*P.sc+18;let fr=null;
-  if(type==='farm')fr=lyFront(P,type,zs,20,resR+40,{rows:[4.1-.6,15.4]});
+  if(type==='farm')fr=lyFront(P,type,zs,24,resR+40,{rows:[4.1-.6,15.4]});
   else if(['church','market','tavern','well','school'].includes(type))fr=lyFront(P,type,zs,0,mixR,{plaza:type!=='school'});
   else if(['smith','mill','mason','sawmill','station'].includes(type))fr=lyFront(P,type,zs,8,resR);
   else if(['factory','powerplant','fusion'].includes(type))fr=lyFront(P,type,zs,22,lyRmax(P)+12,{rows:[0,3]});
@@ -210,7 +210,9 @@ function lyFillCands(need,cands){const P=G.plan,type=need.type,keep=cands.slice(
   else for(const c of keep)cands.push([c[0],c[1],c[2]||{rot:faceStreetRot(c[0],c[1],rnd()*TAU)}]);}
 // hard zone rule and a soft bonus (called from evalSite)
 function lyScore(type,x,z,s,snap){const P=G.plan;if(!P||P.v<3)return s;const zs=LY_ZONES[type];if(!zs||(snap&&snap.plot))return s;
-  const z0=lyZone(P,x,z);if(!zs.includes(z0))return null;return s+(z0===zs[0]?6:2);}
+  const z0=lyZone(P,x,z);if(!zs.includes(z0))return null;s+=z0===zs[0]?6:2;
+  if(type==='farm'){const wd=nearWater(x,z,16);if(wd<16)s+=6-wd*.25;}// fields like level ground by the water
+  return s;}
 // the town ran out of room: widen the plan (more streets and plots further out)
 function lyGrow(){const P=G.plan;if(!P||P.v<3||P.sc>=1.95||G.t<(P.growT||0))return false;P.growT=G.t+10;P.sc=+(P.sc+.14).toFixed(2);
   const n0=P.streets.length,added=lyLay(P,lyDefs(P,lyRlen(P)),{avoidB:true});let np=0;for(const s of added)np+=lyPlots(P,s,null,true);for(let i=0;i<n0;i++)np+=lyPlots(P,P.streets[i],null,true);
@@ -231,6 +233,7 @@ function lyRegen(P,box){// lay the lines of the template again: new runs appear 
   const b=box?[box.x0-14,box.z0-14,box.x1+14,box.z1+14]:null;for(let i=0;i<n0;i++)np+=lyPlots(P,P.streets[i],b,true);
   return {streets:added.length,plots:np};}
 function lyLandTick(){const P=G.plan;if(!P||P.v<3||!G.center)return;
+  P.zr=clamp(30+Math.sqrt(popN())*4.5,40,P.z.res);// the fields lie just beyond the houses: the belt moves outward as the town grows
   const p=lyChanged(P);
   if(p&&G.t>=(P.reT||0)){P.reT=G.t+3;P.seenV=LY.v;const box={x0:p.x0,z0:p.z0,x1:p.x1,z1:p.z1},cx=(box.x0+box.x1)/2,cz=(box.z0+box.z1)/2;
     let r={streets:0,plots:0};r=lyRegen(P,box);

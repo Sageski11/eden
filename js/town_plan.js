@@ -16,7 +16,7 @@ function sameRow(a,type,x,z,rot,w){if(a.type!=='house'||type!=='house')return fa
 function blockedAt(type,x,z,rot,w,ignore){const R=fpRect(x,z,rot,fpOf(type,w));const rr=Math.hypot(R.f[0],R.f[2])+Math.hypot(R.f[1],R.f[3]);
   for(const o of buildings){if(o===ignore)continue;const or=o.type==='house'?6:Math.max(o.r||3,(FPR[o.type]?Math.hypot(FPR[o.type][1],FPR[o.type][3]):4))+2;if(Math.hypot(o.x-x,o.z-z)>rr+or)continue;
     const row=sameRow(o,type,x,z,rot,w);if(rectsHit(R,bRect(o),row?-.08:.9))return true;}
-  if(G.plan&&!['dock','shipyard'].includes(type)&&streetHit(R,type==='well'||type==='market',!['house','church','market','tavern','smith','well','fishmkt','hall'].includes(type)))return true;
+  if(G.plan&&!['dock','shipyard'].includes(type)&&streetHit(R,type==='well'||type==='market',G.plan.v<3&&!['house','church','market','tavern','smith','well','fishmkt','hall'].includes(type)))return true;
   return false;}
 function streetHit(R,skipPlaza,paintedOnly){const P=G.plan;const {x,z,cs,sn,f}=R;const rad=Math.max(Math.abs(f[0]),Math.abs(f[1]),Math.abs(f[2]),Math.abs(f[3]))*1.5+3;
   for(const s of P.streets){const hw=s.hw+.15;const lim=paintedOnly?s.painted:1e9;for(let pi=0;pi<s.pts.length&&pi<=lim;pi++){const p=s.pts[pi];const dx=p[0]-x,dz=p[1]-z;if(Math.abs(dx)>rad||Math.abs(dz)>rad)continue;const lx=dx*cs-dz*sn,lz=dx*sn+dz*cs;

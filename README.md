@@ -25,6 +25,7 @@ sharing one global scope (so order matters):
 | `eras.js`, `era_buildings.js`, `era_civic.js` | the eight ages: requirements, crafts, factories/stations/power, tall houses, civic styles per age |
 | `settlements.js`, `neighbours.js`, `trade.js` | the settlement layer (several peoples sharing one world), the second people who arrive in the Bronze Age and the tabs to switch between them, and caravans between them |
 | `opening.js` | the opening: arrival in rain, the free first Sunshine, folk fetching their own water |
+| `era_tiers.js`, `city_layout.js`, `replan.js` | tiered working buildings (camps, farms, docks... per age), the planned town (layout templates: ring-and-spoke, grid, riverside ribbon, hillside terraces, bay crescent; district zones; plots; folk levelling and terracing for the streets; the plan re-plots when the land changes) and era renewal (obsolete table; houses climb, buildings are rebuilt in the style of the age or pulled down and the land re-planned) |
 | `transport.js` | paved streets, railways, highways, trains and cars |
 | `god_ui.js`, `saves.js`, `menu.js` | powers and UI, main loop, saves, quality presets, menus |
 
@@ -54,6 +55,8 @@ node tools/smoke.js            # loads the game, reports console/page errors
 node tools/devtest.js          # famine -> prophet -> intervention -> judgment -> reckoning
 node tools/devtest2.js         # atrocities, save/load, judgment, next-age flow
 node tools/tftest.js           # terraforming and petitions
+node tools/layouttest.js       # grows a town through the ages (SEED, WORLD, STAGES, SHOT=dir): checks no obsolete building stands, draws a plan map and a top-down screenshot
+node tools/plantest.js dir     # draws the street plans of fresh settlements (WORLDS, SEEDS, TPL to force a template)
 node tools/eratest.js          # fast-forward through the ages
 node tools/nettest.js out.png  # lay a railway and highway, screenshot
 node tools/nbtest.js 60        # two peoples (JUDGE=1, SAVELOAD=1, TRADE=1 add checks)

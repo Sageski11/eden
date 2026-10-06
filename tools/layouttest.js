@@ -17,13 +17,13 @@ const path = require('path');
   await page.goto('file://' + path.resolve(__dirname, '../Eden.html')); await page.waitForTimeout(2500);
   await page.evaluate(() => document.getElementById('tNew').click()); await page.waitForTimeout(800);
   await page.evaluate(([w, sd]) => { setupWorld = w; setupSeed = sd; document.getElementById('setupGo').click(); }, [WORLD, SEED]); await page.waitForTimeout(2000);
-  await page.evaluate(() => { [...document.querySelectorAll('#prayers button')].find(x => /settlers/i.test(x.textContent)).click(); autoChooseStart(); });
+  await page.evaluate((t) => { window.LY_FORCE = t; [...document.querySelectorAll('#prayers button')].find(x => /settlers/i.test(x.textContent)).click(); autoChooseStart(); }, process.env.TPL || '');
   await page.waitForTimeout(800);
   await page.evaluate(() => {
     PAUSED = true;
     window.__day = () => {
       G.food = Math.max(G.food, popN() * 6 + 40); G.faith = Math.max(G.faith, 200); G.hap = Math.max(G.hap, 58); G.hapT = Math.max(G.hapT, 58);
-      G.wood = Math.max(G.wood, 160); G.stone = Math.max(G.stone, 160); G.raid = null; G.raidCool = 1e9; G.bandits.length = 0; G.sad = Math.min(G.sad, 3);
+      G.wood = Math.max(G.wood, 260); G.stone = Math.max(G.stone, G.era >= 5 ? 700 : 200); G.raid = null; G.raidCool = 1e9; G.bandits.length = 0; G.sad = Math.min(G.sad, 3);
       if (G.dev) G.dev.doubt = Math.min(G.dev.doubt, 12);
       for (const v of G.vill) if (v.sick && Math.random() < .5) v.sick = 0;
       for (const p of G.tf.pet.slice()) tfDecide(p.id, true);
@@ -50,12 +50,12 @@ const path = require('path');
       if (r.era >= stage && r.day - (await page.evaluate(() => window.__eraDay || 0)) >= DAYS + EXTRA) break;
       if (errs.length) break;
     }
-    const c = await page.evaluate(() => { const o = __ageCheck(); o.plan = G.plan ? { tpl: G.plan.tpl, streets: G.plan.streets.length, plots: G.plan.plots.length } : null; o.pop = popN(); o.day = dayN(); o.poll = Math.round(G.poll || 0); o.sites = buildings.filter(b => b.build || b.upg).length; return o; });
-    console.log('STAGE', stage, JSON.stringify({ era: c.era, pop: c.pop, n: c.n, plan: c.plan, sites: c.sites }), '\n  types', JSON.stringify(c.all), '\n  OBSOLETE', JSON.stringify(c.bad), ' (rebuilding: ' + JSON.stringify(c.pend) + ')');
+    const c = await page.evaluate(() => { const o = __ageCheck(); o.plan = G.plan ? { tpl: G.plan.tpl, streets: G.plan.streets.length, plots: G.plan.plots.length } : null; o.pop = popN(); o.day = dayN(); o.poll = Math.round(G.poll || 0); o.sites = buildings.filter(b => b.build || b.upg).length; o.works = G.chron.filter(c => /terrace|levelled|shallows|elders|new plan|pulled down|rebuild the/i.test(c.t)).slice(0, 8).map(c => c.t.slice(0, 110)); o.graded = G.plan && G.plan.nGr; o.paved = G.net && G.net.paved; o.lines = G.net ? G.net.lines.map(l => l.kind).join() : ''; return o; });
+    console.log('STAGE', stage, JSON.stringify({ era: c.era, pop: c.pop, n: c.n, plan: c.plan, sites: c.sites }), '\n  types', JSON.stringify(c.all), '\n  OBSOLETE', JSON.stringify(c.bad), ' (rebuilding: ' + JSON.stringify(c.pend) + ')', '\n  works', JSON.stringify(c.works), 'graded', c.graded, 'paved', c.paved, 'lines', c.lines);
     if (Object.keys(c.bad).length) failed = true;
     if (SHOT) {
       { const url = await page.evaluate(() => __planmap(G.center.x, G.center.z, 110)); require('fs').writeFileSync(path.join(SHOT, `map-${WORLD}-${SEED}-era${stage}.png`), Buffer.from(url.split(',')[1], 'base64')); }
-      await page.evaluate(() => { document.getElementById('ghelp').classList.add('hidden'); document.body.classList.add('photo'); cam.tx = G.center.x; cam.tz = G.center.z; cam.dist = +(window.__shotDist || 150); cam.pitch = 1.45; cam.yaw = 0; setTime(12); PAUSED = false; G.paused = true; });
+      await page.evaluate(() => { document.getElementById('ghelp').classList.add('hidden'); document.body.classList.add('photo'); SNOWF = 0; G.snow = 0; recolorAll(); cam.tx = G.center.x; cam.tz = G.center.z; cam.dist = +(window.__shotDist || 150); cam.pitch = 1.45; cam.yaw = 0; setTime(12); PAUSED = false; G.paused = true; });
       await page.waitForTimeout(9000);
       await page.screenshot({ path: path.join(SHOT, `${WORLD}-${SEED}-era${stage}.png`), timeout: 120000 });
       await page.evaluate(() => { PAUSED = true; G.paused = false; document.body.classList.remove('photo'); });

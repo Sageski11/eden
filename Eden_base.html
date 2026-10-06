@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hearthmere — A God Game of Ages</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2a1d12;--ink2:#6a5238;--wood:#3b2717;--wood2:#5e3e22;--gold:#c99a3b;--red:#8e2f1f;--line:#7a5732}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#16130f;font-family:'EB Garamond',Georgia,serif;color:var(--ink);user-select:none;-webkit-user-select:none}
+canvas{display:block;outline:none}
+.panel{background:linear-gradient(170deg,#f3e9cf 0%,#e8d8b2 60%,#dfcb9f 100%);border:1px solid #6b4a2a;box-shadow:0 0 0 3px #2b1c10,0 0 0 4px #a07a44,0 10px 28px rgba(0,0,0,.5),inset 0 0 40px rgba(130,90,40,.22);border-radius:4px}
+.hidden{display:none!important}
+#top{position:fixed;top:12px;left:12px;right:12px;min-height:50px;display:flex;align-items:center;gap:10px;padding:6px 12px;flex-wrap:wrap;z-index:5}
+#top .btns{display:flex;gap:5px;flex-wrap:wrap}#top .btns button{padding:3px 8px}
+.brand{display:flex;align-items:center;gap:9px;font-family:Cinzel,serif;font-weight:800;font-size:21px;letter-spacing:2.5px;color:var(--wood)}
+.brand small{font-family:'EB Garamond',serif;font-style:italic;font-weight:400;letter-spacing:.5px;font-size:14px;color:var(--ink2)}
+.stats{display:flex;gap:14px;font-size:15px;color:var(--ink2);margin-left:6px}
+.stats b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.spacer{flex:1}
+button{font-family:'EB Garamond',serif;font-size:15px;color:var(--ink);background:linear-gradient(#fbf4e2,#eadbb6);border:1px solid #8a6a44;border-radius:3px;padding:4px 10px;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 1px 2px rgba(0,0,0,.18);transition:background .12s,transform .05s}
+button:hover{background:linear-gradient(#fffaf0,#f1e3c0)}
+button:active{transform:translateY(1px)}
+button.on{background:linear-gradient(#6e4a2a,#4a2f19);color:#f6e9c8;border-color:#2b1c10;box-shadow:0 0 0 1px var(--gold) inset}
+.tod{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ink2)}
+.tod b{font-variant-numeric:tabular-nums;color:var(--ink);min-width:38px}
+input[type=range]{accent-color:#6e4a2a;width:110px}
+#tools{position:fixed;top:84px;left:12px;width:214px;bottom:12px;overflow-y:auto;padding:10px 10px 12px;z-index:4}
+#tools::-webkit-scrollbar{width:6px}#tools::-webkit-scrollbar-thumb{background:#a88a5c;border-radius:3px}
+.grp h3{font-family:Cinzel,serif;font-size:12.5px;letter-spacing:1.8px;text-transform:uppercase;color:var(--wood2);margin:10px 2px 6px;display:flex;align-items:center;gap:6px}
+.grp h3:after{content:"";flex:1;height:1px;background:linear-gradient(90deg,#9b7a4c,transparent)}
+.grp:first-child h3{margin-top:2px}
+.tg{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.tg button{text-align:left;padding:5px 7px;font-size:14.5px;display:flex;justify-content:space-between;align-items:center;gap:4px;line-height:1.1}
+.tg button kbd{font-family:Cinzel,serif;font-size:10px;opacity:.55;border:1px solid currentColor;border-radius:2px;padding:0 3px}
+#brushbar{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:18px;align-items:center;padding:8px 16px;z-index:4;font-size:15px}
+#brushbar label{display:flex;gap:7px;align-items:center;color:var(--ink2)}
+#brushbar em{color:var(--ink2);font-size:13.5px}
+#insp{position:fixed;top:84px;right:12px;width:272px;padding:12px 14px;z-index:4}
+#insp h2{font-family:Cinzel,serif;font-size:18px;margin:0 0 2px;color:var(--wood)}
+#insp .kind{font-style:italic;color:var(--ink2);font-size:14px;margin-bottom:8px}
+#insp ul{margin:6px 0 4px;padding-left:18px;font-size:15px;line-height:1.35}
+#insp li::marker{color:var(--gold)}
+#insp .warn{color:var(--red);font-weight:600;font-size:15px;margin-top:6px}
+#insp .ok{color:#3f5f2a;font-size:14px;margin-top:6px}
+#insp .keys{font-size:13px;color:var(--ink2);margin-top:8px;border-top:1px solid #b89a6a;padding-top:6px}
+#insp .acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+#hint{position:fixed;left:240px;bottom:64px;max-width:460px;font-size:15px;color:#f3e7c8;text-shadow:0 1px 3px #000,0 0 10px rgba(0,0,0,.7);pointer-events:none;z-index:3;font-style:italic}
+#toast{position:fixed;top:78px;left:50%;transform:translateX(-50%);padding:6px 16px;font-family:Cinzel,serif;font-size:14px;letter-spacing:1px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:6}
+#toast.show{opacity:1}
+#help{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:560px;max-width:92vw;padding:20px 26px;z-index:10;font-size:16px}
+#help h2{font-family:Cinzel,serif;margin:0 0 8px;color:var(--wood)}
+#help table{width:100%;border-collapse:collapse;font-size:15px}
+#help td{padding:3px 4px;border-bottom:1px dotted #b89a6a;vertical-align:top}
+#help td:first-child{white-space:nowrap;font-weight:600;width:42%}
+#help p{margin:10px 0 0;font-size:15px;color:var(--ink2)}
+#loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#16130f;color:#e9d9b0;font-family:Cinzel,serif;letter-spacing:3px;font-size:20px;z-index:20}
+
+.tg button .cost{font-style:normal;font-size:11px;color:#7a4a12;margin-left:auto;margin-right:3px;font-variant-numeric:tabular-nums}
+.tg button.on .cost{color:#f0d48a}
+.tg button.locked{opacity:.42;cursor:not-allowed}
+#gtop{position:fixed;top:12px;left:12px;right:12px;min-height:50px;display:flex;align-items:center;gap:14px;padding:6px 12px;flex-wrap:wrap;z-index:5}
+#gtop .town{font-family:Cinzel,serif;font-weight:800;font-size:19px;letter-spacing:1.5px;color:var(--wood);line-height:1.05}
+#gtop .town small{display:block;font-family:'EB Garamond',serif;font-weight:400;font-style:italic;font-size:13.5px;letter-spacing:.3px;color:var(--ink2)}
+.res{display:flex;gap:12px;font-size:15px;color:var(--ink2);align-items:center;flex-wrap:wrap}
+.res span{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.res b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+.res .faith b{color:#7a4a12}
+.res svg{width:15px;height:15px;flex:none}
+.bar{display:inline-block;width:46px;height:7px;border-radius:4px;background:#cdb88e;overflow:hidden;box-shadow:inset 0 1px 1px rgba(0,0,0,.25)}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#b0452a,#d8a23a 45%,#5f8a35)}
+.speed{display:flex;gap:3px}.speed button{padding:2px 8px;font-variant-numeric:tabular-nums;min-width:34px}
+.date{font-size:14px;color:var(--ink2);text-align:right;line-height:1.15;min-width:120px}
+.date b{color:var(--ink);font-weight:600}
+#prayers{position:fixed;right:12px;width:272px;padding:10px 12px 8px;z-index:4}
+#prayers h3{font-family:Cinzel,serif;font-size:12.5px;letter-spacing:1.8px;text-transform:uppercase;color:var(--wood2);margin:0 0 6px;display:flex;gap:6px;align-items:center}
+#prayers h3:after{content:"";flex:1;height:1px;background:linear-gradient(90deg,#9b7a4c,transparent)}
+.pr{border-left:3px solid var(--gold);padding:3px 0 5px 8px;margin-bottom:6px;font-size:15px;line-height:1.25}
+.pr em{display:block;font-size:13px;color:var(--ink2)}
+.pr .rw{font-size:12.5px;color:#7a4a12}
+.pr.urgent{border-color:var(--red)}
+.pr.none{border:none;padding-left:0;color:var(--ink2);font-style:italic;font-size:14px}
+#insp .mood{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink2);margin:4px 0}
+#insp .thought{font-style:italic;margin:6px 0;font-size:15.5px}
+#insp .prog{height:8px;background:#cdb88e;border-radius:4px;overflow:hidden;margin:6px 0 2px}
+#insp .prog i{display:block;height:100%;background:linear-gradient(90deg,#8a6a3a,#c99a3b)}
+#insp .small{font-size:13.5px;color:var(--ink2)}
+#chron{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:620px;max-width:94vw;max-height:80vh;display:flex;flex-direction:column;padding:22px 28px;z-index:12}
+#chron h2{font-family:Cinzel,serif;margin:0;color:var(--wood);text-align:center;letter-spacing:2px}
+#chron .sub{text-align:center;font-style:italic;color:var(--ink2);margin-bottom:10px}
+#chron .list{overflow-y:auto;padding-right:8px}
+#chron .e{margin:0 0 9px;font-size:16px;line-height:1.35}
+#chron .e b{font-family:Cinzel,serif;font-size:12px;letter-spacing:1px;color:#7a4a12;display:block}
+#chron .e span{display:block}#chron .e span:first-letter{font-family:Cinzel,serif;font-size:26px;float:left;line-height:.9;margin:3px 5px 0 0;color:var(--red)}
+#saves{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(var(--ui));width:640px;max-width:calc(94vw / var(--ui));max-height:calc(86vh / var(--ui));display:flex;flex-direction:column;padding:20px 24px;z-index:40}
+#saves h2{font-family:Cinzel,serif;margin:0;color:var(--wood);text-align:center;letter-spacing:2px}
+#saves .sub{text-align:center;font-style:italic;color:var(--ink2);margin:2px 0 10px;font-size:14.5px}
+#saves .svbar{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
+#saves .x{position:absolute;right:10px;top:8px;padding:0 8px;font-size:18px;line-height:24px}
+#saveList{overflow-y:auto;padding-right:6px;display:flex;flex-direction:column;gap:8px}
+#saveList .none{text-align:center;color:var(--ink2);font-style:italic}
+.sv{display:flex;gap:12px;padding:8px;border:1px solid rgba(107,74,42,.45);border-radius:4px;background:rgba(255,250,235,.45)}
+.sv.cur{border-color:#8e2f1f;box-shadow:inset 0 0 0 1px #8e2f1f}
+.sv .th{width:160px;height:90px;flex:none;border-radius:3px;background:#3a2c1c center/cover no-repeat;box-shadow:inset 0 0 0 1px rgba(0,0,0,.35);position:relative}
+.sv .th .tag{position:absolute;left:5px;top:5px;background:rgba(43,28,16,.8);color:#f3e9cf;font-size:11px;padding:1px 6px;border-radius:2px;letter-spacing:1px;text-transform:uppercase}
+.sv .inf{display:flex;flex-direction:column;min-width:0;flex:1}.sv .inf b{font-family:Cinzel,serif;font-size:16px;color:var(--wood)}
+.sv .inf span{font-size:13.5px;color:var(--ink2)}.sv .act{display:flex;gap:6px;margin-top:auto;flex-wrap:wrap}.sv .act button{padding:2px 10px;font-size:13.5px}
+.sv .act .del{margin-left:auto;color:#8e2f1f}
+@media (max-width:560px){.sv .th{width:110px;height:62px}}
+#vig{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse 75% 70% at 50% 48%,rgba(0,0,0,0) 62%,rgba(28,16,6,.26) 100%)}
+body.photo #vig{background:radial-gradient(ellipse 70% 65% at 50% 50%,rgba(0,0,0,0) 55%,rgba(28,16,6,.4) 100%)}
+#banner{position:fixed;top:24%;left:50%;transform:translate(-50%,-50%);font-family:Cinzel,serif;text-align:center;color:#fff3d0;text-shadow:0 2px 6px #000,0 0 24px rgba(0,0,0,.6);pointer-events:none;opacity:0;transition:opacity .8s;z-index:7}
+#banner.show{opacity:1}#banner big{display:block;font-size:42px;letter-spacing:4px;font-weight:800}#banner span{font-family:'EB Garamond',serif;font-style:italic;font-size:21px}
+#photo{position:fixed;inset:0;pointer-events:none;z-index:15;box-shadow:inset 0 0 180px 40px rgba(20,12,4,.65)}
+#photo .cap{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);text-align:center;color:#fff3d6;text-shadow:0 2px 8px #000;font-family:Cinzel,serif}
+#photo .cap big{display:block;font-size:34px;letter-spacing:5px}#photo .cap i{font-family:'EB Garamond',serif;font-size:19px}
+body.photo #top,body.photo #gtop,body.photo #tools,body.photo #brushbar,body.photo #insp,body.photo #prayers,body.photo #hint,body.photo #toast{display:none!important}
+
+:root{--ui:1}
+#top,#gtop{transform-origin:0 0;transform:scale(var(--ui));right:auto!important;width:calc((100vw - 24px) / var(--ui))}
+#tools{transform-origin:0 0;transform:scale(var(--ui));bottom:auto!important}
+#prayers,#insp{transform-origin:100% 0;transform:scale(var(--ui));overflow-y:auto}
+#brushbar{transform:translateX(-50%) scale(var(--ui));transform-origin:50% 100%}
+#toast{transform:translateX(-50%) scale(var(--ui));transform-origin:50% 0}
+#banner{transform:translate(-50%,-50%) scale(var(--ui))}
+#help,#ghelp,#chron{transform:translate(-50%,-50%) scale(var(--ui))!important}
+#hint{font-size:calc(15px * var(--ui))}
+.tbhead{display:flex;align-items:center;justify-content:space-between;margin:-2px 0 4px;font-family:Cinzel,serif;font-size:12px;letter-spacing:1.6px;color:var(--wood2);text-transform:uppercase}
+.mini{padding:0 7px;font-size:14px;line-height:18px;min-width:24px}
+#tools.collapsed .grp{display:none}#tools.collapsed{width:auto;min-width:150px}
+#tools .cur{font-family:'EB Garamond',serif;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink);margin:0 6px}
+#prayers h3{cursor:pointer}#prayers.collapsed>*:not(h3){display:none}#prayers.collapsed h3{margin:0}
+#insp .x{position:absolute;top:6px;right:8px}
+.tg button .cnt{font-style:normal;font-size:11px;color:#7a4a12;margin-left:auto;margin-right:3px}
+#envrep .row{display:flex;align-items:center;gap:8px;font-size:14px;margin:3px 0}#envrep .row span{width:74px;color:var(--ink2)}
+#envrep .row .bar{width:120px}#envrep .way{font-style:italic;margin:8px 0 4px;font-size:15px}
+#setup{position:fixed;inset:0;z-index:31;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(20,14,8,.25),rgba(10,7,4,.8))}
+#setup .card{width:760px;max-width:96vw;padding:24px 28px}
+#setup h2{font-family:Cinzel,serif;margin:0 0 4px;color:var(--wood);text-align:center;letter-spacing:3px}
+#setup .worlds{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:9px;margin:14px 0}
+#setup .worlds button{text-align:left;padding:9px 11px;font-size:17px}#setup .worlds button small{display:block;font-size:13.5px;color:var(--ink2);font-style:italic;line-height:1.25;margin-top:3px}
+#setup .worlds button.on small{color:#e9dbb6}
+#crafts .sk{display:grid;grid-template-columns:96px 1fr 30px;align-items:center;gap:8px;font-size:14.5px;margin:4px 0}
+#crafts .sk .bar{width:100%}#crafts .un{font-size:13px;color:var(--ink2);margin:6px 0 0;line-height:1.35}
+#crafts .un b{color:#3f5f2a}#crafts .un i{color:#8a6a3a}
+
+/* ================= cinematic main menu ================= */
+#title{position:fixed;inset:0;z-index:30;overflow:hidden;color:#efe2c4;pointer-events:none}
+#title>*{pointer-events:auto}
+#title.hidden{display:none}
+body.inmenu #gtop,body.inmenu #top,body.inmenu #tools,body.inmenu #prayers,body.inmenu #insp,body.inmenu #brushbar,body.inmenu #hint,body.inmenu #toast,body.inmenu #banner,body.inmenu #ghelp,body.inmenu #help,body.inmenu #chron,body.inmenu #crafts{display:none!important}
+#mart{position:absolute;inset:0;width:100%;height:100%;pointer-events:none!important;display:block}
+.mshade{position:absolute;inset:0;pointer-events:none!important;background:
+  linear-gradient(90deg,rgba(8,4,10,.78) 0%,rgba(8,4,10,.5) 22%,rgba(8,4,10,.12) 40%,rgba(0,0,0,0) 52%),
+  radial-gradient(ellipse 80% 75% at 62% 48%,rgba(0,0,0,0) 55%,rgba(6,3,1,.55) 100%)}
+.mrays{position:absolute;inset:-30%;pointer-events:none!important;mix-blend-mode:screen;opacity:.55;
+  background:repeating-conic-gradient(from 200deg at 78% 8%,rgba(255,214,140,.10) 0deg,rgba(255,214,140,0) 3.5deg,rgba(255,214,140,0) 9deg,rgba(255,200,120,.07) 12deg,rgba(255,214,140,0) 16deg);
+  -webkit-mask-image:radial-gradient(ellipse 70% 70% at 78% 8%,#000 0%,transparent 70%);mask-image:radial-gradient(ellipse 70% 70% at 78% 8%,#000 0%,transparent 70%);
+  animation:rays 24s ease-in-out infinite alternate}
+@keyframes rays{0%{transform:rotate(-2.5deg) scale(1);opacity:.4}50%{opacity:.62}100%{transform:rotate(2.5deg) scale(1.05);opacity:.45}}
+.lb{position:absolute;left:0;right:0;height:0;background:#000;pointer-events:none!important;transition:height 1.6s cubic-bezier(.2,.7,.2,1);z-index:3}
+.lb.t{top:0}.lb.b{bottom:0}
+#title.cine .lb{height:7.5vh}
+.mleft{position:absolute;left:6vw;top:50%;transform:translateY(-50%);width:min(560px,86vw);z-index:4}
+.mcrest{width:86px;height:98px;display:block;margin:0 0 6px -4px;filter:drop-shadow(0 0 18px rgba(255,190,90,.45));animation:crestIn 1.8s .3s both cubic-bezier(.2,.8,.2,1),crestGlow 4.5s 2.1s ease-in-out infinite}
+@keyframes crestIn{from{opacity:0;transform:translateY(-14px) scale(.85);filter:blur(8px)}to{opacity:1}}
+@keyframes crestGlow{50%{filter:drop-shadow(0 0 30px rgba(255,190,90,.75))}}
+.mtitle{font-family:Cinzel,serif;font-weight:800;font-size:clamp(40px,6.4vw,96px);letter-spacing:.14em;line-height:1;margin:0;white-space:nowrap;
+  filter:drop-shadow(0 6px 22px rgba(0,0,0,.75)) drop-shadow(0 0 26px rgba(255,170,60,.25))}
+.mtitle span{display:inline-block;background:linear-gradient(100deg,#7a4a14 0%,#d9a650 22%,#fff3cf 34%,#f2c873 44%,#9a6420 60%,#e9bd6a 78%,#7a4a14 100%);background-size:300% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;animation:letterIn 1.4s both cubic-bezier(.2,.8,.2,1),shine 7s linear infinite}
+@keyframes letterIn{from{opacity:0;transform:translateY(28px) scale(1.25);filter:blur(10px)}to{opacity:1;transform:none;filter:blur(0)}}
+@keyframes shine{from{background-position:120% 0}to{background-position:-180% 0}}
+.mflour{display:block;width:min(460px,80vw);height:22px;margin:10px 0 4px}
+.mflour path{stroke:#d9a650;stroke-width:1.3;fill:none;stroke-dasharray:900;stroke-dashoffset:900;animation:draw 2.6s 1.2s forwards ease-out}
+.mflour circle{fill:#f2c873;opacity:0;animation:fadeIn 1s 3s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}@keyframes fadeIn{to{opacity:1}}
+.mtag{font-style:italic;font-size:clamp(16px,1.5vw,21px);color:#d8c6a0;text-shadow:0 2px 10px #000;opacity:0;animation:fadeUp 1.2s 1.8s forwards}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.mnav{display:flex;flex-direction:column;gap:2px;margin-top:clamp(18px,4vh,40px)}
+.mnav button{all:unset;cursor:pointer;position:relative;display:block;padding:9px 18px 9px 34px;font-family:Cinzel,serif;font-weight:600;font-size:clamp(17px,1.7vw,24px);letter-spacing:.12em;color:#efe2c4;text-shadow:0 2px 8px #000;
+  opacity:0;animation:fadeUp .9s forwards;transition:transform .35s cubic-bezier(.2,.8,.2,1),color .25s;width:max-content;max-width:100%}
+.mnav button small{display:block;font-family:'EB Garamond',serif;font-weight:400;font-style:italic;letter-spacing:.02em;font-size:clamp(13px,1vw,15px);color:#b9a37c;margin-top:1px;transition:color .25s}
+.mnav button::before{content:'';position:absolute;left:10px;top:21px;width:8px;height:8px;transform:rotate(45deg) scale(.6);background:#c99a3b;box-shadow:0 0 8px #f2c873;opacity:.55;transition:all .3s}
+.mnav button::after{content:'';position:absolute;left:0;top:4px;bottom:4px;width:0;background:linear-gradient(90deg,rgba(242,200,115,.28),rgba(242,200,115,.07) 70%,transparent);border-left:2px solid #f2c873;opacity:0;transition:width .4s cubic-bezier(.2,.8,.2,1),opacity .3s;z-index:-1}
+.mnav button:hover,.mnav button:focus-visible{transform:translateX(12px);color:#fff3cf}
+.mnav button:hover small{color:#e6cf9c}
+.mnav button:hover::before{transform:rotate(45deg) scale(1);opacity:1}
+.mnav button:hover::after,.mnav button:focus-visible::after{width:110%;opacity:1}
+.mnav button.hidden{display:none}
+.mnav button.prim b{color:#ffe7a8}
+.mcap{position:absolute;right:5vw;bottom:calc(7.5vh + 26px);text-align:right;z-index:4;pointer-events:none!important;transition:opacity 1.2s;opacity:0}
+.mcap.on{opacity:1}
+.mcap i{display:block;font-family:Cinzel,serif;font-style:normal;font-size:clamp(14px,1.3vw,19px);letter-spacing:.3em;color:#f2c873;text-shadow:0 2px 10px #000}
+.mcap span{display:block;font-style:italic;font-size:clamp(14px,1.2vw,18px);color:#e6d7b8;text-shadow:0 2px 10px #000;margin-top:3px}
+.mfoot{position:absolute;left:6vw;bottom:calc(7.5vh + 18px);font-size:13px;color:#8f7c5a;letter-spacing:.08em;z-index:4;display:flex;gap:14px;align-items:center;opacity:0;animation:fadeUp 1s 3s forwards}
+.mfoot button{all:unset;cursor:pointer;color:#c9b38a;border:1px solid rgba(201,154,59,.45);border-radius:20px;padding:3px 11px;font-size:13px}
+.mfoot button:hover{color:#fff3cf;border-color:#f2c873}
+#mFade{position:absolute;inset:0;background:#000;pointer-events:none!important;opacity:1;transition:opacity 1s ease;z-index:5}
+#mFade.clear{opacity:0}
+#mIntro{position:absolute;left:50%;top:calc(7.5vh + 18px);transform:translateX(-50%);font-family:Cinzel,serif;letter-spacing:.35em;font-size:12px;color:#c9b38a;opacity:0;animation:fadeUp 1s 4s forwards, pulse 2.6s 5s infinite;z-index:4;pointer-events:none!important}
+@keyframes pulse{50%{opacity:.35}}
+/* dark glass panels (menus) */
+.glass{background:linear-gradient(170deg,rgba(32,22,13,.92),rgba(18,12,7,.94));border:1px solid rgba(201,154,59,.55);box-shadow:0 0 0 1px rgba(0,0,0,.6),0 24px 70px rgba(0,0,0,.7),inset 0 0 60px rgba(201,154,59,.07);border-radius:6px;color:#e9dcc0}
+.glass h2,.glass .ptitle{font-family:Cinzel,serif;color:#f2c873;letter-spacing:.22em;text-align:center;margin:0;text-shadow:0 2px 10px #000}
+.glass .sub,.glass .psub{text-align:center;font-style:italic;color:#b9a37c;margin:4px 0 14px}
+.glass button,.gbtn{font-family:'EB Garamond',serif;background:linear-gradient(#3a2817,#24170c);color:#f0e2c2;border:1px solid rgba(201,154,59,.55);border-radius:4px;padding:6px 14px;font-size:16px;cursor:pointer;transition:all .2s}
+.glass button:hover{border-color:#f2c873;color:#fff3cf;box-shadow:0 0 12px rgba(242,200,115,.25)}
+.glass button.on,.glass button.primary{background:linear-gradient(#7a5226,#4f3216);color:#fff3cf;border-color:#f2c873}
+body.inmenu #setup{background:radial-gradient(ellipse at center,rgba(10,6,3,.35),rgba(6,3,1,.78))}
+body.inmenu #setup .card,body.inmenu #saves{background:linear-gradient(170deg,rgba(32,22,13,.94),rgba(18,12,7,.96));border:1px solid rgba(201,154,59,.55);box-shadow:0 24px 70px rgba(0,0,0,.7);color:#e9dcc0}
+body.inmenu #setup h2,body.inmenu #saves h2{color:#f2c873}
+body.inmenu #setup .worlds button,body.inmenu #setup button,body.inmenu #saves button{background:linear-gradient(#3a2817,#24170c);color:#f0e2c2;border:1px solid rgba(201,154,59,.5)}
+body.inmenu #setup .worlds button.on,body.inmenu #setup #setupGo{background:linear-gradient(#7a5226,#4f3216);border-color:#f2c873;color:#fff3cf}
+body.inmenu #setup .worlds button small,body.inmenu #setup span,body.inmenu #saves .sub,body.inmenu .sv .inf span,body.inmenu #setup div{color:#c4ae86}
+body.inmenu .sv{background:rgba(0,0,0,.25);border-color:rgba(201,154,59,.35)}body.inmenu .sv .inf b{color:#f2c873}
+#setup .rname{display:flex;align-items:center;gap:10px;justify-content:center;margin:12px 0 4px;font-family:Cinzel,serif;letter-spacing:.12em;font-size:14px}
+#setup .rname input,.svname input{font-family:'EB Garamond',serif;font-size:19px;padding:5px 10px;border-radius:4px;border:1px solid #a07a44;background:#fbf4e2;color:#2a1d12;width:260px;user-select:text;-webkit-user-select:text}
+body.inmenu #setup .rname input{background:rgba(0,0,0,.35);color:#fff3cf;border-color:rgba(201,154,59,.6)}
+.svname{display:flex;gap:8px;justify-content:center;align-items:center;margin:0 0 12px;flex-wrap:wrap}.svname.hidden{display:none}
+.svname input{width:240px;font-size:17px}
+/* pause */
+#pause{position:fixed;inset:0;z-index:38;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(10,6,3,.25),rgba(6,3,1,.72));animation:pfade .25s}
+#pause.hidden,#settings.hidden,#farewell.hidden{display:none}
+@keyframes pfade{from{opacity:0}}
+body.paused canvas{filter:blur(3px) brightness(.62) saturate(.8);transition:filter .3s}
+.pcard{width:340px;padding:26px 28px 22px;display:flex;flex-direction:column;gap:9px;transform:scale(var(--ui));animation:pop .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes pop{from{transform:scale(calc(var(--ui)*.94));opacity:0}}
+.pcard .ptitle{font-size:30px;margin-bottom:0}
+.pcard .orn{height:1px;background:linear-gradient(90deg,transparent,#c99a3b,transparent);margin:2px 0 8px}
+.pcard button{font-family:Cinzel,serif;font-size:17px;letter-spacing:.1em;padding:10px 14px}
+.pcard button.danger{color:#e8a08a}
+#settings{position:fixed;inset:0;z-index:42;display:flex;align-items:center;justify-content:center;background:rgba(4,2,1,.55);animation:pfade .25s}
+.scard{width:520px;max-width:94vw;padding:24px 28px;transform:scale(var(--ui))}
+.scard h3{font-family:Cinzel,serif;font-size:14px;letter-spacing:.22em;color:#c99a3b;margin:16px 0 8px;border-bottom:1px solid rgba(201,154,59,.3);padding-bottom:4px}
+.srow{display:grid;grid-template-columns:150px 1fr 46px;align-items:center;gap:12px;margin:8px 0;font-size:17px}
+.srow output{text-align:right;color:#f2c873;font-variant-numeric:tabular-nums}
+.srow input[type=range]{accent-color:#c99a3b;width:100%}
+.qbtns{display:flex;gap:8px}.qbtns button{flex:1}
+.sdesc{font-size:14px;font-style:italic;color:#a8936c;margin:4px 0 0}
+.schk{display:flex;align-items:center;gap:9px;margin:10px 0;font-size:16px}.schk input{accent-color:#c99a3b;width:17px;height:17px}
+.sfoot{display:flex;justify-content:flex-end;margin-top:18px}
+#reckon{position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(20,6,2,.55),rgba(4,2,1,.88));animation:pfade .6s}
+#reckon.hidden{display:none}
+.rcard{width:520px;max-width:94vw;padding:26px 30px;transform:scale(var(--ui))}
+.rcard .rrow{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dotted rgba(201,154,59,.35);font-size:17px}.rcard .rrow span{color:#b9a37c}.rcard .rrow b{color:#f2c873;font-weight:600;text-align:right}
+.rcard .verdict{font-style:italic;text-align:center;margin:14px 0 4px;color:#e6d7b8}.rcard .rages{margin-top:12px;font-size:14px;color:#a8936c}.rcard .rages i{display:block;letter-spacing:.2em;font-style:normal;font-family:Cinzel,serif;font-size:12px;color:#c99a3b;margin-bottom:3px}
+#farewell{position:fixed;inset:0;z-index:60;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#d8c6a0;text-align:center;gap:14px}
+#farewell h2{font-family:Cinzel,serif;font-size:38px;letter-spacing:.25em;color:#f2c873;margin:0}
+</style>
+</head>
+<body>
+<div id="loading">Surveying the land…</div>
+<div id="top" class="panel">
+  <div class="brand">
+    <svg width="26" height="30" viewBox="0 0 26 30"><path d="M13 1 L24 5 V14 C24 21 19 26 13 29 C7 26 2 21 2 14 V5 Z" fill="#8e2f1f" stroke="#2b1c10" stroke-width="1.5"/><path d="M7 17 L7 11 L9 11 L9 13 L11 13 L11 9 L15 9 L15 13 L17 13 L17 11 L19 11 L19 17 Z" fill="#e9c66b"/><rect x="11.5" y="14" width="3" height="3" fill="#2b1c10"/></svg>
+    <div>Hearthmere<br><small>a medieval town planner</small></div>
+  </div>
+  <div class="stats">
+    <span>Folk <b id="stPop">0</b></span><span>Buildings <b id="stB">0</b></span><span>Trees <b id="stT">0</b></span><span>Water <b id="stW">0</b></span>
+  </div>
+  <div class="spacer"></div>
+  <label class="tod">Hour <input id="tod" type="range" min="4" max="22" step="0.05" value="15.5"><b id="todv">15:30</b></label>
+  <div class="btns"><button id="bPause" title="Pause / resume water (P)">Water flowing</button>
+  <button id="bUndo" title="Undo (Ctrl+Z)">Undo</button>
+  <button id="bSave" title="Save to this browser">Save</button>
+  <button id="bLoad" title="Load from this browser">Load</button>
+  <button id="bExport" title="Download map file">Export</button>
+  <button id="bImport" title="Open map file">Import</button>
+  <button id="bNew" title="Generate new land">New land</button>
+  <button id="bHelp" title="Controls (H)">?</button></div>
+</div>
+<div id="tools" class="panel"></div>
+<div id="brushbar" class="panel">
+  <label>Brush <input id="bSize" type="range" min="1" max="36" step="0.5" value="8"><b id="bSizeV">8</b></label>
+  <label>Strength <input id="bStr" type="range" min="0.05" max="1" step="0.05" value="0.6"></label>
+  <em id="bTip">Shift inverts</em>
+</div>
+<div id="insp" class="panel hidden"></div>
+<div id="hint"></div>
+<div id="toast" class="panel"></div>
+<div id="help" class="panel hidden">
+  <h2>How to rule Hearthmere</h2>
+  <table>
+    <tr><td>Left drag</td><td>Use current tool (sculpt, pour, plant, paint road)</td></tr>
+    <tr><td>Shift + left drag</td><td>Inverse of the tool (lower, sink, fell, erase road)</td></tr>
+    <tr><td>Right drag · Q / E</td><td>Orbit the camera</td></tr>
+    <tr><td>Middle drag · WASD</td><td>Pan the camera</td></tr>
+    <tr><td>Mouse wheel</td><td>Zoom</td></tr>
+    <tr><td>R / Shift+R</td><td>Rotate building (turns off auto-facing)</td></tr>
+    <tr><td>F</td><td>Toggle auto-facing (roads, water, neighbours)</td></tr>
+    <tr><td>V</td><td>Reroll building variant</td></tr>
+    <tr><td>1–7 · 8 9 0</td><td>Terrain tools · Pour / Spring / Drain</td></tr>
+    <tr><td>T · Y · G · I · X</td><td>Plant · Fell · Road · Inspect · Demolish</td></tr>
+    <tr><td>P · Ctrl+Z · H</td><td>Pause water · Undo · This help</td></tr>
+  </table>
+  <p>Buildings read their surroundings: water turns houses into lake houses with docks or stilt houses; neighbouring houses merge into terraced rows; forests make log cabins; hills bring stone and slate; roads and squares decide which way a building faces. Churches grow with the town, castles with the hill they stand on.</p>
+  <p style="text-align:right;margin-top:12px"><button id="bHelpClose">Begin</button></p>
+</div>
+
+<div id="gtop" class="panel hidden">
+  <div class="town"><span id="gTown">Ashford</span><small id="gEra">Camp</small></div>
+  <div id="gTowns" class="btns hidden"></div>
+  <div class="res">
+    <span class="faith" title="Faith: spend it on miracles. Earned from happy, worshipping folk."><svg viewBox="0 0 16 16"><path d="M8 1 L10 6 L15 6.5 L11 10 L12.5 15 L8 12 L3.5 15 L5 10 L1 6.5 L6 6 Z" fill="#d4a73c" stroke="#7a4a12"/></svg><b id="gFaith">0</b><small id="gFaithCap" style="opacity:.6">/300</small></span>
+    <span title="Folk"><svg viewBox="0 0 16 16"><circle cx="8" cy="4.5" r="3" fill="#6a5238"/><path d="M2.5 15c0-4 2.5-6 5.5-6s5.5 2 5.5 6z" fill="#6a5238"/></svg><b id="gPop">0</b></span>
+    <span title="Happiness"><span class="bar"><i id="gHap" style="width:50%"></i></span></span>
+    <span title="Food"><svg viewBox="0 0 16 16"><path d="M8 15V5M8 6c-3 0-4-2-4-4 3 0 4 2 4 4zm0 0c3 0 4-2 4-4-3 0-4 2-4 4zm0 4c-3 0-4-2-4-4 3 0 4 2 4 4zm0 0c3 0 4-2 4-4-3 0-4 2-4 4z" fill="#c9a24a" stroke="#7a5a1a" stroke-width=".8"/></svg><b id="gFood">0</b></span>
+    <span title="Wood"><svg viewBox="0 0 16 16"><rect x="1" y="5" width="14" height="6" rx="3" fill="#8a6440" stroke="#4a3020"/><circle cx="12" cy="8" r="2" fill="#c9a06a"/></svg><b id="gWood">0</b></span>
+    <span title="Stone"><svg viewBox="0 0 16 16"><path d="M2 12 L4 5 L9 3 L14 7 L13 13 Z" fill="#a39c8e" stroke="#5e5850"/></svg><b id="gStone">0</b></span>
+  </div>
+  <div class="spacer"></div>
+  <div class="date"><b id="gDate">Spring</b><br><span id="gTime">06:00</span></div>
+  <div class="speed"><button data-sp="0" title="Pause (Space)">❚❚</button><button data-sp="1">1×</button><button data-sp="3">3×</button><button data-sp="10">10×</button></div>
+  <div class="btns"><button id="gChron">Chronicle</button><button id="gCrafts">Crafts</button><button id="gSound">Sound off</button><button id="gPhoto" title="Photo mode (K)">Photo</button><button id="gSave">Save</button><button id="gQual" title="Graphics quality">High</button><button id="gHelpB">Help</button><button id="gMenu">Menu</button></div>
+</div>
+<div id="prayers" class="panel hidden"></div>
+<div id="chron" class="panel hidden"><h2 id="chronTitle">The Chronicle</h2><div class="sub" id="chronSub"></div><div class="list" id="chronList"></div><p style="text-align:right;margin:10px 0 0"><button id="chronClose">Close</button></p></div>
+
+<div id="ghelp" class="panel hidden" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:640px;max-width:94vw;max-height:84vh;overflow:auto;padding:20px 26px;z-index:12;font-size:16px">
+  <h2 style="font-family:Cinzel,serif;margin:0 0 6px;color:var(--wood)">The Spirit of the Valley</h2>
+  <p style="margin:0 0 10px;color:var(--ink2)">Your people think and build for themselves. You cannot place their houses — you shape their world, answer their prayers and protect them. Their happiness becomes your <b>Faith</b>, and Faith pays for every miracle.</p>
+  <table style="width:100%;border-collapse:collapse;font-size:15px">
+    <tr><td style="padding:3px 4px;font-weight:600;width:38%">Shape the land</td><td>Raise, lower, flatten and carve. Folk need flat, dry ground for homes and fields. Costs Faith by how much earth you move.</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">Water</td><td>Pour water or open springs. Homes near water are happier, lake houses fish, mills turn — but floods destroy low houses.</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">Banners</td><td>Free. “Settle here”, “Farm here”, “Worship here” steer where they build. “Keep clear” protects land. Each has a limit — click an existing banner with the same tool to remove it. Folk lay out streets from the square in front of their hall and build along them; a “Settle here” banner far from town makes them run a new lane out to it.</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">The land decides</td><td>Lakes and rivers make fishers, docks and fish markets; forests feed hunters and sawmills; dry plains mean farms and hunting lodges. Wildlife breeds near forests — overhunt it and it vanishes.</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">Crafts</td><td>Folk improve with practice. Woodcutting brings axes, then bows; fishing brings nets, then boats and sails; stone and woodwork unlock finer, more intricate buildings (J).</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">Sky</td><td>Rain, sunshine, snow, rainbows, thunderstorms — and meteors that carve craters and leave stone.</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">Prayers</td><td>Shown top right. Answer them for Faith and joy; ignored prayers make folk sad.</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">Seasons</td><td>Fields grow spring to autumn; winter eats the stores. Summers can bring drought, springs bring floods.</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">Dangers</td><td>Fires spread between thatched roofs (Rain or Bless saves them). From the Village era raiders come — Smite them, or cut them off with cliffs and water. Towers and castles shoot arrows.</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">The Ages</td><td>Stone Age → Bronze Age → Iron Age → Medieval → High Medieval → Industrial → Modern → Futuristic. Folk learn crafts by practice (Stonecutting, Woodworking… then Engineering and Science), and each age brings new buildings, miracles and ways to travel: huts become cottages, then townhouses, brick tenements, concrete towers and spires of light. Streets are paved, and railways and highways are laid across the land.</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">Piety &amp; doubt</td><td>Hunger, fear, sickness, unanswered prayers and even pride make the folk doubt you. Watch <b>Hearts of the folk</b> to see why — and ease what troubles them before it breeds a false prophet.</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">False prophets</td><td>A prophet rises from doubt, raises a dark shrine and gathers followers whose deeds grow crueller. Answer with a <b>Divine sign</b>, <b>Anoint a seer</b>, or <b>Silence the prophet</b> (a strong cult will make them a martyr). Faith drains away while a cult thrives.</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">Petitions</td><td>The folk reshape the land themselves — levelling plots, digging quarries — and ask your leave for the big works: draining a marsh, felling a forest, cutting a mountain, laying a railway or highway. <b>Allow</b> or <b>Forbid</b>. You may still raise, lower and carve the land yourself.</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">Other peoples</td><td>In the Bronze Age a second people come into the valley and settle somewhere different — by the water, the forest or open land — so they live differently: fishers, hunters, farmers. You are the Spirit of both: switch with the tabs in the top bar or <b>Tab</b>. Faith is shared; each people have their own doubts, prophets and petitions. When one has what the other lacks, merchants walk between them and roads wear in. Judge one people and the other goes on.</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">Judgment</td><td>When a people are beyond saving, pass judgment: Deluge, Firestorm, Pestilence or Starfall. The faithful may flee. The reckoning is written in the Ledger of Ages, and a new age begins with a little of the old memory.</td></tr>
+    <tr><td style="padding:3px 4px;font-weight:600">Controls</td><td>Right-drag orbit · middle-drag / WASD pan · wheel zoom · Space pause · +/− speed · I watch · B bless · R rain · X smite · C chronicle · J crafts · K photo · H help · Ctrl+S save</td></tr>
+  </table>
+  <p style="text-align:right;margin:12px 0 0"><button id="ghelpClose">Watch over them</button></p>
+</div>
+
+<div id="setup" class="hidden"><div class="card panel">
+  <h2>CHOOSE YOUR VALLEY</h2><div style="text-align:center;font-style:italic;color:var(--ink2)">The land decides who your people become. You may reshape it freely before they arrive.</div>
+  <div class="rname">NAME YOUR REALM <input id="realmName" maxlength="28" spellcheck="false"><button class="mini" id="rnRoll" title="Another name">↻</button></div>
+  <div class="worlds" id="worlds"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span style="color:var(--ink2);font-size:14px">Seed <b id="seedv"></b> <button class="mini" id="reroll" title="New random seed">↻</button></span>
+  <span><button id="setupBack">Back</button> <button id="setupGo" class="on">Shape this valley</button></span></div>
+</div></div>
+<div id="crafts" class="panel hidden" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(var(--ui));width:520px;max-width:94vw;padding:18px 24px;z-index:12"></div>
+<div id="saves" class="panel hidden"><button class="x" id="svClose" title="Close">×</button>
+  <h2 id="svTitle">Save &amp; load</h2><div class="sub">Realms are kept in this browser. Autosaves happen every few minutes and when you leave. Ctrl+S saves quickly.</div>
+  <div class="svbar"><button id="svNew" class="primary">Save as new</button><button id="svExport">Export file</button><button id="svImport">Import file</button></div>
+  <div class="svname hidden" id="svNameRow"><input id="svNameIn" maxlength="40" spellcheck="false" placeholder="Name this save"><button id="svNameOk" class="primary">Save</button><button id="svNameX">Cancel</button></div>
+  <div id="saveList"></div><input type="file" id="svFile" accept=".json,application/json" hidden></div>
+<div id="vig"></div><div id="banner"></div>
+<div id="photo" class="hidden"><div class="cap"><big id="phTown"></big><i id="phLine"></i></div></div>
+<div id="title" class="hidden">
+  <div class="mshade"></div>
+  <div class="lb t"></div><div class="lb b"></div>
+  <div class="mleft">
+    <svg class="mcrest" viewBox="0 0 26 30"><defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b8402a"/><stop offset="1" stop-color="#5e1a10"/></linearGradient><linearGradient id="cg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0c0"/><stop offset=".5" stop-color="#e2b45a"/><stop offset="1" stop-color="#8a5a1a"/></linearGradient></defs>
+      <path d="M13 1 L24 5 V14 C24 21 19 26 13 29 C7 26 2 21 2 14 V5 Z" fill="url(#cg)" stroke="url(#cg2)" stroke-width="1.3"/><path d="M7 17 L7 11 L9 11 L9 13 L11 13 L11 9 L15 9 L15 13 L17 13 L17 11 L19 11 L19 17 Z" fill="url(#cg2)"/><rect x="11.6" y="14" width="2.8" height="3" fill="#5e1a10"/></svg>
+    <h1 class="mtitle" id="mTitle"></h1>
+    <svg class="mflour" viewBox="0 0 460 22"><path d="M2 11 H180 C200 11 205 2 218 6 C226 9 222 16 230 16 C238 16 234 9 242 6 C255 2 260 11 280 11 H458"/><circle cx="230" cy="11" r="3"/><circle cx="2" cy="11" r="2"/><circle cx="458" cy="11" r="2"/></svg>
+    <div class="mtag">You are the spirit of the valley. They are your people.</div>
+    <nav class="mnav" id="mnav">
+      <button id="tCont" class="hidden prim"><b>Continue</b><small id="tContSub"></small></button>
+      <button id="tNew"><b>New World</b><small>Shape a valley, name your realm, call the settlers</small></button>
+      <button id="tLoad" class="hidden"><b>Load World</b><small>Your saved realms</small></button>
+      <button id="tSand"><b>Sandbox</b><small>Sculpt and build freely — no rules</small></button>
+      <button id="tSet"><b>Settings</b><small>Sound, music &amp; graphics</small></button>
+      <button id="tQuit"><b>Quit</b><small>Leave the valley</small></button>
+    </nav>
+  </div>
+  <div class="mcap" id="mCap"><i id="mCapT"></i><span id="mCapS"></span></div>
+  <div class="mfoot"><span>HEARTHMERE · A GOD GAME OF AGES</span><button id="mSound">♪ Sound off</button></div>
+  <div id="mIntro">CLICK ANYWHERE TO AWAKEN THE MUSIC</div>
+  <div id="mFade"></div>
+</div>
+<div id="pause" class="hidden"><div class="pcard glass">
+  <div class="ptitle">PAUSED</div><div class="psub" id="pSub"></div><div class="orn"></div>
+  <button data-p="resume" class="primary">Resume</button>
+  <button data-p="save">Save game</button>
+  <button data-p="load">Load world</button>
+  <button data-p="settings">Settings</button>
+  <button data-p="menu">Quit to main menu</button>
+  <button data-p="quit" class="danger">Quit game</button>
+</div></div>
+<div id="settings" class="hidden"><div class="scard glass">
+  <h2>SETTINGS</h2>
+  <h3>SOUND</h3>
+  <div class="srow"><label for="sMaster">Master volume</label><input type="range" id="sMaster" min="0" max="100"><output id="oMaster"></output></div>
+  <div class="srow"><label for="sMusic">Music</label><input type="range" id="sMusic" min="0" max="100"><output id="oMusic"></output></div>
+  <div class="srow"><label for="sFx">Effects &amp; ambience</label><input type="range" id="sFx" min="0" max="100"><output id="oFx"></output></div>
+  <h3>GRAPHICS</h3>
+  <div class="qbtns"><button data-q="high">High</button><button data-q="bal">Balanced</button><button data-q="low">Low</button></div>
+  <p class="sdesc" id="qDesc"></p>
+  <label class="schk"><input type="checkbox" id="sAutoQ"> Lower quality automatically if the game runs slowly</label>
+  <div class="srow"><label for="sUI">Interface size</label><input type="range" id="sUI" min="70" max="130"><output id="oUI"></output></div>
+  <div class="sfoot"><button id="sDone" class="primary">Done</button></div>
+</div></div>
+<div id="reckon" class="hidden"></div>
+<div id="farewell" class="hidden"><h2>FAREWELL</h2><div>Your realm is saved. You may close this tab now.</div><button class="gbtn" id="fwBack">Return to the valley</button></div>
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
+<script src="js/lib/three.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/water.js"></script>
+<script src="js/trees.js"></script>
+<script src="js/buildkit.js"></script>
+<script src="js/people.js"></script>
+<script src="js/fauna_flora.js"></script>
+<script src="js/buildings.js"></script>
+<script src="js/world_tools.js"></script>
+<script src="js/sim_agents.js"></script>
+<script src="js/sim_economy.js"></script>
+<script src="js/town_plan.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/world_features.js"></script>
+<script src="js/devotion.js"></script>
+<script src="js/settlements.js"></script>
+<script src="js/neighbours.js"></script>
+<script src="js/trade.js"></script>
+<script src="js/terraform.js"></script>
+<script src="js/eras.js"></script>
+<script src="js/era_buildings.js"></script>
+<script src="js/era_civic.js"></script>
+<script src="js/opening.js"></script>
+<script src="js/transport.js"></script>
+<script src="js/sandbox.js"></script>
+<script src="js/bdefs.js"></script>
+<script src="js/nb_a.js"></script>
+<script src="js/nb_b.js"></script>
+<script src="js/nb_c.js"></script>
+<script src="js/nb_d.js"></script>
+<script src="js/god_ui.js"></script>
+<script src="js/era_tiers.js"></script>
+<script src="js/planmap.js"></script>
+<script src="js/chains.js"></script>
+<script src="js/prayers.js"></script>
+<script src="js/saves.js"></script>
+<script src="js/menu.js"></script>
+</body></html>

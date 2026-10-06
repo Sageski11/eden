@@ -53,7 +53,7 @@ function renewTick(){
   if(MODE!=='god'||G.phase!=='play'||G.menu||!G.center||G.center.build)return;const e=G.era||0,P=G.plan;
   if(P&&P.v>=3&&(P.eraSeen||0)<e){P.eraSeen=e;try{rnNewPlan(P,e);}catch(err){console.error('new plan',err);}}
   if(e<3)return;
-  const p=popN(),ups=buildings.filter(b=>b.upg).length,sites=buildings.filter(b=>b.build).length,cap=2+Math.floor(p/16);
+  const p=popN(),ups=buildings.filter(b=>b.upg).length,sites=buildings.filter(b=>b.build).length,cap=2+Math.floor(p/24);
   const stale=buildings.filter(b=>!b.build&&!b.upg&&!b.fire&&b!==G.center&&isObsolete(b,e));
   if(!stale.length)return;
   // 1. what has no modern form is pulled down (one at a time; never while the town is under raid or starving)
