@@ -181,7 +181,7 @@ function populateAnimals(seed,mult=1){animals.length=0;const r=mulberry(seed*13+
   const herd=(sp,n,size)=>{for(let h=0;h<n;h++){let x,z,ok=false;for(let t=0;t<40&&!ok;t++){if(sp!=='hare'&&sp!=='horse'&&forest.length){const f=forest[Math.floor(r()*forest.length)];x=f.x+(r()-.5)*14;z=f.z+(r()-.5)*14;}else{x=(r()-.5)*(N-20);z=(r()-.5)*(N-20);}ok=goodGround(x,z);}
     if(!ok)continue;const m=size[0]+Math.floor(r()*(size[1]-size[0]+1));for(let i=0;i<m;i++){const ax=x+(r()-.5)*6,az=z+(r()-.5)*6;if(goodGround(ax,az))spawnAnimal(sp,ax,az,{hx:x,hz:z});}}};
   herd('deer',Math.round(forest.length/900*mult+2*mult),[3,6]);herd('fox',Math.round(forest.length/2200*mult+mult),[1,2]);if(WORLD==='river'||WORLD==='dry'||WORLD==='lake')herd('horse',Math.round(mult*(WORLD==='dry'?3:2)),[3,6]);herd('boar',Math.round(forest.length/1600*mult),[2,4]);herd('hare',Math.round(14*mult),[2,4]);}
-function animalCaps(){const f=trees.filter(t=>t.t!==4&&t.t!==5).length;return {deer:12+f/120,boar:f/260,hare:30,fox:3+f/700,horse:WORLD==='blank'||WORLD==='high'?8:18};}
+function animalCaps(){const f=trees.filter(t=>t.t!==4&&t.t!==5).length;return {deer:10+f/200,boar:f/420,hare:26,fox:2+f/1100,horse:WORLD==='blank'||WORLD==='high'?8:18};}
 function breedAnimals(){const caps=animalCaps();for(const sp in SPEC){const list=animals.filter(a=>a.sp===sp);const n=list.length,cap=caps[sp];if(n<2||n>=cap)continue;
   const births=Math.min(Math.ceil(n*.08*(1-n/cap)),6);for(let i=0;i<births;i++){const p=pickA(list);if(goodGround(p.x+1,p.z+1))spawnAnimal(sp,p.x+(Math.random()-.5)*2,p.z+(Math.random()-.5)*2,{hx:p.hx,hz:p.hz,sc:.65});}}}
 // the land feeds only so many: a herd above what the woods can carry thins out (the ones furthest from cover go first)

@@ -233,8 +233,12 @@ function builderTask(v){
   setThought(v,G.wood<1&&nw>0?'Waiting for timber…':G.stone<1&&ns>0?'We need stone — is there a quarry?':'Waiting for materials…');
   const [x,z]=doorOf(site);goTo(v,x+(rnd()-.5)*3,z+(rnd()-.5)*3,vv=>wait(vv,.7,'idle'));
 }
-function chooseSite(v){const sites=buildings.filter(b=>siteProj(b));if(!sites.length)return null;
-  let best=null,bs=1e9;for(const s of sites){const n=G.vill.filter(o=>o.site===s.id&&o.job==='builder').length;const big=SITE_PRIORITY[s.type]||0,sc=Math.hypot(s.x-v.x,s.z-v.z)*.05+(G.center?Math.hypot(s.x-G.center.x,s.z-G.center.z)*.03:0)+n*1.5-(s.type==='house'?1:0)-(siteProj(s).blessed?2:0)+(s.upg?2:0)-(!s.upg&&n<(s.type==='castle'?4:2)?big:0);if(sc<bs){bs=sc;best=s;}}return best;}
+function chooseSite(v){const all=buildings.filter(b=>siteProj(b));if(!all.length)return null;
+  const cnts=new Map();for(const o of G.vill)if(o.site&&o.job==='builder')cnts.set(o.site,(cnts.get(o.site)||0)+1);
+  // a small job does not need a crowd: sites with room come first, so houses and fields are not left waiting while a camp has five hands
+  const room=s=>{const P=siteProj(s);const cap=s.type==='castle'?6:Math.max(1,Math.min(8,Math.ceil(P.work/3)));return (cnts.get(s.id)||0)<cap;};
+  let sites=all.filter(room);if(!sites.length)sites=all;
+  let best=null,bs=1e9;for(const s of sites){const n=cnts.get(s.id)||0;const big=SITE_PRIORITY[s.type]||0,sc=Math.hypot(s.x-v.x,s.z-v.z)*.05+(G.center?Math.hypot(s.x-G.center.x,s.z-G.center.z)*.03:0)+n*2-(s.type==='house'?1:0)-(siteProj(s).blessed?2:0)+(s.upg?2:0)-(!s.upg&&n<(s.type==='castle'?4:2)?big:0);if(sc<bs){bs=sc;best=s;}}return best;}
 // large civic works must not be starved of builders by the many small jobs of a big town
 const SITE_PRIORITY={castle:8,church:5,market:4,tavern:3,mill:3,smith:3,school:4,factory:5,station:5,powerplant:6,fusion:6,tower:2,mason:3,sawmill:3,shipyard:3};
 function siteName(b){return b.type==='house'?(b.upg?'house':'new home'):b.type==='camp'?(b.variant==='lumber'?'lumber camp':b.variant==='fish'?'fishing camp':'camp'):(BT[b.type]||b.type).toLowerCase();}

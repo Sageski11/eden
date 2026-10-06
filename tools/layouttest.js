@@ -34,8 +34,8 @@ const path = require('path');
     };
     window.__ageCheck = () => {
       const bad = {}, all = {}; let n = 0;
-      for (const b of buildings) { const a = sbAgeOf(b); const k = b.type + (b.level != null ? 'L' + b.level : ''); all[k] = (all[k] || 0) + 1; n++;
-        const min = typeof minAgeFor === 'function' ? minAgeFor(b, G.era) : 0; if (a < min) bad[k + '@' + a] = (bad[k + '@' + a] || 0) + 1; }
+      for (const b of buildings) { const a = bAge(b); const k = b.type + (b.level != null ? 'L' + b.level : ''); all[k] = (all[k] || 0) + 1; n++;
+        const min = minAgeFor(b, G.era); if (a < min) bad[k + '@' + a] = (bad[k + '@' + a] || 0) + 1; }
       return { era: G.era, n, bad, all };
     };
   });
@@ -54,6 +54,7 @@ const path = require('path');
     console.log('STAGE', stage, JSON.stringify({ era: c.era, pop: c.pop, n: c.n, plan: c.plan, sites: c.sites }), '\n  types', JSON.stringify(c.all), '\n  OBSOLETE', JSON.stringify(c.bad));
     if (Object.keys(c.bad).length) failed = true;
     if (SHOT) {
+      { const url = await page.evaluate(() => __planmap(G.center.x, G.center.z, 110)); require('fs').writeFileSync(path.join(SHOT, `map-${WORLD}-${SEED}-era${stage}.png`), Buffer.from(url.split(',')[1], 'base64')); }
       await page.evaluate(() => { document.getElementById('ghelp').classList.add('hidden'); document.body.classList.add('photo'); cam.tx = G.center.x; cam.tz = G.center.z; cam.dist = +(window.__shotDist || 150); cam.pitch = 1.45; cam.yaw = 0; setTime(12); PAUSED = false; G.paused = true; });
       await page.waitForTimeout(9000);
       await page.screenshot({ path: path.join(SHOT, `${WORLD}-${SEED}-era${stage}.png`), timeout: 120000 });
