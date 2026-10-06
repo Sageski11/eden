@@ -373,6 +373,7 @@ function newDay(){if(G.menu)return;
   for(let k=0;k<V;k++){const r=ROAD[k];if(r>0&&r<.4)ROAD[k]=r<.01?0:r*.9;}
   // fire risk
   if(typeof eventsDaily==='function')eventsDaily();
+  if(typeof lifeDaily==='function')lifeDaily();if(typeof cultureDaily==='function')cultureDaily();
   // harvest festival
   if(s===2&&dis===DPS){if(G.food>=p*5&&G.t-G.lastFest>40){startFestival(12,'harvest');chron(`The harvest was gathered. ${G.town} held a Harvest Festival!`,true);}else chron('A lean harvest. There was no festival this year.');}
   G.prodY={...G.prod};G.prod={food:0,wood:0,stone:0};
@@ -421,7 +422,7 @@ function hourTick(){
   if(G.raid&&G.raid.over&&G.t>G.raid.at+60)G.raid=null;
   // plague spread
   for(const v of G.vill)if(v.sick)for(const o of G.vill)if(!o.sick&&o.home===v.home&&rnd()<.012)o.sick=1;
-  prayerTick();devHourly();
+  prayerTick();devHourly();if(typeof lifeHourly==='function')lifeHourly();if(typeof cultureHourly==='function')cultureHourly();
   const h=Math.floor(hod());
   if(h>=6&&h<=18&&h%2===0)planTick();
   if(h%6===1){upgradeTick();modernizeTick();}if(h%3===0)stuckCheck();

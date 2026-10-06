@@ -110,11 +110,11 @@ function renderAgents(){
 function newVillager(o={}){const female=o.female!=null?o.female:rnd()<.5;
   const v=Object.assign({id:G.nextV++,kind:'v',female,name:pickA(female?NF:NM),fam:o.fam||pickA(FAM),age:18+Math.floor(rnd()*22),job:null,home:0,work:0,x:0,z:0,rot:0,
     path:null,pi:0,onArrive:null,timer:0,onDone:null,tick:null,anim:'idle',hidden:false,carry:null,amt:0,mood:60,thought:'',spouse:0,sick:0,hp:3,skin:pickA(SKIN),site:0,lowDays:0},o);
-  G.vill.push(v);return v;}
+  G.vill.push(v);if(typeof lifeOnNew==='function')lifeOnNew(v,o);return v;}
 const fullName=v=>`${v.name} ${v.fam}`;
 // grief felt by the town is shared out as it grows, so a big city is not crushed by ordinary deaths and fires
 function griefAdd(x){G.grief=Math.min(30,G.grief+x*clamp(28/Math.max(28,popN()),.1,1));}
-function removeVillager(v,why){v._gone=true;releaseRes(v);const i=G.vill.indexOf(v);if(i>=0)G.vill.splice(i,1);
+function removeVillager(v,why){v._gone=true;releaseRes(v);if(typeof lifeOnRemove==='function')lifeOnRemove(v,why);const i=G.vill.indexOf(v);if(i>=0)G.vill.splice(i,1);
   for(const o of G.vill)if(o.spouse===v.id)o.spouse=0;if(G.follow===v)G.follow=null;
   if(why==='died'){G.deaths++;griefAdd(3);}}
 function setThought(v,t){v.thought=t;}
@@ -163,12 +163,14 @@ function think(v){
   if(v._res&&(v.job!=='builder'||!bById(v._res.site)||!siteProj(bById(v._res.site))))releaseRes(v);
   if(v.mission)return missionStep(v);
   const h=hod(),home=bById(v.home);v._sb=v.inside||0;v.inside=0;
+  if(typeof lifeThink==='function'&&lifeThink(v,h,home))return;// lives.js: funerals, mourning, courting, a word with family (returns true if it took the villager)
   if(v.leaving){goTo(v,v.lx,v.lz,vv=>removeVillager(vv,'left'));return;}
   if(v.arriving){if(!G.center){wait(v,1);return;}const [x,z]=doorOf(G.center);goTo(v,x+(rnd()-.5)*3,z+(rnd()-.5)*3,vv=>{vv.arriving=false;assignHomes();assignJobs();});return;}
   if(G.raid&&G.raid.active&&v.job!=='guard'){goInside(v,home||G.center,.8,'hide','Bar the doors! Raiders!');return;}
   if(v.job==='guard'&&G.raid&&G.raid.active&&G.bandits.length)return guardFight(v);
   if(h>=21.5||h<5.2){goInside(v,home||G.center,sleepHours(),'sleep',home?'Home to bed.':'Another night in a tent…');return;}
   if(v.sick){goInside(v,home||G.center,2,'sick','I feel feverish…');return;}
+  if(typeof routineThink==='function'&&routineThink(v,h,home))return;// routines.js: the shape of the day, gatherings, chat, play (returns true if it took the villager)
   if(G.festival>0&&h>=9&&h<21.3&&v.age>=4)return festive(v);
   const ch=built('church')[0];
   if(isSunday()&&h>=8&&h<11.5&&ch&&v.job!=='guard'){goInside(v,ch,11.6-h,'church','Sunday service.');return;}
