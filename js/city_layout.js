@@ -299,6 +299,8 @@ function lyRoadTick(){const P=G.plan;if(!P||P.v<3||!G.center)return;const bh=lyB
 // ---------------------------------------------------------------- hooks
 {const _pt=planTick;planTick=function(){_pt.apply(this,arguments);try{lyLandTick();lyGradeTick();}catch(e){console.error('layout tick',e);}};}
 {const _ed=eraDaily;eraDaily=function(){_ed.apply(this,arguments);try{lyRoadTick();}catch(e){console.error('road tick',e);}};}
+// the folk's own small works (levelling a plot, quarry pits) are not changes of the land to re-plan around
+{const m0=tfMine,g0=tfGradeSite;tfMine=function(){LY.ign++;try{return m0.apply(this,arguments);}finally{LY.ign--;}};tfGradeSite=function(){LY.ign++;try{return g0.apply(this,arguments);}finally{LY.ign--;}};}
 {const _td=tfDecide;tfDecide=function(id,yes){const p=tfEnsure().pet.find(q=>q.id===id);if(p&&p.k==='terrace'&&G.plan)G.plan.tfAllow=!!yes;return _td.apply(this,arguments);};}
 {const _lt=loadTown;loadTown=function(td){_lt.apply(this,arguments);if(G.plan&&G.plan.v>=3)lyRelink(G.plan);};}
 
@@ -306,3 +308,4 @@ function lyRoadTick(){const P=G.plan;if(!P||P.v<3||!G.center)return;const bh=lyB
 function lyGate(t){const P=G.plan;if(!P||P.v<3)return null;const [dx,dz]=lyUnit(t[0]-P.C[0],t[1]-P.C[1]);let best=null,bs=-1e9;
   for(const s of P.streets){if(s.kind==='lane'&&s.hw<1.8)continue;for(const e of [s.pts[0],s.pts[s.pts.length-1]]){const ex=e[0]-P.C[0],ez=e[1]-P.C[1],al=ex*dx+ez*dz,side=Math.abs(-ex*dz+ez*dx),sc=al-side*.8;if(sc>bs&&wAt(e[0],e[1])<.05){bs=sc;best=e;}}}
   return best?[best[0],best[1]]:null;}
+{const lg=loadGod;loadGod=function(){const r=lg.apply(this,arguments);LY.rec=null;return r;};}// loading a game repaints the whole terrain: nothing for the plan to react to
