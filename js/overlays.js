@@ -469,21 +469,22 @@ function updateSigns(dt){
         if(lat<(a.scale.x+b.scale.x)*.5*.96&&vert<b.scale.y*1.15){b.position.y+=b.scale.y*1.25/Math.max(.3,cp);hit=true;}}if(!hit)break;}}}
 // ---------------------------------------------------------------- edicts: a few counsels the Spirit can give a settlement (they use the same levers the game already has)
 const EDICTS=[
-  {k:'ration',n:'Ration the stores',cost:25,days:6,fx:'The folk eat a quarter less. They resent it a little, unless they are starving, when they understand.',hint:()=>G.food<popN()*4?'Famine is near.':''},
-  {k:'volunteers',n:'Call for volunteers',cost:20,days:5,fx:'Neighbours lend a hand: building sites rise faster. Fields go untended (a little less food) and tired folk grumble.',hint:()=>buildings.filter(siteProj).length>=3?'Many sites are waiting.':''},
-  {k:'curfew',n:'Set a night watch',cost:15,days:8,fx:'Watchmen walk the lanes: fires start and spread less. The folk grumble at the early lamps.',hint:()=>(G.raids>0&&G.raidCool<dayN()+6)||seasonN()===1&&G.drought?'Raiders or a dry summer threaten.':''},
-  {k:'granary',n:'Open the granaries',cost:20,days:3,fx:'A feast for all: spirits soar, but the stores empty faster. It ends on its own if food runs low.',hint:()=>G.food>popN()*14?'The stores are overflowing.':''},
-  {k:'farmers',n:'Favour farmers and fishers',cost:30,days:8,fx:'The tithe of tools and timber goes to fields and nets: about 15% more food, a little less timber.',hint:()=>(G.prodY.food||0)<(G.cons||0)?'Food is being eaten faster than it grows.':''}];
+  {k:'ration',cost:25,days:6,n:['Ration the stores','Ration the stores','Ration the reserves'],fx:['The folk eat a quarter less. They resent it a little, unless they are starving, when they understand.','The folk eat a quarter less. They resent it a little, unless they are starving, when they understand.','Everyone draws a quarter less from the stores. They resent it a little, unless supplies are truly short.'],hint:()=>G.food<popN()*4?'Famine is near.':''},
+  {k:'volunteers',cost:20,days:5,n:['Call for volunteers','Call for volunteers','Call for volunteers'],fx:['Neighbours lend a hand: building sites rise faster. Fields go untended (a little less food) and tired folk grumble.','Neighbours and shift-workers lend a hand: building sites rise faster. Output suffers (a little less food) and tired folk grumble.','Volunteers crowd the building sites: they rise faster. Output elsewhere slips (a little less food) and fatigue shows.'],hint:()=>buildings.filter(siteProj).length>=3?'Many sites are waiting.':''},
+  {k:'curfew',cost:15,days:8,n:['Set a night watch','Set a night patrol','Set a night patrol'],fx:['Watchmen walk the lanes: fires start and spread less. The folk grumble at the early lamps.','Patrols walk the streets: fires start and spread less. The folk grumble at the early closing.','Patrols and sensors watch the streets: fires start and spread less. The folk grumble at the early curfew.'],hint:()=>(G.raids>0&&G.raidCool<dayN()+6)||seasonN()===1&&G.drought?'Raiders or a dry summer threaten.':''},
+  {k:'granary',cost:20,days:3,n:['Open the granaries','Open the warehouses','Release the reserves'],fx:['A feast for all: spirits soar, but the stores empty faster. It ends on its own if food runs low.','Cheap bread for all: spirits soar, but the stores empty faster. It ends on its own if food runs low.','Free rations for all: spirits soar, but the stores empty faster. It ends on its own if food runs low.'],hint:()=>G.food>popN()*14?'The stores are overflowing.':''},
+  {k:'farmers',cost:30,days:8,n:['Favour farmers and fishers','Favour farmers and fishers','Favour the farms and fisheries'],fx:['The tithe of tools and timber goes to fields and nets: about 15% more food, a little less timber.','Tools and timber are steered to fields and nets: about 15% more food, a little less timber.','Subsidies and materials are steered to farms and fisheries: about 15% more food, a little less timber.'],hint:()=>(G.prodY.food||0)<(G.cons||0)?'Food is being eaten faster than it grows.':''}];
+const eTier=()=>(G.era||0)>=7?2:(G.era||0)>=5?1:0,edName=D2=>D2.n[eTier()],edFx=D2=>D2.fx[eTier()];
 const edOn=k=>!!(G.edicts&&G.edicts[k]>G.t);
 window.ovEdict=edOn;
 PERKEYS.push('edicts');SAVE_PER.push('edicts');
 function proclaim(k){const D2=EDICTS.find(e=>e.k===k);if(!D2||G.phase!=='play')return;if(!G.edicts)G.edicts={};
-  if(edOn(k)){delete G.edicts[k];chron(`The Spirit lifted the edict: ${D2.n}.`);}
-  else{if(k==='granary'&&G.food<popN()*3){toast('The stores are too low to open the granaries');return;}if(!spend(D2.cost))return;G.edicts[k]=G.t+D2.days*24;chron(`By the Spirit’s counsel: ${D2.n}. It will last ${D2.days} days.`,true);sfx('chime');}
+  if(edOn(k)){delete G.edicts[k];chron(`The Spirit lifted the edict: ${edName(D2)}.`);}
+  else{if(k==='granary'&&G.food<popN()*3){toast('The stores are too low to open the granaries');return;}if(!spend(D2.cost))return;G.edicts[k]=G.t+D2.days*24;chron(`By the Spirit’s counsel: ${edName(D2)}. It will last ${D2.days} days.`,true);sfx('chime');}
   drawLaw(true);}
 window.ovProclaim=proclaim;
 {const _h=hourTick;hourTick=function(){_h.apply(this,arguments);const E=G.edicts;if(!E||G.menu)return;
-    for(const k in E)if(E[k]<=G.t){delete E[k];const D2=EDICTS.find(e=>e.k===k);if(D2)chron(`The edict “${D2.n}” lapsed.`);}
+    for(const k in E)if(E[k]<=G.t){delete E[k];const D2=EDICTS.find(e=>e.k===k);if(D2)chron(`The edict “${edName(D2)}” lapsed.`);}
     const p=popN(),cons=(G.cons||0)/24;
     if(E.ration)G.food+=cons*.25;
     if(E.granary){if(G.food<p*2){delete E.granary;chron('The granaries were closed: the stores ran too low.');}else G.food=Math.max(0,G.food-cons*.2);}
@@ -496,7 +497,7 @@ const law=document.createElement('div');law.id='ovLaw';law.className='panel hidd
 function drawLaw(force){if(!OV.lawOpen){law.classList.add('hidden');return;}law.classList.remove('hidden');
   let h=`<button class="mini x" data-w="close">×</button><h2>Counsel for ${esc2(G.town)}</h2><div class="sub">The folk heed the Spirit’s counsel for a time. Each costs Faith (you have ${Math.floor(G.faith)}), and each has a price of its own.</div>`;
   for(const D2 of EDICTS){const on=edOn(D2.k),left=on?Math.ceil((G.edicts[D2.k]-G.t)/24):0,hint=D2.hint();
-    h+=`<div class="wy"><i style="background:${on?'#3f8a4a':hint?'#d99a2b':'#b8aa86'}"></i><div style="flex:1"><div class="t">${D2.n}${on?` <span style="font-weight:400;color:#3f5f2a">· in force, ${left} day${left===1?'':'s'} left</span>`:''}</div><div class="w">${esc2(D2.fx)}</div>${hint&&!on?`<div class="a" style="font-style:italic">${esc2(hint)}</div>`:''}
+    h+=`<div class="wy"><i style="background:${on?'#3f8a4a':hint?'#d99a2b':'#b8aa86'}"></i><div style="flex:1"><div class="t">${edName(D2)}${on?` <span style="font-weight:400;color:#3f5f2a">· in force, ${left} day${left===1?'':'s'} left</span>`:''}</div><div class="w">${esc2(edFx(D2))}</div>${hint&&!on?`<div class="a" style="font-style:italic">${esc2(hint)}</div>`:''}
       <button data-e="${D2.k}">${on?'Lift the edict':`Proclaim — ${D2.cost} Faith, ${D2.days} days`}</button></div></div>`;}
   if(force||law._h!==h){law._h=h;law.innerHTML=h;for(const b of law.querySelectorAll('button[data-w]'))b.onclick=()=>toggleLaw();for(const b of law.querySelectorAll('button[data-e]'))b.onclick=()=>proclaim(b.dataset.e);}}
 function toggleLaw(){OV.lawOpen=!OV.lawOpen;if(OV.lawOpen&&OV.whyOpen)toggleWhy();drawLaw(true);syncBtns();}
