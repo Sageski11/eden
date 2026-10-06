@@ -39,6 +39,7 @@ const path = require('path');
       return { era: G.era, n, bad, all, pend };
     };
   });
+  if (process.env.PLANONLY) { const r = await page.evaluate(() => ({ tpl: G.plan.tpl, plots: G.plan.plots.length, streets: G.plan.streets.length, slope: G.plan.slope })); console.log('PLAN', WORLD, SEED, JSON.stringify(r)); if (SHOT) { const url = await page.evaluate(() => __planmap(G.center.x, G.center.z, 110)); require('fs').writeFileSync(path.join(SHOT, `plan-${WORLD}-${SEED}-${r.tpl}.png`), Buffer.from(url.split(',')[1], 'base64')); } await browser.close(); process.exit(0); }
   let failed = false;
   for (const stage of STAGES) {
     // advance one era at a time (forced), giving the folk DAYS days per era

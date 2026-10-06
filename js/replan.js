@@ -66,7 +66,7 @@ function renewTick(){
       if(b.type==='castle'&&(G.raids>0&&G.raid&&!G.raid.over))continue;
       const why=b.type==='castle'?`The old castle of ${G.town} was pulled down; its stones will raise the new quarter.`:b.type==='powerplant'?`The old power station was shut down and pulled down: fusion has replaced it.`:
         `The folk pulled down the old ${rnName(b)}; a yard of the new age will rise in the works district.`;
-      rnDemolish(b,why);G.failCool={};if(P&&P.v>=3){P.reT=Math.min(P.reT||0,G.t);try{lyRegen(P,null);}catch(err){console.error(err);}}return;}}
+      rnDemolish(b,why);G.failCool={};if(P&&P.v>=3)P.rgNeed=1;return;}}
   // 2. rebuild in the style of the age: oldest first, nearest the square first
   if(G.hap<30||ups>=cap)return;
   const c=G.center;stale.sort((a,b)=>bAge(a)-bAge(b)||Math.hypot(a.x-c.x,a.z-c.z)-Math.hypot(b.x-c.x,b.z-c.z));
@@ -96,4 +96,4 @@ function rnNewPlan(P,e){if(e<3)return;P.gen=(P.gen||0)+1;
 modernizeTick=function(){};
 {const _pt=planTick;planTick=function(){_pt.apply(this,arguments);try{renewTick();}catch(err){console.error('renew tick',err);}};}
 // the planner does not rebuild what the age has outgrown
-{const _pn=pickNeed;pickNeed=function(sites){const L=_pn(sites),e=G.era||0;return e>=6?L.filter(n=>n.type!=='castle'):L;};}
+{const _pn=pickNeed;pickNeed=function(sites){const L=_pn(sites),e=G.era||0;if(e<6)return L;const fus=buildings.some(o=>o.type==='fusion');return L.filter(n=>n.type!=='castle'&&!(n.type==='powerplant'&&(e>=7&&(fus||G.unl.computing))));};}

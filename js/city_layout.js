@@ -240,6 +240,7 @@ function lyLandTick(){const P=G.plan;if(!P||P.v<3||!G.center)return;
     if(!r.plots&&wAt(cx,cz)<.05&&Math.hypot(cx-G.center.x,cz-G.center.z)<lyRmax(P)+40&&!P.plots.some(q=>Math.hypot(q.x-cx,q.z-cz)<12))extendPlanToward(cx,cz);
     G.siteFail=null;G.failCool={};
     if(r.streets||r.plots)chron(`The elders redrew the plan where the land had changed: ${r.streets?r.streets+' new street'+(r.streets>1?'s':'')+' and ':''}${r.plots} new plots.`);}
+  if(P.rgNeed&&G.t>=(P.rgT||0)){P.rgNeed=0;P.rgT=G.t+24;const r=lyRegen(P,null);if(r.streets||r.plots)chron(`The freed land was re-plotted: ${r.plots} new plots${r.streets?' and '+r.streets+' street'+(r.streets>1?'s':''):''}.`);}
   if(G.t>=(P.growT||0)&&lyFreePlots(P)<4+Math.floor(popN()/45))lyGrow();}
 // ---------------------------------------------------------------- the folk level districts and cut terraces
 function lyFallow(x,z,r){for(const m of G.markers)if(m.k==='forbid'&&Math.hypot(m.x-x,m.z-z)<r)return false;return true;}
