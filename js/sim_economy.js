@@ -192,6 +192,7 @@ function evalSite(need,x,z,snap){
     default:s-=dC*.5;
   }
   if(snap&&snap.front)s+=7;if(snap&&snap.plot)s+=4;
+  if(G.plan&&G.plan.v>=3&&typeof lyScore==='function'){s=lyScore(type,x,z,s,snap);if(s==null)return null;}
   if(sampleArr(ROAD,x,z)>.2||sampleArr(ROAD,x+3,z)>.3||sampleArr(ROAD,x-3,z)>.3||sampleArr(ROAD,x,z+3)>.3||sampleArr(ROAD,x,z-3)>.3)s+=3;
   const mk={house:'settle',farm:'farm',church:'worship'}[type];
   if(mk)for(const m of markersOf(mk)){const d=Math.hypot(m.x-x,m.z-z);if(d<16)s+=30-d;}
@@ -211,7 +212,7 @@ function findSite(need){
     else{const a=rnd()*TAU;const d=type==='farm'?R0*.5+rnd()*(R0+16):type==='castle'?rnd()*(R0+34):type==='tower'?R0*.7+rnd()*16:type==='camp'?rnd()*(R0+28):type==='quarry'?rnd()*48:(type==='factory'||type==='station'||type==='powerplant'||type==='fusion')?R0*.5+rnd()*(R0+26):Math.sqrt(rnd())*(R0+4);x=c.x+Math.cos(a)*d;z=c.z+Math.sin(a)*d;}
     cands.push([x,z,null]);}
   if(G.plan){const P=G.plan;
-    if(type==='house'){const ps=P.plots.map(p=>{let nb=0;for(const o of buildings)if(o.type==='house'&&Math.abs(o.x-p.x)<6&&Math.abs(o.z-p.z)<6)nb++;return [p,p.d-nb*4+rnd()*6];}).sort((a,b)=>a[1]-b[1]);
+    if(P.v>=3)lyFillCands(need,cands);else if(type==='house'){const ps=P.plots.map(p=>{let nb=0;for(const o of buildings)if(o.type==='house'&&Math.abs(o.x-p.x)<6&&Math.abs(o.z-p.z)<6)nb++;return [p,p.d-nb*4+rnd()*6];}).sort((a,b)=>a[1]-b[1]);
       const orig=cands.slice();let n=0;cands.length=0;for(const [p] of ps){if(n>=36)break;if(blockedAt('house',p.x,p.z,p.rot,p.w,null))continue;cands.push([p.x,p.z,{rot:p.rot,w:p.w,d:+(3.2+rnd()*.5).toFixed(1),plot:p}]);n++;}
       if(n<5)for(const c of orig)cands.push([c[0],c[1],{rot:faceStreetRot(c[0],c[1],rnd()*TAU),w:+(3.3+rnd()*.8).toFixed(1),d:3.4}]);}
     else if(['church','market','tavern','smith','well','mason','sawmill','mill','fishmkt','farm','school'].includes(type)){
@@ -226,6 +227,7 @@ function findSite(need){
   if(type==='house'&&G.era>=1&&!G.plan){for(const o of buildings){if(o.type!=='house')continue;const w=Math.round((3.1+rnd()*.9)*10)/10;
     for(const side of [-1,1]){const off=(o.w+w)/2*side,cs=Math.cos(o.rot),sn=Math.sin(o.rot);cands.push([o.x+off*cs,o.z-off*sn,{o,rot:o.rot,w,d:o.d,size:rowSize(o)}]);}}}
   const ok=[];for(const [x,z,snap] of cands){const s=evalSite(need,x,z,snap);if(s==null)continue;ok.push({x,z,snap,s});}
+  if(!ok.length&&G.plan&&G.plan.v>=3&&typeof lyGrow==='function'&&(type==='house'||LY_ZONES[type])){lyGrow();return null;}
   if(!ok.length&&G.plan&&['market','tavern','church','mill','smith','mason','sawmill','school','well'].includes(type)){// frontage is full: build on the edge of town instead
     for(let i=0;i<160;i++){const a=rnd()*TAU,d=R0*.3+rnd()*(R0+28),x=c.x+Math.cos(a)*d,z=c.z+Math.sin(a)*d,snap={rot:faceStreetRot(x,z,rnd()*TAU)};const s=evalSite(need,x,z,snap);if(s!=null)ok.push({x,z,snap,s});}}
   ok.sort((a,b)=>b.s-a.s);const [cx,cz]=doorOf(c);
