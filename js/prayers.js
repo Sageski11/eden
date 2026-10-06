@@ -48,3 +48,7 @@ function prayerTick(){
 }
 // rain washes the air
 {const _d=eraDaily;eraDaily=function(){_d();if(G.rain>0&&(G.poll||0)>0)G.poll=Math.max(0,G.poll-6);};}
+// ---------------- faith is worth less as the ages go on: miracles cost more (income grows with the town; costs did not)
+const faithMul=()=>1+(G.era||0)*.4;
+{const _spend=spend;spend=function(c){return _spend(Math.round(c*faithMul()));};
+ const _gtd=godToolDefs;godToolDefs=function(){const defs=_gtd.apply(this,arguments),m=faithMul();return defs.map(([g,list])=>[g,list.map(t=>(typeof t[3]==='number'&&t[3]>0)?[t[0],t[1],t[2],Math.round(t[3]*m),t[4]]:t)]);};}
