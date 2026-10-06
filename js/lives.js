@@ -119,7 +119,7 @@ function chooseTrade(v){const jobs=new Map();for(const o of G.vill)if(o.job&&o.a
 function startApprentice(v){v.appr=1;const job=chooseTrade(v);if(!job)return;
   const masters=G.vill.filter(o=>o.job===job&&o.age>=18&&!o.leaving&&!o.arriving),par=(v.parents||[]).map(vid).filter(Boolean);
   let m=par.find(p=>p.job===job)||null;if(!m&&masters.length){let bd=1e9;for(const o of masters){const d=Math.hypot(o.x-v.x,o.z-v.z);if(d<bd){bd=d;m=o;}}}
-  v.job=job;v.work=m?m.work:0;
+  v.trade=job;
   const role=(typeof JOBN!=='undefined'&&JOBN[job]||job).toLowerCase(),fam=m&&par.includes(m);
   if(m)lifeRel(v,m,10,true);lifeAddMemory(v,'apprenticed',m?`Began learning the ${role}'s trade from ${m.name}.`:`Chose the ${role}'s trade.`,3);
   storyEvent('apprentice',{who:m?[v.id,m.id]:[v.id],txt:!m?`${v.name} ${v.fam}, fourteen, has chosen the ${role}'s trade.`:fam?`${v.name} ${v.fam}, fourteen, is learning the ${role}'s trade from ${v.female?'her':'his'} ${m.female?'mother':'father'}, ${m.name}.`:`${v.name} ${v.fam}, fourteen, has become ${m.name}'s apprentice, to learn the ${role}'s trade.`});}
@@ -464,7 +464,7 @@ function lifeSummary(v){if(!v)return null;idm();const l=L(),kin=kinOf(v);
   if(rivals.length)why.push(`At odds with ${rivals[0].first}`);if(hasT(v,'doubtful')&&G.dev&&G.dev.doubt>40)why.push('Doubting the Spirit');
   const ms=memSum(v);if(ms>=5)why.push('Warm memories');else if(ms<=-5)why.push('Heavy memories');if(G.hap>=70)why.push('The town is thriving');else if(G.hap<40)why.push('The town is struggling');
   const mem=(v.mem||[]).slice().sort((a,b)=>b.day-a.day).map(x=>({k:x.k.replace(/\d+$/,''),day:x.day,txt:x.txt,w:x.w}));
-  return {id:v.id,name:fullName(v),first:v.name,fam:v.fam,female:!!v.female,age:Math.floor(v.age),born:v.born,job:v.job,
+  return {id:v.id,name:fullName(v),first:v.name,fam:v.fam,female:!!v.female,age:Math.floor(v.age),born:v.born,job:v.job,trade:v.trade||null,
     traits:(v.traits||[]).slice(),traitText:(v.traits||[]).map(t=>LT_TXT[t]||t),
     family:{spouse,parents,children,siblings:sib,courting:v.court?ref(vid(v.court)):null},
     friends:friends.slice(0,8),rivals:rivals.slice(0,5),memories:mem,mood:{value:m,label:moodLabel(m,v),why},grief:Math.round(v.grf||0),

@@ -188,7 +188,7 @@ const SAVE_SHARED=['t','speed','faith','phase','realm','seed','world','sun','sno
 const SAVE_PER=['food','wood','stone','era','hap','markers','prayers','town','raids','births','deaths','arrivals','raidCool','plagueCool','harvest','firstHut','wantHouse','prayerCool','lastFest','plan','sk','unl','fish','boatsBuilt','boatWork','dev','tf','net','poll','waterDist'];
 const _pickK=(o,ks)=>{const r={};for(const k of ks)r[k]=o[k];return r;};
 function serializeTown(){return {bl:buildings.map(b=>_pickK(b,['id','type','x','z','rot','manual','seed','w','d','level','variant','build','upg','forFam','stock','blessedUp','blessUntil','flooded','cw','cs'])),
-  vill:G.vill.filter(v=>!v.leaving).map(v=>_pickK(v,['id','name','fam','female','age','job','home','work','x','z','spouse','parents','sick','skin','site','hp','arriving','look','cult','prophet','seer','born','traits','rel','mem','grf','lost','court','appr','watch','hero'])),
+  vill:G.vill.filter(v=>!v.leaving).map(v=>_pickK(v,['id','name','fam','female','age','job','home','work','x','z','spouse','parents','sick','skin','site','hp','arriving','look','cult','prophet','seer','born','traits','rel','mem','grf','lost','court','appr','trade','watch','hero'])),
   G:_pickK(G,SAVE_PER),center:G.center?G.center.id:0};}
 function serializeGod(){const s=snapshot();
   const towns=TOWNS.list.map((t,i)=>Object.assign(withSettlement(i,serializeTown),{dead:!!t.dead}));

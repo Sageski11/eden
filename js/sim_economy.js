@@ -94,7 +94,7 @@ function assignJobs(){
   else slots.push(...woodMin,...bs.slice(0,2),...s1,...bs.slice(2),...food1,...s2,...wood2,...(needStone?[]:stoneS),...rest,...food2);
   const pool=ad.slice();slots.length=Math.min(slots.length,pool.length);const fill=new Array(slots.length).fill(null);
   slots.forEach((s,i)=>{const j=pool.findIndex(v=>v.job===s.job&&(v.work||0)===(s.b?s.b.id:0));if(j>=0){fill[i]=pool[j];pool.splice(j,1);}});
-  slots.forEach((s,i)=>{if(fill[i]||!pool.length)return;let j=pool.findIndex(v=>v.job===s.job);if(j<0)j=pool.findIndex(v=>!v.job||v.job==='forager');if(j<0)j=0;fill[i]=pool[j];pool.splice(j,1);});
+  slots.forEach((s,i)=>{if(fill[i]||!pool.length)return;let j=pool.findIndex(v=>v.job===s.job);if(j<0)j=pool.findIndex(v=>v.trade===s.job&&(!v.job||v.job==='forager'));/*lives.js: an apprentice is offered the trade they chose first*/if(j<0)j=pool.findIndex(v=>!v.job||v.job==='forager');if(j<0)j=0;fill[i]=pool[j];pool.splice(j,1);});
   slots.forEach((s,i)=>{const v=fill[i];if(!v)return;if(v.job!==s.job){v.site=0;}v.job=s.job;v.work=s.b?s.b.id:0;});
   for(const v of pool){v.work=0;v.job=(sites&&G.food>p*4)?'builder':'forager';}
   for(const v of G.vill)if(v.age<14||v.age>64){v.job=null;v.work=0;}
