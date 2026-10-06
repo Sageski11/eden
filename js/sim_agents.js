@@ -190,7 +190,7 @@ function doJob(v){
 }
 const seasonFood=()=>[.9,1.15,1.4,0][seasonN()];
 function workMul(){return (hasBuilt('smith')?1.2:1)*(.85+G.hap/100*.3)*(typeof eraMul==='function'?eraMul():1)*(typeof waterMul==='function'?waterMul():1);}
-function farmRate(f){if(!f||f.build)return 0;let r=.64*seasonFood()*(G.unl.rotation?1.2:1)*(1+(skLvl('farm')-1)*.04)*(G.sun>0?1.25:1)*(G.snow>0?0:1);if(f._mill)r*=1.3;if(G.harvest>0)r*=1.5;if(G.drought)r*=.6;if(wAt(f.x,f.z)>.15)r=0;return r*workMul();}
+function farmRate(f){if(!f||f.build)return 0;let r=.64*seasonFood()*(G.unl.rotation?1.2:1)*(1+(skLvl('farm')-1)*.04)*(G.sun>0?1.25:1)*(G.snow>0?0:1);if(f._mill)r*=1.3;if(G.harvest>0||f.blessUntil>G.t)r*=1.5;if(G.drought)r*=.6;if(wAt(f.x,f.z)>.15)r=0;return r*workMul();}
 function storeFor(m,x,z){let best=G.center,bd=G.center?Math.hypot(G.center.x-x,G.center.z-z):1e9;
   for(const b of buildings){if(b.build)continue;const ok=(m==='wood'&&b.type==='camp'&&b.variant==='lumber')||(m==='stone'&&b.type==='quarry');if(!ok)continue;const d=Math.hypot(b.x-x,b.z-z);if(d<bd){bd=d;best=b;}}return best;}
 function siteProj(b){return b.build||b.upg;}

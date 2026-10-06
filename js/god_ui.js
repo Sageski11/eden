@@ -38,7 +38,7 @@ function castPower(id){
   if(devCast(id)){updateUI(true);return;}
   const c=G.center||{x:0,z:0};
   if(id==='p:rain'){if(G.rain>12){toast('It is already raining');return;}if(!spend(35))return;G.rain=24;G.rainI=1;chron(seasonN()===3?'The Spirit sent snow over the valley.':'The Spirit sent rain over the valley.');sfx('thunder');}
-  else if(id==='p:harvest'){if(seasonN()===3){toast('Nothing grows in winter');return;}if(G.harvest>0){toast('The harvest is already blessed');return;}if(!spend(50))return;G.harvest=24*(DPS-dayInSeason()+1);chron('The Spirit blessed the fields. The crops grew tall and golden.',true);for(const f of built('farm'))sparkle(f.x,f.z,[1,.85,.3]);}
+  else if(id==='p:harvest'){if(seasonN()===3){toast('Nothing grows in winter');return;}if(G.harvest>0){toast(`The harvest is already blessed (${Math.ceil(G.harvest/24)} days left)`);return;}if(!spend(50))return;G.harvest=24*(DPS-dayInSeason()+1);chron('The Spirit blessed the fields. The crops grew tall and golden.',true);for(const f of built('farm'))sparkle(f.x,f.z,[1,.85,.3]);}
   else if(id==='p:heal'){if(!G.vill.some(v=>v.sick)){toast('No one is sick');return;}if(!spend(40))return;for(const v of G.vill){if(v.sick)sparkle(v.x,v.z,[.6,1,.7]);v.sick=0;}chron('The Spirit lifted the sickness.',true);G.joy+=5;}
   else if(id==='p:festival'){if(G.festival>0){toast('The festival is already under way');return;}if(G.t-G.lastFest<48){toast('The folk are still tired from the last festival');return;}if(!spend(60))return;startFestival(10,'cast');chron('By the Spirit’s blessing, a festival was held in '+G.town+'.',true);}
   sfx('chime');updateUI(true);
@@ -47,14 +47,17 @@ let hoverV=null,startAuto=0;
 function godClick(e){
   if(G.phase==='pick'){if(hover)chooseStart(hover.x,hover.z);return true;}
   if(tool.startsWith('m:')){markerClick(tool.slice(2));return true;}
-  if(tool.startsWith('w:')){if(!hover)return true;if(!goodGround(hover.x,hover.z)){toast('Animals need dry, gentle ground');return true;}if(G.phase!=='shape'&&!spend(tool==='w:hare'?8:tool==='w:fox'?10:tool==='w:horse'?25:20))return true;
+  if(tool.startsWith('w:')){if(!hover)return true;if(!goodGround(hover.x,hover.z)){toast('Animals need dry, gentle ground');return true;}{const sp0=tool.slice(2),n0=sp0==='fox'?2:sp0==='boar'?3:5,cap=animalCaps()[sp0]||0;if(animals.filter(a=>a.sp===sp0).length+n0>cap*1.15+1){toast(`The land cannot feed more ${SPEC[sp0].n.toLowerCase()} — it is already full of them`);return true;}}
+if(G.phase!=='shape'&&!spend(tool==='w:hare'?8:tool==='w:fox'?10:tool==='w:horse'?25:20))return true;
     const sp=tool.slice(2),n=sp==='deer'?5:sp==='boar'?3:sp==='fox'?2:sp==='horse'?5:5;for(let i=0;i<n;i++)spawnAnimal(sp,hover.x+(rnd()-.5)*5,hover.z+(rnd()-.5)*5,{hx:hover.x,hz:hover.z});sparkle(hover.x,hover.z,[.8,1,.7]);
     toast(`${SPEC[sp].n}: ${n} released`);if(G.noGame)G.noGame=false;envRep=null;return true;}
   if(tool==='meteor'){if(!hover)return true;if(G.phase!=='shape'&&!spend(150))return true;launchMeteor(hover.x,hover.z);return true;}
   if(tool==='bless'){const b=hoverB;if(!b){toast('Click a building to bless it');return true;}
     if(b.fire){if(!spend(20))return true;b.fire=null;realize(b);chron(`The Spirit quenched the fire at the ${b.info.name}.`);}
     else if(siteProj(b)){const P=siteProj(b);if(P.blessed){toast('Already blessed');return true;}if(!spend(20))return true;P.blessed=true;for(const m of ['wood','stone']){P.need[m]=Math.max(P.have[m]+P.inb[m],Math.ceil(P.need[m]*.6));}toast('Blessed: builders work faster');}
-    else{if(b.blessedUp){toast('Already blessed');return true;}if(!spend(20))return true;b.blessedUp=true;G.joy=Math.min(25,G.joy+2);toast(b.type==='house'?'Blessed: this home will be improved next':'Blessed: the folk rejoice');}
+    else if(b.type==='farm'){if(b.blessUntil>G.t){toast(`This field is blessed already (${Math.ceil((b.blessUntil-G.t)/24)} days left)`);return true;}if(!spend(20))return true;b.blessUntil=G.t+72;G.joy=Math.min(25,G.joy+1);toast('Blessed: this field will give more for three days');}
+    else if(b.type==='house'){if(b.blessedUp){toast('This home is already chosen to be improved next');return true;}if(!spend(20))return true;b.blessedUp=true;G.joy=Math.min(25,G.joy+2);toast('Blessed: this home will be improved next');}
+    else{if(b.blessUntil>G.t){toast(`Already blessed (${Math.ceil((b.blessUntil-G.t)/24)} days left)`);return true;}if(!spend(20))return true;b.blessUntil=G.t+48;G.joy=Math.min(25,G.joy+2);toast('Blessed: the folk rejoice');}
     sparkle(b.x,b.z,[1,.9,.5]);sfx('chime');godInspector();return true;}
   if(tool==='smite'){if(!hover)return true;if(!spend(15))return true;smite(hover.x,hover.z);return true;}
   if(tool==='spring'){if(!hover)return true;if(shift){let bi=-1,bd=6;springs.forEach((s,i)=>{const d=Math.hypot(s.x-hover.x,s.z-hover.z);if(d<bd){bd=d;bi=i;}});if(bi>=0){springs.splice(bi,1);refreshSprings();toast('Spring sealed');}return true;}
@@ -184,7 +187,7 @@ function autoFindSpot(lim){let best=null,bs=-1e9;for(let i=0;i<600;i++){const x=
 const SAVE_SHARED=['t','speed','faith','phase','realm','seed','world','sun','snow','storm','rainbow','lastRain','rain','rainI','drought','snowmelt','chron','nextV','openRain','nbDone','nbAt'];
 const SAVE_PER=['food','wood','stone','era','hap','markers','prayers','town','raids','births','deaths','arrivals','raidCool','plagueCool','harvest','firstHut','wantHouse','prayerCool','lastFest','plan','sk','unl','fish','boatsBuilt','boatWork','dev','tf','net','poll','waterDist'];
 const _pickK=(o,ks)=>{const r={};for(const k of ks)r[k]=o[k];return r;};
-function serializeTown(){return {bl:buildings.map(b=>_pickK(b,['id','type','x','z','rot','manual','seed','w','d','level','variant','build','upg','forFam','stock','blessedUp','flooded','cw','cs'])),
+function serializeTown(){return {bl:buildings.map(b=>_pickK(b,['id','type','x','z','rot','manual','seed','w','d','level','variant','build','upg','forFam','stock','blessedUp','blessUntil','flooded','cw','cs'])),
   vill:G.vill.filter(v=>!v.leaving).map(v=>_pickK(v,['id','name','fam','female','age','job','home','work','x','z','spouse','parents','sick','skin','site','hp','arriving','look','cult','prophet','seer'])),
   G:_pickK(G,SAVE_PER),center:G.center?G.center.id:0};}
 function serializeGod(){const s=snapshot();

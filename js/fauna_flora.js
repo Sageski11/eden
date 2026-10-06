@@ -184,6 +184,15 @@ function populateAnimals(seed,mult=1){animals.length=0;const r=mulberry(seed*13+
 function animalCaps(){const f=trees.filter(t=>t.t!==4&&t.t!==5).length;return {deer:12+f/120,boar:f/260,hare:30,fox:3+f/700,horse:WORLD==='blank'||WORLD==='high'?8:18};}
 function breedAnimals(){const caps=animalCaps();for(const sp in SPEC){const list=animals.filter(a=>a.sp===sp);const n=list.length,cap=caps[sp];if(n<2||n>=cap)continue;
   const births=Math.min(Math.ceil(n*.08*(1-n/cap)),6);for(let i=0;i<births;i++){const p=pickA(list);if(goodGround(p.x+1,p.z+1))spawnAnimal(sp,p.x+(Math.random()-.5)*2,p.z+(Math.random()-.5)*2,{hx:p.hx,hz:p.hz,sc:.65});}}}
+// the land feeds only so many: a herd above what the woods can carry thins out (the ones furthest from cover go first)
+function cullAnimals(){const caps=animalCaps();let gone=0;
+  for(const sp in SPEC){const list=animals.filter(a=>a.sp===sp),cap=Math.ceil((caps[sp]||0)*1.1);let over=list.length-cap;if(over<=0)continue;
+    over=Math.min(over,1+Math.floor(over*.3));
+    for(let k=0;k<over;k++){let worst=null,wd=-1;for(let q=0;q<8;q++){const a=list[Math.floor(Math.random()*list.length)];if(!a||a._cull)continue;let near=0;for(const t of trees){if(t.t===4||t.t===5)continue;if(Math.abs(t.x-a.x)<14&&Math.abs(t.z-a.z)<14)near++;}const lone=100-near;if(lone>wd){wd=lone;worst=a;}}
+      if(worst){worst._cull=1;const i=animals.indexOf(worst);if(i>=0){animals.splice(i,1);gone++;}}}}
+  return gone;}
+// game within reach of the lodges (what the hunters can actually take)
+function huntableTotal(){const L=buildings.filter(b=>b.type==='lodge'&&!b.build);if(!L.length)return 99;let n=0;for(const a of animals){if(SPEC[a.sp].nohunt)continue;for(const l of L)if(Math.hypot(a.x-l.x,a.z-l.z)<75){n++;break;}}return n;}
 // animals notice people: villagers are bucketed into 8-unit cells once per update instead of scanned per animal
 let PH=null;const _pk=(i,j)=>(i+64)*256+(j+64);
 function buildPeopleHash(){const m=new Map();const list=typeof allVill==='function'?allVill():((typeof G!=='undefined'&&G.vill)?G.vill:[]);

@@ -16,7 +16,7 @@ function startSite(type,x,z,rot,o={}){
   if(['church','castle','smith','mill','tavern','market','quarry','well'].includes(type))chron(`The folk began raising a ${siteName(b)}.`);
   return b;
 }
-function startUpgrade(b,to){b.cw=skLvl('work');b.cs=skLvl('stone');const [w,s,wk]=costOf(b.type,b.variant,to);b.upg={to,need:{wood:w,stone:s},have:{wood:0,stone:0},inb:{wood:0,stone:0},work:wk,done:0,blessed:false};realize(b);}
+function startUpgrade(b,to){b.blessedUp=false;b.cw=skLvl('work');b.cs=skLvl('stone');const [w,s,wk]=costOf(b.type,b.variant,to);b.upg={to,need:{wood:w,stone:s},have:{wood:0,stone:0},inb:{wood:0,stone:0},work:wk,done:0,blessed:false};realize(b);}
 function completeSite(b){
   const wasUp=!!b.upg,wasHall=b.type==='hall';
   BVER++;if(b.build){b.build=null;}else if(b.upg){b.level=b.upg.to;b.upg=null;}
@@ -80,7 +80,7 @@ function assignJobs(){
   const sites=buildings.filter(siteProj).length,winter=seasonN()===3,foodLow=G.food<p*5;
   const slots=[],food=[],other=[];
   for(const b of buildings){if(b.build)continue;const k=slotKey(b),sj=SLOTJ[k];if(!sj)continue;if(k==='hall'&&!b.level)continue;
-    let n=sj[1];if(k==='farm'&&winter)n=0;if(k==='lumber')n=G.wood>260?0:G.wood>140?1:G.wood<60?3:n;if(k==='quarry'&&G.stone>220)n=1;if(k==='tower'&&!(G.raids||p>=40))n=1;
+    let n=sj[1];if(k==='lodge'&&G.era>=5)n=0;if(k==='farm'&&winter)n=0;if(k==='lumber')n=G.wood>260?0:G.wood>140?1:G.wood<60?3:n;if(k==='quarry'&&G.stone>220)n=1;if(k==='tower'&&!(G.raids||p>=40))n=1;
     if(k==='dock'&&!G.unl.boats)n=1;for(let i=0;i<n;i++)(k==='farm'||k==='fish'||k==='dock'||k==='lodge'?food:other).push({b,job:sj[0]});}
   const nb=sites?(G.wood<6&&G.stone<6?1:clamp(Math.ceil(ad.length*.3),1,2+sites*2)):0;const bs=[];for(let i=0;i<nb;i++)bs.push({b:null,job:'builder'});
   const foodNeed=Math.ceil((Math.ceil(p/2.3)+1)*(G.food<p*3?1.35:G.food>p*12?.6:G.food>p*7?.85:1));
@@ -297,14 +297,14 @@ const PRAYERS={
   water:{t:'We thirst! Grant us fresh water near our homes.',how:'Pour water or open a Spring near the town.',when:()=>popN()>=4&&G.center&&nearWater(G.center.x,G.center.z,14)>=14&&!hasBuilt('well'),ok:()=>(G.center&&nearWater(G.center.x,G.center.z,14)<14)||hasBuilt('well'),r:40,d:4},
   food:{t:'Our stores are almost empty. Help us feed the children!',how:'Bless the harvest, or shape flat fields near water.',when:()=>popN()>=5&&G.food<popN()*1.5,ok:()=>G.food>=popN()*4,r:30,d:4},
   rain:{t:'The fields wither in the drought. Send us rain!',how:'Cast Rain.',when:()=>G.drought,ok:()=>G.rain>0||!G.drought,r:35,d:3,urgent:1},
-  harvest:{t:'Bless our harvest, Spirit of the valley.',how:'Cast Bountiful Harvest.',when:()=>seasonN()===1&&dayInSeason()>=2&&G.harvest<=0&&cnt('farm')>=1,ok:()=>G.harvest>0,r:25,d:4},
+  harvest:{t:'Bless our harvest, Spirit of the valley.',how:'Cast Bountiful Harvest.',when:()=>seasonN()===1&&dayInSeason()>=2&&G.harvest<=0&&cnt('farm')>=1&&!buildings.some(b=>b.type==='farm'&&b.blessUntil>G.t),ok:()=>G.harvest>0||buildings.some(b=>b.type==='farm'&&b.blessUntil>G.t),r:25,d:4},
   trees:{t:'The woods are bare. Let the forest grow again!',how:'Grow forest near the town.',when:()=>G.noTrees||(G.center&&!G.center.build&&trees.filter(t=>t.t!==4&&t.t!==5&&Math.hypot(t.x-G.center.x,t.z-G.center.z)<60).length<15),ok:()=>{const l=built('camp').find(b=>b.variant==='lumber')||G.center;return l&&trees.filter(t=>t.t!==4&&t.t!==5&&Math.hypot(t.x-l.x,t.z-l.z)<40).length>=25;},r:35,d:5},
   land:{t:'We can find no good land for a new {X}.',how:'Flatten dry ground near town, or plant a banner.',when:()=>G.siteFail&&G.t-G.siteFail.since>10,ok:()=>!G.siteFail,r:30,d:5},
   worship:{t:'Show us where to raise a house of worship.',how:'Plant a “Worship here” banner.',when:()=>popN()>=15&&!cnt('church')&&G.era>=1&&!markersOf('worship').length,ok:()=>markersOf('worship').length>0||cnt('church')>0,r:20,d:6},
   fire:{t:'Fire! The {X} is burning!',how:'Cast Rain or pour water on it.',when:()=>buildings.some(b=>b.fire),ok:()=>!buildings.some(b=>b.fire),r:20,d:1,urgent:1},
   flood:{t:'The waters rise into our homes!',how:'Drain the water or raise the ground.',when:()=>G.flooded>0,ok:()=>G.flooded===0,r:30,d:3,urgent:1},
   protect:{t:'Raiders are coming! Protect us, Spirit!',how:'Smite them, wall them off with cliffs or water.',when:()=>G.raid&&!G.raid.over,ok:()=>G.raid&&G.raid.over&&G.raid.losses<=1,r:60,d:4,urgent:1},
-  game:{t:'The game has fled the woods. Our hunters return empty-handed.',how:'Release a herd, or grow forest near the lodge.',when:()=>G.noGame&&cnt('lodge')>0,ok:()=>!G.noGame,r:30,d:5},
+  game:{t:'The game has fled the woods. Our hunters return empty-handed.',how:'Release a herd, or grow forest near the lodge.',when:()=>G.noGame&&cnt('lodge')>0&&huntableTotal()<2,ok:()=>!G.noGame||huntableTotal()>=3,r:30,d:5},
   fished:{t:'The waters are fished out. Our nets come up empty.',how:'Widen the lake with water, or wait for the fish to return.',when:()=>(G.fish||1)<.3,ok:()=>(G.fish||1)>.55,r:30,d:6},
   heal:{t:'A sickness spreads among us. Heal us!',how:'Cast Heal.',when:()=>G.vill.some(v=>v.sick),ok:()=>!G.vill.some(v=>v.sick),r:40,d:3,urgent:1},
 };
@@ -330,7 +330,7 @@ function newDay(){if(G.menu)return;
     if(G.era>=3&&d>=G.plagueCool&&rnd()<.12){startPlague();}
   }
   if(SHARED&&G.snowmelt>0)G.snowmelt--;
-  G.noTrees=false;if(SHARED){growForest();breedAnimals();}if(G.center)G.env=envScan(G.center.x,G.center.z,70);G.fish=Math.min(1,(G.fish||1)+.07);if(G.noGame&&animals.filter(a=>G.center&&Math.hypot(a.x-G.center.x,a.z-G.center.z)<80).length>6)G.noGame=false;
+  G.noTrees=false;if(SHARED){growForest();breedAnimals();cullAnimals();}if(G.center)G.env=envScan(G.center.x,G.center.z,70);G.fish=Math.min(1,(G.fish||1)+.07);if(G.noGame&&huntableTotal()>=3)G.noGame=false;
   const mills=built('mill');for(const f of buildings)if(f.type==='farm')f._mill=mills.some(m=>Math.hypot(m.x-f.x,m.z-f.z)<26);
   // aging, deaths
   for(const v of G.vill.slice()){if(v.arriving||v.leaving)continue;v.age+=.2;
