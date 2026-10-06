@@ -76,7 +76,8 @@ function lyShoreN(x,z,R){// smoothed outward normal to the water around (x,z) an
   if(!n)return null;const l=Math.hypot(sx,sz);if(l<1e-9)return null;return {d:dm,nx:sx/l,nz:sz/l};}
 function lySmooth(pts,k,passes){let a=pts;for(let p=0;p<passes;p++){a=a.map((q,i)=>{let sx=0,sz=0,c=0;for(let j=Math.max(0,i-k);j<=Math.min(a.length-1,i+k);j++){sx+=a[j][0];sz+=a[j][1];c++;}return [sx/c,sz/c];});}return a;}
 function lyShoreWalk(x,z,dx,dz,len,target){const pts=[[x,z]];let hx=dx,hz=dz;
-  for(let L=0;L<len;L+=2){const wn=lyShoreN(x,z,target+22);
+  for(let L=0;L<len;L+=2){if(hx*dx+hz*dz<-.2)break;// the street does not curl back on itself
+    const wn=lyShoreN(x,z,target+22);
     if(wn){let tx=-wn.nz,tz=wn.nx;if(tx*hx+tz*hz<0){tx=-tx;tz=-tz;}const e=clamp((wn.d-target)*.3,-1,1);hx=hx*.6+tx*.4;hz=hz*.6+tz*.4;const hl=Math.hypot(hx,hz);hx/=hl;hz/=hl;x+=hx*2+wn.nx*e;z+=hz*2+wn.nz*e;}
     else{x+=hx*2;z+=hz*2;}pts.push([x,z]);}
   return pts;}

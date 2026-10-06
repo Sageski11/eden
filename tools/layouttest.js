@@ -17,7 +17,9 @@ const path = require('path');
   await page.goto('file://' + path.resolve(__dirname, '../Eden.html')); await page.waitForTimeout(2500);
   await page.evaluate(() => document.getElementById('tNew').click()); await page.waitForTimeout(800);
   await page.evaluate(([w, sd]) => { setupWorld = w; setupSeed = sd; document.getElementById('setupGo').click(); }, [WORLD, SEED]); await page.waitForTimeout(2000);
-  await page.evaluate((t) => { window.LY_FORCE = t; [...document.querySelectorAll('#prayers button')].find(x => /settlers/i.test(x.textContent)).click(); autoChooseStart(); }, process.env.TPL || '');
+  await page.evaluate(([t, slope, ang]) => { window.LY_FORCE = t;
+    if (slope) { for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) { const x = i - HALF, z = j - HALF, k = j * S + i; H[k] = 12 + slope * (x * Math.cos(ang) + z * Math.sin(ang)) + Math.sin(x * .09) * .4 + Math.cos(z * .11) * .4; W[k] = 0; } refreshTerrain(); trees.length = 0; treesDirty = true; } // SLOPE=0.2 ANG=2.2: a uniform hillside on a blank world
+    [...document.querySelectorAll('#prayers button')].find(x => /settlers/i.test(x.textContent)).click(); if (slope) chooseStart(0, 0); else autoChooseStart(); }, [process.env.TPL || '', +(process.env.SLOPE || 0), +(process.env.ANG || 2.2)]);
   await page.waitForTimeout(800);
   await page.evaluate(() => {
     PAUSED = true; checkEra = function () { }; // the test moves the ages itself
