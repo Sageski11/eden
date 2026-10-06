@@ -283,7 +283,7 @@ function schedule(t){
   if(!OV.job&&(OV.force||t-OV.lastDone>OV.every)){const m=OV.mode,st=m==='svc'||m==='poll'||m==='land'||m==='dist'||m==='plan',sg=st?jobSig(m):null;
     if(st&&!OV.force&&sg===OV.sig&&t-OV.lastFull<20)OV.lastDone=t;// nothing that this picture depends on has changed: keep it
     else{OV.job=jobFor(m);OV.force=false;OV.jobMode=m;OV.sig=sg;OV.lastFull=t;}}
-  if(OV.job){const t0=performance.now();let r;try{do{r=OV.job.next();}while(!r.done&&performance.now()-t0<2);}catch(err){console.error('overlay',err);OV.job=null;OV.lastDone=t;return;}
+  if(OV.job){const t0=performance.now();let r;try{do{r=OV.job.next();}while(!r.done&&performance.now()-t0<1.6);}catch(err){console.error('overlay',err);OV.job=null;OV.lastDone=t;return;}
     if(r.done){OV.job=null;OV.lastDone=t;OV.done=(OV.done||0)+1;upload();}}}
 // ---------------------------------------------------------------- 'Why is nothing happening?' diagnostics
 const HAPTXT={Food:['The stores are running low.','Farms, fishers and hunters feed the town; bless the harvest or plant a Farm banner on flat ground near water.'],
