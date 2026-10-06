@@ -96,4 +96,5 @@ function rnNewPlan(P,e){if(e<3)return;P.gen=(P.gen||0)+1;
 modernizeTick=function(){};
 {const _pt=planTick;planTick=function(){_pt.apply(this,arguments);try{renewTick();}catch(err){console.error('renew tick',err);}};}
 // the planner does not rebuild what the age has outgrown
-{const _pn=pickNeed;pickNeed=function(sites){const L=_pn(sites),e=G.era||0;if(e<6)return L;const fus=buildings.some(o=>o.type==='fusion');return L.filter(n=>n.type!=='castle'&&!(n.type==='powerplant'&&(e>=7&&(fus||G.unl.computing))));};}
+{const _pn=pickNeed;pickNeed=function(sites){let L=_pn(sites);const e=G.era||0;const nt=cnt('tower'),p=popN();if(nt>=1+Math.floor(p/110))L=L.filter(n=>n.type!=='tower');// watch towers do not multiply with the town
+  if(e<6)return L;const fus=buildings.some(o=>o.type==='fusion');return L.filter(n=>n.type!=='castle'&&!(n.type==='powerplant'&&(e>=7&&(fus||G.unl.computing))));};}

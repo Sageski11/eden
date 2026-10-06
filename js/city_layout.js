@@ -268,11 +268,11 @@ function lyUsablePlots(P){const M=lyBuildHash(),lim=2.6+tfExtra();let n=0;
   return n;}
 function lyGradeTick(){const P=G.plan;if(MODE!=='god'||!P||P.v<3||(G.era||0)<1||!G.tf||!G.center||G.center.build)return;if(G.t<(P.gT||0))return;P.gT=G.t+3;
   // the folk level ground when the town has too few good plots, nearest the square first
-  if(lyUsablePlots(P)>=6+Math.floor(popN()/22)){lyReclaim(P);return;}
+  const need=lyUsablePlots(P)<6+Math.floor(popN()/22);// short of good plots: level ahead of the town; otherwise only where a street is being opened
   const cap=tfCap()*.55,d0=s=>Math.hypot(s.pts[0][0]-P.C[0],s.pts[0][1]-P.C[1]);
   const ordered=P.streets.filter(s=>!s.stair).sort((a,b)=>d0(a)-d0(b));
-  for(const s of ordered){let gi=s.gi||0;
-    while(gi<s.pts.length-1){const e=Math.min(gi+9,s.pts.length-1),m=s.pts[(gi+e)>>1];
+  for(const s of ordered){let gi=s.gi||0;const lim=need?s.pts.length-1:Math.min(s.painted+6,s.pts.length-1);
+    while(gi<lim){const e=Math.min(gi+9,s.pts.length-1),m=s.pts[(gi+e)>>1];
       if(lyD(P,m[0],m[1])>P.z.res*P.sc+8){gi=s.pts.length;break;}
       if(!lyFallow(m[0],m[1],10)){gi=e;continue;}
       const rough=lyRough(s,gi,e);if(rough<.5){gi=e;s.gp=0;continue;}
